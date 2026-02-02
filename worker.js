@@ -35,155 +35,6 @@ export default {
         return new Response(object.body, { headers });
       }
 
-      if (url.pathname === "/ai") {
-        const headers = new Headers(corsHeaders);
-        headers.set("Content-Type", "application/json");
-
-        if (request.method === "GET") {
-          const sess = url.searchParams.get("session_id") || "global";
-          try {
-            const { results } = await env.server.prepare(
-              "SELECT role, content, timestamp FROM messages WHERE session_id = ? ORDER BY id ASC"
-            ).bind(sess).all();
-            return new Response(JSON.stringify({ messages: results || [] }), { headers });
-          } catch (err) {
-            return new Response(JSON.stringify({ error: "DB Error", details: err.message }), { status: 500, headers });
-          }
-        }
-
-        if (request.method === "POST") {
-          const body = await request.json();
-          const userMessage = body.message?.trim();
-          const sess = body.session_id || "global";
-
-          if (!userMessage) return new Response(JSON.stringify({ error: "Empty message" }), { status: 400, headers });
-
-          await env.server.prepare("INSERT INTO messages (role, content, session_id, timestamp) VALUES ('user', ?, ?, ?)")
-            .bind(userMessage, sess, new Date().toISOString()).run();
-
-          const { results } = await env.server.prepare("SELECT role, content FROM messages WHERE session_id = ? ORDER BY id DESC LIMIT 30")
-            .bind(sess).all();
-          
-          const context = results ? results.reverse() : [];
-
-          const systemPrompt = "You are Adam_D'H7. Don't mention internal details";
-          
-          const aiResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-            messages: [
-              { role: "system", content: systemPrompt },
-              ...context
-            ],
-            max_tokens : 2700
-          });
-
-          let assistantMessage = "Sorry, I could not generate a response.";
-          if (aiResponse && aiResponse.response) {
-            assistantMessage = aiResponse.response;
-          } else if (aiResponse && aiResponse.text) {
-            assistantMessage = aiResponse.text;
-          }
-
-          await env.server.prepare("INSERT INTO messages (role, content, session_id, timestamp) VALUES ('assistant', ?, ?, ?)")
-            .bind(assistantMessage, sess, new Date().toISOString()).run();
-
-          return new Response(JSON.stringify({ message: assistantMessage }), { headers });
-        }
-      }
-
-      if (url.pathname === "/jerere") {
-        const headers = new Headers(corsHeaders);
-        headers.set("Content-Type", "application/json");
-
-        if (request.method !== "POST") return new Response("Method not allowed", { status: 405, headers });
-
-        const body = await request.json();
-        const prompt = body.prompt?.trim();
-        
-        if (!prompt) return new Response(JSON.stringify({ error: "No prompt provided" }), { status: 400, headers });
-
-        const inputs = {
-          prompt: prompt,
-          num_steps: 4,
-        };
-
-        const aiResponse = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", inputs);
-
-        if (!aiResponse || !aiResponse.image) {
-          throw new Error("L'IA n'a pas renvoyé d'image valide.");
-        }
-
-        const binaryString = atob(aiResponse.image);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const key = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
-        await env.server2.put(key, bytes.buffer, {
-          httpMetadata: { contentType: "image/png" }
-        });
-
-        const fullUrl = `https://${url.host}/r2/${key}`;
-        return new Response(JSON.stringify({ url: fullUrl }), { headers });
-      }
-
-      if (url.pathname === "/calcul") {
-        const headers = new Headers(corsHeaders);
-        headers.set("Content-Type", "application/json");
-
-        if (request.method !== "POST") {
-          return new Response(JSON.stringify({ error: "Méthode non autorisée" }), { status: 405, headers });
-        }
-
-        let body;
-        try {
-          body = await request.json();
-        } catch (e) {
-          return new Response(JSON.stringify({ error: "JSON invalide" }), { status: 400, headers });
-        }
-
-        const calculation = body.calculation?.trim();
-        if (!calculation) {
-          return new Response(JSON.stringify({ error: "Aucune expression fournie" }), { status: 400, headers });
-        }
-
-        try {
-          const systemPrompt = `You are an expert polymath specializing in Mathematics, Physics, and all scientific calculations. 
-CRITICAL RULES:
-1. LANGUAGE: Always respond in the exact same language used by the user. If they ask in French, reply in French; if in Spanish, reply in Spanish.
-2. CONTEXT: Thoroughly analyze and incorporate any specific user notes, variables, or constraints provided to tailor the calculation.
-3. STEP-BY-STEP LOGIC: Do not just give the answer. Deconstruct the solution into a clear, numbered "logical path." Explain the reasoning and formulas for every step.
-4. RIGOR: Use LaTeX for all mathematical formulas and scientific notation.
-5. ERROR HANDLING: If the input is syntactically incorrect or physically impossible, explain the error clearly instead of guessing.`;
-
-          const userPrompt = `Analyze and solve the following scientific expression or problem: 
-
-"${calculation}"
-
-Instructions for this task:
-- Apply any additional user notes provided in the input.
-- Show the full derivation and intermediate steps.
-- Conclude with the final answer clearly visible at the bottom as: **Final result: [Result]**
-
-IMPORTANT : You just have 1500 tokens`;
-
-          const aiResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt }
-            ], 
-            max_tokens : 2700
-          });
-
-          const analysis = aiResponse.response?.trim() || "Impossible d'analyser l'expression pour le moment.";
-
-          return new Response(JSON.stringify({ result: analysis }), { headers });
-        } catch (e) {
-          return new Response(JSON.stringify({ error: "Erreur interne lors de l'analyse mathématique" }), { status: 500, headers });
-        }
-      }
-
       if (url.pathname === "/quizz") {
         const headers = new Headers(corsHeaders);
         headers.set("Content-Type", "application/json");
@@ -214,6 +65,7 @@ IMPORTANT : You just have 1500 tokens`;
 
         const current_step_num = progress.current_step;
         const language = progress.language;
+        const langName = language === "fr" ? "French" : language === "es" ? "Spanish" : "English";
 
         const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
         const randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
@@ -226,29 +78,30 @@ IMPORTANT : You just have 1500 tokens`;
 
           let personName = "";
           let attempts = 0;
-          while (attempts < 15) {
+          
+          while (attempts < 5) {
             attempts++;
-            const avoid = usedList ? ` Do not use any of these names: ${usedList}.` : "";
-            const personPrompt = `Output ONLY the full name of one universally famous person (historical figure, scientist, celebrity, leader, artist, etc.).${avoid} No additional text, no quotes, no explanation.`;
+            const avoid = usedList ? `Exclude these: ${usedList}.` : "";
+            const personPrompt = `Generate the full name of one universally famous historical figure or celebrity. ${avoid} Output ONLY the name.`;
 
             const nameResp = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
               messages: [
-                { role: "system", content: "You output exactly and only the requested name." },
+                { role: "system", content: "You are a precise database assistant." },
                 { role: "user", content: personPrompt }
               ]
             });
 
-            const candidate = (nameResp.response || "").trim();
+            const candidate = (nameResp.response || "").trim().replace(/\.$/, "");
             if (candidate && (!usedList || !usedList.includes(candidate))) {
               personName = candidate;
               break;
             }
           }
 
-          if (!personName) personName = "Marie Curie";
+          if (!personName) personName = "Albert Einstein";
 
           const imageInputs = {
-            prompt: `Highly detailed realistic portrait of ${personName}, professional studio photography, cinematic lighting, sharp focus, 8k resolution`,
+            prompt: `Professional portrait of ${personName}, realistic, 8k, studio lighting`,
             num_steps: 4,
           };
 
@@ -285,27 +138,31 @@ IMPORTANT : You just have 1500 tokens`;
           quizData.image_url = imageUrl;
 
         } else {
-          const langName = language === "fr" ? "French" : language === "es" ? "Spanish" : "English";
+          
+          const systemPrompt = `Role: Quiz Generator.
+Target Language: ${langName}.
+Difficulty Level: ${current_step_num} (1=easy, 10=hard).
+Question Type: ${randomType}.
 
-          const systemPrompt = `You are a precise quiz generator. Generate everything exclusively in ${langName}.
-Difficulty level: ${current_step_num} (1 = very easy, higher = advanced topics and harder).
+Instructions:
+1. Create a question in ${langName}.
+2. If MCQ, provide 4 options. If TRUE_FALSE, options are null.
+3. Provide the exact answer.
+4. Provide a short explanation in ${langName}.
+5. Output strict valid JSON ONLY.
 
-Question type: ${randomType}
-
-STRICT OUTPUT FORMAT - ONLY valid JSON, no markdown, no extra text:
-
+Format:
 {
-  "type": "${randomType}",
-  "question": "Full question text in ${langName}. For MCQ include labeled options A) B) C) D) in the question string.",
-  "options": ["A) option1", "B) option2", "C) option3", "D) option4"] or null if not MCQ,
-  "answer": "Exact correct answer (for MCQ the full 'A) correct text', for TRUE_FALSE 'True' or 'False', for FILL_BLANK the missing word/phrase)",
-  "explanation": "Short explanation in ${langName}"
+  "question": "Question text here",
+  "options": ["A) ...", "B) ..."] or null,
+  "answer": "Correct answer text",
+  "explanation": "Brief explanation"
 }`;
 
           const aiResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
             messages: [
               { role: "system", content: systemPrompt },
-              { role: "user", content: "Generate the question now." }
+              { role: "user", content: "Generate JSON now." }
             ],
             max_tokens: 1000
           });
@@ -318,9 +175,9 @@ STRICT OUTPUT FORMAT - ONLY valid JSON, no markdown, no extra text:
           } catch (e) {
             parsed = {
               type: randomType,
-              question: "Temporary error generating question.",
+              question: "Error generating question. Please retry.",
               options: null,
-              answer: "",
+              answer: "Error",
               explanation: ""
             };
           }
@@ -360,55 +217,44 @@ STRICT OUTPUT FORMAT - ONLY valid JSON, no markdown, no extra text:
 
         let progress = await env.server.prepare("SELECT * FROM user_progress WHERE session_id = ?").bind(session_id).first();
         if (!progress) {
-          await env.server.prepare("INSERT INTO user_progress (session_id, language, current_step, consecutive_correct) VALUES (?, 'en', 1, 0)").bind(session_id).run();
           progress = { language: "en", current_step: 1, consecutive_correct: 0 };
         }
 
-        const lang = progress.language;
-        const langName = lang === "fr" ? "français" : lang === "es" ? "espagnol" : "anglais";
+        const langName = progress.language === "fr" ? "French" : progress.language === "es" ? "Spanish" : "English";
 
-        let optionsText = "";
-        if (current.options) {
-          try {
-            const opts = JSON.parse(current.options);
-            optionsText = "Options:\n" + opts.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join("\n");
-          } catch {}
-        }
+        const judgePrompt = `Role: Strict but fair Quiz Judge.
+Task: Compare USER ANSWER vs OFFICIAL ANSWER.
+Question: "${current.question}"
+Official Answer: "${current.answer}"
+User Answer: "${user_answer}"
 
-        const imageNote = current.image_url ? " (Une image est associée à la question.)" : "";
+Rules:
+1. Ignore Case Sensitivity, small typos, and punctuation.
+2. Focus on SEMANTIC meaning. (e.g., if answer is "False" and user says "Faut", it is CORRECT).
+3. If the user answer matches the meaning of the official answer, return true.
+4. If the user is wrong, return false.
 
-        const judgePrompt = `Question: ${current.question}
-${optionsText}
-${imageNote}
-
-Réponse correcte: ${current.answer}
-
-Réponse de l'utilisateur: "${user_answer}"
-
-Juge si la réponse de l'utilisateur est essentiellement correcte (tolère les petites fautes d'orthographe, abréviations, synonymes équivalents).
-
-Réponds UNIQUEMENT avec du JSON valide :
-
-{"correct": true ou false, "explanation": "Explication courte en ${langName}. Si correct félicite, si incorrect donne la bonne réponse."}`;
+Output ONLY valid JSON:
+{"correct": boolean, "explanation": "Short feedback in ${langName}"}`;
 
         const judgeResp = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
           messages: [
-            { role: "system", content: "Tu réponds exclusivement avec l'objet JSON demandé, rien d'autre." },
+            { role: "system", content: "You are a JSON-only output machine." },
             { role: "user", content: judgePrompt }
           ],
-          max_tokens: 600
+          max_tokens: 500
         });
 
         let judgeResult = { correct: false, explanation: "" };
         try {
           let text = (judgeResp.response || "").replace(/```json|```/g, "").trim();
           judgeResult = JSON.parse(text);
-        } catch (e) {}
+        } catch (e) {
+           judgeResult = { correct: false, explanation: "Validation error." };
+        }
 
         const isCorrect = !!judgeResult.correct;
-        const explanation = judgeResult.explanation || (isCorrect 
-          ? (lang === "fr" ? "Correct !" : lang === "es" ? "¡Correcto!" : "Correct!") 
-          : (lang === "fr" ? `Incorrect. La réponse est : ${current.answer}` : lang === "es" ? `Incorrecto. La respuesta es: ${current.answer}` : `Incorrect. The answer is: ${current.answer}`));
+        const explanation = judgeResult.explanation || (isCorrect ? "Correct!" : `Incorrect. Answer: ${current.answer}`);
 
         let new_consec = progress.consecutive_correct;
         let new_step = progress.current_step;
