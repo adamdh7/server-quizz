@@ -19,11 +19,6 @@ export default {
     }
 
     try {
-      await env.server.exec(`CREATE TABLE IF NOT EXISTS user_progress (session_id TEXT PRIMARY KEY, language TEXT DEFAULT 'en', current_step INTEGER DEFAULT 1, consecutive_correct INTEGER DEFAULT 0);`);
-      await env.server.exec(`CREATE TABLE IF NOT EXISTS current_quiz (session_id TEXT PRIMARY KEY, q_type TEXT, question TEXT, options TEXT, image_url TEXT, answer TEXT, explanation TEXT);`);
-      await env.server.exec(`CREATE TABLE IF NOT EXISTS used_persons (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL, person_name TEXT NOT NULL);`);
-      await env.server.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_used_persons ON used_persons(session_id, person_name);`);
-
       if (url.pathname.startsWith("/r2/")) {
         const key = url.pathname.slice(4);
         const object = await env.server2.get(key);
@@ -137,7 +132,7 @@ export default {
         const headers = new Headers(corsHeaders);
         headers.set("Content-Type", "application/json");
 
-        if (request.method !== "POST")") {
+        if (request.method !== "POST") {
           return new Response(JSON.stringify({ error: "Méthode non autorisée" }), { status: 405, headers });
         }
 
