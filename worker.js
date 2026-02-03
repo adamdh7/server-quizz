@@ -153,7 +153,7 @@ NO other text.`;
           
           const systemPrompt = `Task: Generate Quiz Question.
 Lang: ${langName}.
-Diff: ${current_step_num}.
+Diff: ${current_step_num} As the level increases, the questions should become more difficult, and previously asked questions should not be repeated.
 Type: ${randomType}.
 JSON Structure: { "question": "str", "options": ["A","B","C","D"] or null, "answer": "str", "explanation": "str" }.
 Strict JSON only.`;
@@ -229,7 +229,7 @@ Strict JSON only.`;
         const judgePrompt = `Role: Judge.
 Task: Compare User Answer vs Correct Answer.
 Question: "${current.question}"
-Correct Answer: "${current.answer}"
+Correct Answer: "${current.answer}" Validate the user's answer Mark as 'Correct' if the response is relevant to the question, otherwise 'Incorrect
 User Answer: "${user_answer}"
 Output JSON: {"correct": boolean, "explanation": "Short feedback in ${langName}"}`;
 
