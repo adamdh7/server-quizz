@@ -242,11 +242,11 @@ Format:
           ht: "Haitian Creole"
         }[progress.language] || "English";
 
-        const judgePrompt = `Role: Validate the user's answer. If an image description is provided, compare the user's input to the person described. Reply "Correct" if it matches, otherwise "Incorrect" : 
+        const judgePrompt = `Validate the user's answer. If an image description is provided, compare the user's input to the person described. Reply "Correct" if it matches, otherwise "Incorrect" : 
 Question : "${current.question}"
 User Answer : "${user_answer}"
-
-Output ONLY valid JSON:
+Mark as 'Correct' if the response is relevant to the question, otherwise 'Incorrect'.
+IMPORTANT: Output ONLY valid JSON:
 {"correct": boolean, "explanation": "Short feedback in ${langName}"}`;
 
         const judgeResp = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
