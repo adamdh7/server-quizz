@@ -4,37 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-touch-fullscreen" content="yes">
-    
     <title>Quizzs</title>
-    <meta name="description" content="Plateforme de quiz éducatifs interactifs par D'H7. Testez vos connaissances en Créole, Français, Anglais et Espagnol. Rejoignez la communauté Digital HUB 7.">
-    <meta name="keywords" content="quiz, education, apprentissage, haiti, dh7, examen, test, kreyol, digital hub 7, interactif">
-    <meta name="author" content="Adam_D’H7">
-    <meta name="robots" content="index, follow, max-image-preview:large">
-    <link rel="canonical" href="https://quiz.adamdh7.org">
-    
-    <link rel="alternate" hreflang="ht" href="https://quiz.adamdh7.org?lang=ht">
-    <link rel="alternate" hreflang="fr" href="https://quiz.adamdh7.org?lang=fr">
-    <link rel="alternate" hreflang="en" href="https://quiz.adamdh7.org?lang=en">
-    <link rel="alternate" hreflang="es" href="https://quiz.adamdh7.org?lang=es">
-    <link rel="alternate" hreflang="x-default" href="https://quiz.adamdh7.org">
+    <meta name="description" content="Quizzs Plateforme de quiz interactifs multilingues. Testez vos connaissances.">
+<meta name="author" content="Adam_D’H7">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://quiz.adamdh7.org">
 
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://quiz.adamdh7.org">
-    <meta property="og:title" content="Quizzs">
-    <meta property="og:description" content="Plateforme de quiz interactifs. Apprenez en jouant.">
-    <meta property="og:image" content="https://adamdh7.org/adamdh7.png">
-    <meta property="og:site_name" content="Quizzs">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://quiz.adamdh7.org">
+<meta property="og:title" content="Quizzs">
+<meta property="og:description" content="Plateforme de quiz interactifs.">
+<meta property="og:image" content="https://adamdh7.org/adamdh7.png">
 
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Quizzs">
-    <meta name="twitter:description" content="Testez vos connaissances sur Quizzs">
-    <meta name="twitter:image" content="https://adamdh7.org/adamdh7.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Quizzs">
+<meta name="twitter:description" content="Plateforme de quiz interactifs.">
+<meta name="twitter:image" content="https://adamdh7.org/adamdh7.png">
 
-    <link rel="icon" href="https://adamdh7.org/adamdh7.png" type="image/png">
-    <link rel="apple-touch-icon" href="https://adamdh7.org/adamdh7.png">
-    <link rel="manifest" href="/manifest.json">
+<link rel="icon" href="https://adamdh7.org/adamdh7.png" type="image/png">
+<link rel="apple-touch-icon" href="https://adamdh7.org/adamdh7.png">
+<link rel="manifest" href="/manifest.json">
 
 <script type="application/ld+json">
 {
@@ -47,15 +37,9 @@
     "name": "Adam_D’H7"
   },
   "image": "https://adamdh7.org/adamdh7.png",
-  "description": "Plateforme éducative de quiz multilingues.",
+  "description": "Plateforme de quiz interactifs multilingues.",
   "applicationCategory": "EducationalApplication",
-  "operatingSystem": "All",
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD"
-  },
-  "inLanguage": ["ht", "fr", "en", "es"]
+  "operatingSystem": "All"
 }
 </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&display=swap" rel="stylesheet">
@@ -124,19 +108,6 @@
             --border: #27272a;
         }
 
-        /* SCROLLBAR HIDING LOGIC - AGGRESSIVE */
-        html, body, .page-view, div, * {
-            scrollbar-width: none !important; /* Firefox */
-            -ms-overflow-style: none !important; /* IE 10+ */
-        }
-        
-        ::-webkit-scrollbar {
-            display: none !important; /* Chrome, Safari, Opera */
-            width: 0px !important;
-            height: 0px !important;
-            background: transparent !important;
-        }
-
         * {
             -webkit-tap-highlight-color: transparent;
             box-sizing: border-box;
@@ -167,6 +138,21 @@
             overflow: hidden;
             margin: 0;
             position: fixed;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        .page-view {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .page-view::-webkit-scrollbar {
+            display: none;
         }
 
         .brand-text {
@@ -396,14 +382,14 @@
 
     <div id="view-auth" class="page-view flex-col items-center justify-center p-8">
         <div class="w-full max-w-sm text-center">
-            <h1 class="text-7xl mb-4 brand-text text-white" onclick="actionWithLang(null)">D'H7</h1>
+            <h1 class="text-7xl mb-4 brand-text text-white" onclick="openLangModal()">D'H7</h1>
             <p class="text-zinc-500 text-xs uppercase tracking-[0.6em] mb-12" data-key="subtitle">Digital HUB 7</p>
             
             <div id="login-form" class="space-y-4">
                 <input type="text" id="login-id" data-key="placeholder-tfid" placeholder="TFID / DH7" class="modern-input" onkeydown="handleEnter(event, 'login-pass')">
                 <input type="password" id="login-pass" data-key="placeholder-password" placeholder="Password" class="modern-input" onkeydown="handleEnter(event, null, handleLogin)">
                 
-                <button onclick="actionWithLang(handleLogin)" class="w-full bg-white text-black font-black py-4 rounded-xl mt-4 text-lg" data-key="connect">LOG IN</button>
+                <button onclick="openLangModalBeforeAction(handleLogin)" class="w-full bg-white text-black font-black py-4 rounded-xl mt-4 text-lg" data-key="connect">LOG IN</button>
                 <button onclick="toggleAuthMode()" class="w-full text-zinc-600 text-sm mt-6 font-bold" data-key="register">CREER UN COMPTE</button>
             </div>
 
@@ -416,7 +402,7 @@
                 <input type="number" id="reg-age" placeholder="Age" class="modern-input" onkeydown="handleEnter(event, 'reg-pass')">
                 <input type="password" id="reg-pass" placeholder="Password" class="modern-input" onkeydown="handleEnter(event, null, handleRegister)">
                 
-                <button onclick="actionWithLang(handleRegister)" class="w-full bg-white text-black font-black py-4 rounded-xl mt-4" data-key="create-account">JOIN</button>
+                <button onclick="openLangModalBeforeAction(handleRegister)" class="w-full bg-white text-black font-black py-4 rounded-xl mt-4" data-key="create-account">JOIN</button>
                 <button onclick="toggleAuthMode()" class="w-full text-zinc-600 text-sm mt-6 font-bold" data-key="back-to-login">RETOUR</button>
             </div>
         </div>
@@ -478,7 +464,6 @@
     </div>
 
     <div id="lang-modal" class="lang-modal">
-        <div class="lang-opt" onclick="setLang('ht')">Kreyòl Ayisyen</div>
         <div class="lang-opt" onclick="setLang('fr')">Français</div>
         <div class="lang-opt" onclick="setLang('en')">English</div>
         <div class="lang-opt" onclick="setLang('es')">Español</div>
@@ -539,7 +524,6 @@
         ];
 
         const translations = {
-            ht: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID oswa DH7", "placeholder-password": "Modpas", connect: "Konekte", register: "KREYE YON KONT", "create-account": "JOIN", "back-to-login": "RETOUNEN", "change-lang": "Chanje Lang", logout: "Dekonekte", step: "NIVO", error_title: "ERÈ", success_title: "KÒRÈK", valider: "VALIDER" },
             fr: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID ou DH7", "placeholder-password": "Mot de passe", connect: "Se connecter", register: "CRÉER UN COMPTE", "create-account": "REJOINDRE", "back-to-login": "RETOUR", "change-lang": "Changer Langue", logout: "Déconnexion", step: "NIVEAU", error_title: "ERREUR", success_title: "EXCELLENT", valider: "VALIDER" },
             en: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID or DH7", "placeholder-password": "Password", connect: "Login", register: "CREATE ACCOUNT", "create-account": "JOIN", "back-to-login": "BACK", "change-lang": "Change Language", logout: "Log Out", step: "LEVEL", error_title: "WRONG", success_title: "CORRECT", valider: "SUBMIT" },
             es: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID o DH7", "placeholder-password": "Contraseña", connect: "Conectar", register: "CREAR CUENTA", "create-account": "UNIRSE", "back-to-login": "VOLVER", "change-lang": "Cambiar Idioma", logout: "Cerrar Sesión", step: "NIVEL", error_title: "ERROR", success_title: "CORRECTO", valider: "VALIDAR" }
@@ -547,13 +531,12 @@
 
         let state = {
             user: JSON.parse(localStorage.getItem('dh7_session')) || null,
-            lang: localStorage.getItem('language') || 'ht',
+            lang: localStorage.getItem('language') || 'fr',
             step: 1,
             progress: 0
         };
 
         let isInteractionLocked = false; 
-        let pendingAction = null;
 
         async function fetchQuizAPI(endpoint, options = {}) {
             for (const server of QUIZ_SERVERS) {
@@ -650,11 +633,11 @@
             const nom = document.getElementById('reg-nom').value.trim();
             const prenom = document.getElementById('reg-prenom').value.trim();
             const dh7 = document.getElementById('reg-dh7').value.trim();
-            const ageVal = document.getElementById('reg-age').value.trim();
+            const age = parseInt(document.getElementById('reg-age').value);
             const password = document.getElementById('reg-pass').value;
-
-            if(!nom || !prenom || !dh7 || !ageVal || !password) {
-                alert("Veuillez remplir tous les champs obligatoires.");
+            
+            if (!nom || !prenom || !dh7 || !age || !password) {
+                alert("Tous les champs sont obligatoires.");
                 return;
             }
 
@@ -665,27 +648,19 @@
                         'Content-Type': 'application/json',
                         'Origin': 'https://quiz.adamdh7.org'
                     },
-                    body: JSON.stringify({
-                        nom: nom,
-                        prenom: prenom,
-                        dh7: dh7,
-                        age: parseInt(ageVal),
-                        password: password
-                    })
+                    body: JSON.stringify({ nom, prenom, dh7, age, password })
                 });
-
                 const data = await res.json();
-
-                if(res.ok && data.success) {
-                    state.user = data.user || { nom, prenom, identifier: dh7 };
-                    if(!state.user.identifier) state.user.identifier = dh7;
+                if (data.success) {
+                    state.user = data.user;
+                    state.user.identifier = `${dh7}@dh7.tf`;
                     localStorage.setItem('dh7_session', JSON.stringify(state.user));
                     router.navigate('/dashboard');
                 } else {
-                    alert(data.message || "Erreur lors de l'inscription");
+                    alert("Erreur lors de l'inscription.");
                 }
-            } catch(e) {
-                alert("Erreur de connexion au serveur");
+            } catch (e) {
+                alert("Erreur de connexion.");
             }
         }
 
@@ -903,20 +878,29 @@
             loadQuizQuestion(); 
         }
 
-        function actionWithLang(callback) {
-            pendingAction = callback;
-            openLangModal();
-        }
-
         function openLangModal() {
             toggleMenu(false);
             document.getElementById('backdrop').classList.add('active');
             document.getElementById('lang-modal').classList.add('active');
         }
 
+        function openLangModalBeforeAction(actionCallback) {
+            const modal = document.getElementById('lang-modal');
+            const bd = document.getElementById('backdrop');
+            modal.classList.add('active');
+            bd.classList.add('active');
+            modal.setAttribute('data-action-callback', actionCallback.name);
+        }
+
         function setLang(l) {
             state.lang = l;
             localStorage.setItem('language', l);
+            const modal = document.getElementById('lang-modal');
+            const actionName = modal.getAttribute('data-action-callback');
+            if (actionName) {
+                window[actionName]();
+                modal.removeAttribute('data-action-callback');
+            }
             closeOverlays();
             applyTranslations();
             if (document.getElementById('view-quiz').classList.contains('active')) {
@@ -924,11 +908,6 @@
             }
             if (document.getElementById('view-dashboard').classList.contains('active')) {
                 updateDashboard();
-            }
-            if (pendingAction) {
-                const action = pendingAction;
-                pendingAction = null;
-                action();
             }
         }
 
