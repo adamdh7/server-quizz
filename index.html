@@ -690,7 +690,7 @@
                 console.error("Failed to fetch progress");
             }
 
-            document.getElementById('dash-level').innerText = `STEP ${state.step}`;
+            document.getElementById('dash-level').innerText = `${state.step}`;
             if (state.user) {
                 document.getElementById('menu-name-display').innerText = `${state.user.prenom} ${state.user.nom}`;
             }
