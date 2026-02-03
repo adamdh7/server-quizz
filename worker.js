@@ -245,6 +245,7 @@ Format:
         const judgePrompt = `Validate the user's answer. If an image description is provided, compare the user's input to the person described. Reply "Correct" if it matches, otherwise "Incorrect" : 
 Question : "${current.question}"
 User Answer : "${user_answer}"
+Correct Answer: "${current.answer}"
 Mark as 'Correct' if the response is relevant to the question, otherwise 'Incorrect'.
 IMPORTANT: Output ONLY valid JSON:
 {"correct": boolean, "explanation": "Short feedback in ${langName}"}`;
