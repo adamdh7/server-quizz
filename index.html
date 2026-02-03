@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ht">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-touch-fullscreen" content="yes">
+    <title>Quizzs</title>
+    <meta name="description" content="Quizzs Plateforme de quiz interactifs multilingues. Testez vos connaissances.">
+<meta name="author" content="Adam_D’H7">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://quiz.adamdh7.org">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://quiz.adamdh7.org">
+<meta property="og:title" content="Quizzs">
+<meta property="og:description" content="Plateforme de quiz interactifs.">
+<meta property="og:image" content="https://adamdh7.org/adamdh7.png">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Quizzs">
+<meta name="twitter:description" content="Plateforme de quiz interactifs.">
+<meta name="twitter:image" content="https://adamdh7.org/adamdh7.png">
+
+<link rel="icon" href="https://adamdh7.org/adamdh7.png" type="image/png">
+<link rel="apple-touch-icon" href="https://adamdh7.org/adamdh7.png">
+<link rel="manifest" href="/manifest.json">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Quizzs",
+  "url": "https://quiz.adamdh7.org",
+  "author": {
+    "@type": "Person",
+    "name": "Adam_D’H7"
+  },
+  "image": "https://adamdh7.org/adamdh7.png",
+  "description": "Plateforme de quiz interactifs multilingues.",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "All"
+}
+</script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 300;
+          src: url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfAZJhiJ-Ek-_EeAmM.woff2) format('woff2');
+          unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+        }
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 300;
+          src: url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfAZthiJ-Ek-_EeAmM.woff2) format('woff2');
+          unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+        }
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 300;
+          src: url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfAZNhiJ-Ek-_EeAmM.woff2) format('woff2');
+          unicode-range: U+1F00-1FFF;
+        }
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 300;
+          src: url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfAZxhiJ-Ek-_EeAmM.woff2) format('woff2');
+          unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+        }
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 300;
+          src: url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfAZBhiJ-Ek-_EeAmM.woff2) format('woff2');
+          unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+        }
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 300;
+          src: url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfAZFhiJ-Ek-_EeAmM.woff2) format('woff2');
+          unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 300;
+          src: url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfAZ9hiJ-Ek-_EeA.woff2) format('woff2');
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+
+        :root {
+            --bg-pure: #000000;
+            --bg-card: #121212;
+            --bg-input: #1c1c1e;
+            --text-main: #ffffff;
+            --text-sec: #a1a1aa; 
+            --accent: #ffffff; 
+            --error: #ef4444; 
+            --success: #22c55e;
+            --border: #27272a;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: pan-y; 
+            overscroll-behavior: none;
+        }
+
+        input, textarea {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: var(--bg-pure);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0;
+            position: fixed;
+        }
+
+        .brand-text {
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -0.05em;
+            text-transform: uppercase;
+        }
+
+        .modern-input {
+            background: var(--bg-input);
+            border: 1px solid transparent;
+            border-radius: 12px;
+            padding: 18px;
+            color: white;
+            width: 100%;
+            outline: none;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .modern-input:focus {
+            border-color: var(--text-sec);
+        }
+
+        .hidden { display: none !important; }
+        .page-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            display: none; 
+            padding-bottom: 80px; 
+        }
+        .page-view.active { display: flex; }
+
+        .app-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 24px;
+            background: var(--bg-pure);
+            z-index: 50;
+        }
+
+        .menu-btn {
+            color: var(--text-main);
+            background: none; border: none; padding: 0; cursor: pointer;
+        }
+
+        .side-menu {
+            position: fixed; top: 0; left: 0; bottom: 0; width: 300px;
+            background: #0a0a0a; z-index: 200;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border-right: 1px solid var(--border);
+            padding: 40px 30px; display: flex; flex-direction: column;
+        }
+        .side-menu.open { transform: translateX(0); }
+
+        .menu-user-name {
+            font-size: 1.5rem; font-weight: 700; color: white;
+            margin-bottom: 40px; line-height: 1.2;
+            word-wrap: break-word;
+        }
+
+        .menu-btn-item {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 20px 0;
+            background: transparent; border: none;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-sec); font-size: 1.1rem; font-weight: 500;
+            cursor: pointer; text-align: left;
+        }
+        .menu-btn-item:hover, .menu-btn-item:active { color: white; }
+        .menu-btn-item.logout { color: var(--error); border-bottom: none; margin-top: auto; }
+
+        .dash-content {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            cursor: pointer;
+        }
+        .play-icon {
+            width: 80px; height: 80px; fill: white; margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        .dash-content:active .play-icon { transform: scale(0.9); }
+        .level-indicator {
+            font-size: 1rem; color: var(--text-sec); letter-spacing: 0.2em; text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .progress-dots {
+            display: flex; gap: 4px;
+        }
+        .dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #333;
+        }
+        .dot.active { background: white; }
+
+        .quiz-container {
+            max-width: 600px; width: 100%; margin: 0 auto;
+            padding: 0 24px 40px 24px;
+            display: flex; flex-direction: column; flex: 1;
+        }
+
+        .question-txt {
+            font-size: 1.8rem; font-weight: 800; text-align: center;
+            margin: 20px 0 30px 0; line-height: 1.2; color: white;
+        }
+        
+        .quiz-img {
+            width: 100%; max-height: 300px; object-fit: contain;
+            border-radius: 16px; margin-bottom: 24px; background: #000;
+        }
+
+        .opt-btn {
+            background: var(--bg-input);
+            color: var(--text-sec);
+            padding: 20px; border-radius: 16px;
+            margin-bottom: 12px; width: 100%;
+            text-align: left; font-size: 1.1rem; font-weight: 600;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .opt-btn:active {
+            background: white; color: black; transform: scale(0.98);
+        }
+
+        .opt-btn.processing {
+            background-color: var(--error) !important;
+            color: white !important;
+            border-color: var(--error) !important;
+            opacity: 1 !important;
+        }
+        
+        .opt-btn.success {
+            background-color: var(--success) !important;
+            color: white !important;
+            border-color: var(--success) !important;
+            opacity: 1 !important;
+        }
+        
+        .opt-btn.disabled {
+            pointer-events: none !important;
+        }
+
+        .text-answer-area {
+            width: 100%; text-align: center; margin-top: 20px;
+        }
+        .quiz-text-input {
+            background: transparent; border: none;
+            border-bottom: 2px solid var(--text-sec);
+            color: white; font-size: 1.5rem; text-align: center;
+            width: 100%; padding: 10px 0; outline: none;
+            border-radius: 0;
+            transition: border-bottom-color 0.3s;
+        }
+        .quiz-text-input:focus { border-bottom-color: white; }
+        .quiz-text-input:disabled { opacity: 0.5; border-bottom-color: #333; }
+
+        .validate-btn {
+            margin-top: 30px;
+            background: white; color: black;
+            font-weight: 900; padding: 16px 40px;
+            border-radius: 50px; border: none;
+            font-size: 1rem; cursor: pointer;
+            min-width: 160px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .validate-btn.disabled { pointer-events: none; opacity: 0.8; }
+        
+        .btn-loader {
+            width: 24px; height: 24px;
+            color: black;
+            animation: spin 1s infinite linear;
+        }
+
+        .feedback-overlay {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #111; padding: 30px 24px;
+            border-top: 1px solid #333; z-index: 100;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        .feedback-overlay.show { transform: translateY(0); }
+        .feedback-overlay.err { border-top: 2px solid var(--error); }
+        
+        .fb-title { font-size: 1.2rem; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; }
+        .err .fb-title { color: var(--error); }
+        
+        .fb-desc { color: var(--text-sec); font-size: 0.95rem; margin-bottom: 20px; line-height: 1.4; }
+        
+        .next-btn {
+            width: 100%; background: #333; color: white;
+            padding: 18px; border-radius: 14px; font-weight: 700; border: none;
+        }
+
+        .loader {
+            width: 24px; height: 24px; border: 3px solid #333;
+            border-top-color: white; border-radius: 50%;
+            animation: spin 1s infinite linear; margin: auto;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .backdrop {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .backdrop.active { opacity: 1; pointer-events: auto; }
+
+        .lang-modal {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #111; z-index: 300;
+            border-radius: 24px 24px 0 0; padding-bottom: 20px;
+            transform: translateY(100%); transition: transform 0.3s;
+        }
+        .lang-modal.active { transform: translateY(0); }
+        .lang-opt {
+            padding: 20px; text-align: center; border-bottom: 1px solid #222;
+            color: var(--text-sec); font-weight: 500;
+        }
+        .lang-opt:active { color: white; background: #1a1a1a; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <div id="view-auth" class="page-view flex-col items-center justify-center p-8">
+        <div class="w-full max-w-sm text-center">
+            <h1 class="text-7xl mb-4 brand-text text-white">D'H7</h1>
+            <p class="text-zinc-500 text-xs uppercase tracking-[0.6em] mb-12" data-key="subtitle">Digital HUB 7</p>
+            
+            <div id="login-form" class="space-y-4">
+                <input type="text" id="login-id" data-key="placeholder-tfid" placeholder="TFID / DH7" class="modern-input" onkeydown="handleEnter(event, 'login-pass')">
+                <input type="password" id="login-pass" data-key="placeholder-password" placeholder="Password" class="modern-input" onkeydown="handleEnter(event, null, handleLogin)">
+                
+                <button onclick="handleLogin()" class="w-full bg-white text-black font-black py-4 rounded-xl mt-4 text-lg" data-key="connect">LOG IN</button>
+                <button onclick="toggleAuthMode()" class="w-full text-zinc-600 text-sm mt-6 font-bold" data-key="register">CREER UN COMPTE</button>
+            </div>
+
+            <div id="reg-form" class="hidden space-y-4">
+                <div class="flex gap-2">
+                    <input type="text" id="reg-nom" placeholder="Nom" class="modern-input" onkeydown="handleEnter(event, 'reg-prenom')">
+                    <input type="text" id="reg-prenom" placeholder="Prénom" class="modern-input" onkeydown="handleEnter(event, 'reg-dh7')">
+                </div>
+                <input type="text" id="reg-dh7" placeholder="DH7 ID" class="modern-input" onkeydown="handleEnter(event, 'reg-age')">
+                <input type="number" id="reg-age" placeholder="Age" class="modern-input" onkeydown="handleEnter(event, 'reg-pass')">
+                <input type="password" id="reg-pass" placeholder="Password" class="modern-input" onkeydown="handleEnter(event, null, handleRegister)">
+                
+                <button onclick="handleRegister()" class="w-full bg-white text-black font-black py-4 rounded-xl mt-4" data-key="create-account">JOIN</button>
+                <button onclick="toggleAuthMode()" class="w-full text-zinc-600 text-sm mt-6 font-bold" data-key="back-to-login">RETOUR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-dashboard" class="page-view relative">
+        <header class="app-header">
+            <button class="menu-btn" onclick="toggleMenu(true)">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <div class="brand-text text-3xl">QUIZZS</div>
+            <div style="width: 32px;"></div>
+        </header>
+
+        <div class="dash-content" onclick="router.navigate('/quiz')">
+            <svg class="play-icon" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+            </svg>
+            <div class="level-indicator" id="dash-level">STEP 1</div>
+            <div class="progress-dots" id="dash-dots">
+            </div>
+        </div>
+    </div>
+
+    <div id="view-quiz" class="page-view">
+        <header class="app-header">
+            <button class="menu-btn" onclick="router.navigate('/dashboard')">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <div class="brand-text text-2xl">QUIZZS</div>
+            <div style="width: 32px;"></div>
+        </header>
+
+        <div id="quiz-loader" class="hidden flex-1 flex items-center justify-center">
+            <div class="loader"></div>
+        </div>
+
+        <div id="quiz-content" class="quiz-container hidden">
+        </div>
+    </div>
+
+    <div id="side-menu" class="side-menu">
+        <div id="menu-name-display" class="menu-user-name"></div>
+        
+        <button class="menu-btn-item" onclick="openLangModal()" data-key="change-lang">
+            Langue
+            <span>→</span>
+        </button>
+        
+        <button class="menu-btn-item logout" onclick="logout()" data-key="logout">
+            LOG OUT
+        </button>
+    </div>
+
+    <div id="lang-modal" class="lang-modal">
+        <div class="lang-opt" onclick="setLang('ht')">Kreyòl Ayisyen</div>
+        <div class="lang-opt" onclick="setLang('fr')">Français</div>
+        <div class="lang-opt" onclick="setLang('en')">English</div>
+        <div class="lang-opt" onclick="setLang('es')">Español</div>
+        <div class="p-4 text-center text-zinc-500 font-bold text-sm cursor-pointer" onclick="closeOverlays()">FERMER</div>
+    </div>
+
+    <div id="feedback-sheet" class="feedback-overlay">
+        <div class="fb-title" id="fb-title"></div>
+        <div class="fb-desc" id="fb-desc"></div>
+        <button class="next-btn" onclick="nextQuestion()">CONTINUER</button>
+    </div>
+
+    <div id="backdrop" class="backdrop" onclick="closeOverlays()"></div>
+
+    <script>
+        document.addEventListener('keydown', function(e) {
+            if (
+                e.key === 'F5' || 
+                (e.ctrlKey && e.key === 'r') || 
+                (e.metaKey && e.key === 'r')
+            ) {
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', function(event) {
+            if (event.scale !== 1) { 
+                event.preventDefault(); 
+            }
+        }, { passive: false });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        window.onbeforeunload = function() {
+            return "Prevent";
+        };
+
+        const AUTH_API = "https://server.dh7.adamdh7.org";
+        const QUIZ_SERVERS = [
+            "https://server-quizz.dhaitiadam.workers.dev",
+            "https://server.quiz.adamdh7.org",
+            "https://server.quizz.adamdh7.org"
+        ];
+
+        const translations = {
+            ht: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID oswa DH7", "placeholder-password": "Modpas", connect: "Konekte", register: "KREYE YON KONT", "create-account": "JOIN", "back-to-login": "RETOUNEN", "change-lang": "Chanje Lang", logout: "Dekonekte", step: "NIVO", error_title: "ERÈ", success_title: "KÒRÈK", valider: "VALIDER" },
+            fr: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID ou DH7", "placeholder-password": "Mot de passe", connect: "Se connecter", register: "CRÉER UN COMPTE", "create-account": "REJOINDRE", "back-to-login": "RETOUR", "change-lang": "Changer Langue", logout: "Déconnexion", step: "NIVEAU", error_title: "ERREUR", success_title: "EXCELLENT", valider: "VALIDER" },
+            en: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID or DH7", "placeholder-password": "Password", connect: "Login", register: "CREATE ACCOUNT", "create-account": "JOIN", "back-to-login": "BACK", "change-lang": "Change Language", logout: "Log Out", step: "LEVEL", error_title: "WRONG", success_title: "CORRECT", valider: "SUBMIT" },
+            es: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID o DH7", "placeholder-password": "Contraseña", connect: "Conectar", register: "CREAR CUENTA", "create-account": "UNIRSE", "back-to-login": "VOLVER", "change-lang": "Cambiar Idioma", logout: "Cerrar Sesión", step: "NIVEL", error_title: "ERROR", success_title: "CORRECTO", valider: "VALIDAR" }
+        };
+
+        let state = {
+            user: JSON.parse(localStorage.getItem('dh7_session')) || null,
+            lang: localStorage.getItem('language') || 'ht',
+            step: 1,
+            progress: 0
+        };
+
+        let isInteractionLocked = false; 
+
+        async function fetchQuizAPI(endpoint, options = {}) {
+            for (const server of QUIZ_SERVERS) {
+                try {
+                    const url = server + endpoint;
+                    const res = await fetch(url, options);
+                    
+                    if (!res.ok && res.status >= 500) throw new Error(res.status);
+                    if (res.status === 404) throw new Error("404");
+                    
+                    return res; 
+                } catch (e) {
+                    continue; 
+                }
+            }
+            throw new Error("All servers failed");
+        }
+
+        function getSessionId() {
+            if (state.user && state.user.identifier) {
+                return state.user.identifier;
+            }
+            return 'unknown_user';
+        }
+
+        function handleEnter(event, nextId, callback) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (nextId) {
+                    document.getElementById(nextId).focus();
+                } else if (callback) {
+                    callback();
+                }
+            }
+        }
+
+        const router = {
+            routes: {
+                '/login': 'view-auth',
+                '/dashboard': 'view-dashboard',
+                '/quiz': 'view-quiz'
+            },
+            init: function() {
+                window.addEventListener('popstate', () => this.handleLocation());
+                let path = window.location.pathname;
+                if(path === '/' || path === '') path = state.user ? '/dashboard' : '/login';
+                this.navigate(path, true);
+            },
+            navigate: function(path, replace = false) {
+                if(!state.user && path !== '/login') path = '/login';
+                if(state.user && path === '/login') path = '/dashboard';
+
+                if(replace) window.history.replaceState({}, "", path);
+                else window.history.pushState({}, "", path);
+                
+                this.handleLocation();
+            },
+            handleLocation: async function() {
+                const path = window.location.pathname;
+                const viewId = this.routes[path] || 'view-auth';
+                
+                document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
+                const view = document.getElementById(viewId);
+                if(view) {
+                    view.classList.add('active');
+                    if(viewId === 'view-dashboard') await updateDashboard();
+                    if(viewId === 'view-quiz') await loadQuizQuestion();
+                }
+            }
+        };
+
+        async function handleLogin() {
+            let id = document.getElementById('login-id').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            if(!id || !pass) return;
+            if (!id.includes('@') && !id.startsWith('TF-')) id += '@dh7.tf';
+
+            try {
+                const res = await fetch(`${AUTH_API}/login`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: id, password: pass })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    state.user = data.user;
+                    state.user.identifier = id; 
+                    localStorage.setItem('dh7_session', JSON.stringify(state.user));
+                    router.navigate('/dashboard');
+                } else alert("Error");
+            } catch(e) { alert("Connection failed"); }
+        }
+
+        async function handleRegister() {
+            alert("Registration Logic Here");
+        }
+
+        function toggleAuthMode() {
+            document.getElementById('login-form').classList.toggle('hidden');
+            document.getElementById('reg-form').classList.toggle('hidden');
+        }
+
+        function logout() {
+            localStorage.clear();
+            state.user = null;
+            state.progress = 0;
+            router.navigate('/login');
+            location.reload(); 
+        }
+
+        async function updateDashboard() {
+            applyTranslations();
+            const t = translations[state.lang];
+            const sessionId = getSessionId();
+
+            try {
+                const res = await fetchQuizAPI(`/step?session_id=${sessionId}&lang=${state.lang}`);
+                const data = await res.json();
+                state.step = data.current_step || 1;
+                state.progress = data.consecutive_correct || 0;
+                if (data.language) {
+                    state.lang = data.language;
+                    localStorage.setItem('language', data.language);
+                    applyTranslations();
+                }
+            } catch(e) {
+                console.error("Failed to fetch progress");
+            }
+
+            document.getElementById('dash-level').innerText = `${t.step} ${state.step}`;
+            if (state.user) {
+                document.getElementById('menu-name-display').innerText = `${state.user.prenom} ${state.user.nom}`;
+            }
+
+            const dotsContainer = document.getElementById('dash-dots');
+            dotsContainer.innerHTML = '';
+            for(let i = 0; i < 7; i++) {
+                const dot = document.createElement('div');
+                dot.className = `dot ${i < state.progress ? 'active' : ''}`;
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function toggleMenu(show) {
+            const menu = document.getElementById('side-menu');
+            const bd = document.getElementById('backdrop');
+            if(show === true) {
+                menu.classList.add('open');
+                bd.classList.add('active');
+            } else {
+                menu.classList.remove('open');
+                bd.classList.remove('active');
+            }
+        }
+
+        async function loadQuizQuestion() {
+            isInteractionLocked = false;
+            
+            const loader = document.getElementById('quiz-loader');
+            const content = document.getElementById('quiz-content');
+            const sheet = document.getElementById('feedback-sheet');
+            
+            sheet.classList.remove('show');
+            content.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            const sessionId = getSessionId();
+
+            try {
+                const res = await fetchQuizAPI('/quizz', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ session_id: sessionId, lang: state.lang })
+                });
+                const data = await res.json();
+                renderQuiz(data);
+            } catch(e) {
+                console.error(e);
+            } finally {
+                loader.classList.add('hidden');
+                content.classList.remove('hidden');
+            }
+        }
+
+        function renderQuiz(data) {
+            const container = document.getElementById('quiz-content');
+            container.innerHTML = '';
+
+            if(data.image_url) {
+                container.innerHTML += `<img src="${data.image_url}" class="quiz-img" alt="Quiz image">`;
+            }
+
+            container.innerHTML += `<div class="question-txt">${data.question}</div>`;
+
+            if (data.options && Array.isArray(data.options)) {
+                data.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'opt-btn';
+                    btn.innerText = opt;
+                    btn.onclick = function() { handleOptionClick(this, opt); };
+                    container.appendChild(btn);
+                });
+            } else {
+                const t = translations[state.lang];
+                container.innerHTML += `
+                    <div class="text-answer-area">
+                        <input type="text" id="quiz-input-text" class="quiz-text-input" placeholder="" autocomplete="off" onfocus="handleInputFocus(this)">
+                        <button id="btn-valider" class="validate-btn" onclick="handleTextSubmit()">${t.valider}</button>
+                    </div>
+                `;
+            }
+        }
+
+        function handleInputFocus(el) {
+            setTimeout(() => {
+                el.scrollIntoView({behavior: 'smooth', block: 'center'});
+            }, 300);
+        }
+
+        function handleOptionClick(btnElement, value) {
+            if (isInteractionLocked) return;
+            
+            isInteractionLocked = true;
+            
+            btnElement.classList.add('processing');
+            
+            const allBtns = document.querySelectorAll('.opt-btn');
+            allBtns.forEach(btn => btn.classList.add('disabled'));
+
+            submitAnswer(value, btnElement);
+        }
+
+        function handleTextSubmit() {
+            if (isInteractionLocked) return;
+            
+            const inputField = document.getElementById('quiz-input-text');
+            const val = inputField.value;
+            if (!val || !val.trim()) return;
+
+            isInteractionLocked = true;
+
+            const btn = document.getElementById('btn-valider');
+            const originalText = btn.innerText;
+            
+            inputField.disabled = true; 
+            btn.classList.add('disabled'); 
+            btn.innerHTML = `<svg class="btn-loader" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
+            submitAnswer(val.trim(), btn, originalText);
+        }
+
+        async function submitAnswer(userAnswer, uiElement, originalText = "") {
+            const sessionId = getSessionId();
+            
+            try {
+                const res = await fetchQuizAPI('/validate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        session_id: sessionId, 
+                        user_answer: userAnswer,
+                        lang: state.lang
+                    })
+                });
+
+                const data = await res.json();
+                
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+
+                state.step = data.current_step;
+                state.progress = data.consecutive_correct;
+
+                if(uiElement && uiElement.classList.contains('opt-btn')) {
+                    if (data.correct) {
+                        uiElement.classList.remove('processing');
+                        uiElement.classList.add('success');
+                    }
+                } else if (uiElement && uiElement.id === 'btn-valider') {
+                    uiElement.innerText = originalText; 
+                }
+
+                showFeedback(data.correct, data.explanation || "");
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function showFeedback(success, explanation) {
+            const sheet = document.getElementById('feedback-sheet');
+            const title = document.getElementById('fb-title');
+            const desc = document.getElementById('fb-desc');
+            const t = translations[state.lang];
+
+            sheet.classList.toggle('err', !success);
+
+            title.innerText = success ? t.success_title : t.error_title;
+            desc.innerText = explanation;
+            
+            sheet.classList.add('show');
+        }
+
+        function nextQuestion() {
+            const sheet = document.getElementById('feedback-sheet');
+            sheet.classList.remove('show');
+            loadQuizQuestion(); 
+        }
+
+        function openLangModal() {
+            toggleMenu(false);
+            document.getElementById('backdrop').classList.add('active');
+            document.getElementById('lang-modal').classList.add('active');
+        }
+
+        function setLang(l) {
+            state.lang = l;
+            localStorage.setItem('language', l);
+            closeOverlays();
+            applyTranslations();
+            if (document.getElementById('view-quiz').classList.contains('active')) {
+                loadQuizQuestion();
+            }
+            if (document.getElementById('view-dashboard').classList.contains('active')) {
+                updateDashboard();
+            }
+        }
+
+        function closeOverlays() {
+            document.getElementById('backdrop').classList.remove('active');
+            document.getElementById('side-menu').classList.remove('open');
+            document.getElementById('lang-modal').classList.remove('active');
+        }
+
+        function applyTranslations() {
+            const t = translations[state.lang];
+            document.querySelectorAll('[data-key]').forEach(el => {
+                const k = el.dataset.key;
+                if(t[k]) {
+                    if(el.tagName === 'INPUT') el.placeholder = t[k];
+                    else el.innerText = t[k];
+                }
+            });
+        }
+
+        let touchX = 0;
+        const menuEl = document.getElementById('side-menu');
+        menuEl.addEventListener('touchstart', e => touchX = e.changedTouches[0].screenX);
+        menuEl.addEventListener('touchend', e => {
+            if(touchX - e.changedTouches[0].screenX > 50) toggleMenu(false);
+        });
+
+        router.init();
+        applyTranslations();
+    </script>
+</body>
+</html>
