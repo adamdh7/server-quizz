@@ -3,7 +3,6 @@ export default {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin");
     const allowedOrigin = "https://quiz.adamdh7.org";
-
     const corsHeaders = {
       "Access-Control-Allow-Origin": allowedOrigin,
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -23,18 +22,27 @@ export default {
       return new Response("Forbidden: Origin not allowed", { status: 403, headers: corsHeaders });
     }
 
-    async function runAIWithTimeout(aiName, args = {}, ms = 7000) {
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("AI timeout")), ms));
-      const call = env.AI.run(aiName, args);
-      return Promise.race([call, timeout]);
-    }
-
     function base64ToArrayBuffer(base64) {
       const binary = atob(base64);
       const len = binary.length;
       const bytes = new Uint8Array(len);
       for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
       return bytes.buffer;
+    }
+
+    async function runAIWithTimeout(aiName, args = {}, ms = 7000) {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("AI timeout")), ms));
+      const call = env.AI.run(aiName, args);
+      return Promise.race([call, timeout]);
+    }
+
+    async function fetchLatestHistory(session_id) {
+      const row = await env.server.prepare("SELECT * FROM quiz_history WHERE session_id = ? ORDER BY created_at DESC LIMIT 1").bind(session_id).first();
+      return row;
+    }
+
+    async function saveHistory(session_id, q_type, question, optionsStr, image_url, answer, explanation) {
+      await env.server.prepare("INSERT INTO quiz_history (session_id, q_type, question, options, image_url, answer, explanation, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(session_id, q_type, question, optionsStr, image_url, answer, explanation, Date.now()).run();
     }
 
     try {
@@ -98,17 +106,6 @@ export default {
 
         const quizData = {};
 
-        const existing = await env.server.prepare("SELECT * FROM current_quiz WHERE session_id = ?").bind(session_id).first();
-        if (existing && existing.q_type && existing.question) {
-          quizData.type = existing.q_type;
-          quizData.question = existing.question;
-          if (existing.options) {
-            try { quizData.options = JSON.parse(existing.options); } catch (e) { quizData.options = null; }
-          }
-          if (existing.image_url) quizData.image_url = existing.image_url;
-          return new Response(JSON.stringify(quizData), { headers });
-        }
-
         if (randomType === "IDENTITY_IMAGE") {
           const usedRows = await env.server.prepare("SELECT person_name FROM used_persons WHERE session_id = ?").bind(session_id).all();
           const usedList = (usedRows.results || []).map(r => r.person_name);
@@ -116,7 +113,7 @@ export default {
 
           let personName = "";
           try {
-            const prompt = `List up to 3 universally famous historical figures or celebrities (full name only), do not include explanations. ${avoidStr}`;
+            const prompt = `Give 3 universally famous full names only. ${avoidStr}`;
             const nameResp = await runAIWithTimeout("@cf/meta/llama-3.1-8b-instruct", {
               messages: [
                 { role: "system", content: "You are concise." },
@@ -172,7 +169,7 @@ export default {
           };
           const questionText = questionTexts[language] || questionTexts.en;
 
-          await env.server.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation, created_at) VALUES (?, ?, ?, NULL, ?, ?, NULL, ?)").bind(session_id, "IDENTITY_IMAGE", questionText, imageUrl, personName, Date.now()).run();
+          await saveHistory(session_id, "IDENTITY_IMAGE", questionText, null, imageUrl, personName, null);
 
           quizData.type = "IDENTITY_IMAGE";
           quizData.question = questionText;
@@ -204,6 +201,16 @@ export default {
           }
 
           if (!parsed) {
+            const fallback = await fetchLatestHistory(session_id);
+            if (fallback && fallback.question) {
+              const fallbackObj = {
+                type: fallback.q_type,
+                question: fallback.question,
+                options: fallback.options ? JSON.parse(fallback.options) : null,
+                image_url: fallback.image_url || null
+              };
+              return new Response(JSON.stringify(fallbackObj), { headers });
+            }
             parsed = {
               question: language === "fr" ? "Erreur génération. Réessayer." : "Error generating question. Please retry.",
               options: null,
@@ -213,12 +220,11 @@ export default {
           }
 
           const optionsStr = parsed.options ? JSON.stringify(parsed.options) : null;
-          await env.server.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation, created_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?)").bind(session_id, randomType, parsed.question, optionsStr, parsed.answer, parsed.explanation || null, Date.now()).run();
+          await saveHistory(session_id, randomType, parsed.question, optionsStr, null, parsed.answer, parsed.explanation || null);
 
-          quizData.type = randomType;
-          quizData.question = parsed.question;
-          if (parsed.options) quizData.options = parsed.options;
-          return new Response(JSON.stringify(quizData), { headers });
+          const result = { type: randomType, question: parsed.question };
+          if (parsed.options) result.options = parsed.options;
+          return new Response(JSON.stringify(result), { headers });
         }
       }
 
@@ -238,8 +244,11 @@ export default {
         const user_answer = (body.user_answer || "").trim();
         if (!session_id || !user_answer) return jsonResponse({ error: "session_id and user_answer required" }, 400);
 
-        const current = await env.server.prepare("SELECT * FROM current_quiz WHERE session_id = ?").bind(session_id).first();
-        if (!current) return jsonResponse({ error: "No active quiz" }, 400);
+        let current = await env.server.prepare("SELECT * FROM current_quiz WHERE session_id = ?").bind(session_id).first();
+        if (!current) {
+          current = await fetchLatestHistory(session_id);
+          if (!current) return jsonResponse({ error: "No active quiz" }, 400);
+        }
 
         let progress = await env.server.prepare("SELECT * FROM user_progress WHERE session_id = ?").bind(session_id).first();
         if (!progress) progress = { language: "en", current_step: 1, consecutive_correct: 0 };
@@ -278,7 +287,7 @@ export default {
         }
 
         const isCorrect = !!judgeResult.correct;
-        const explanation = judgeResult.explanation || (isCorrect ? (language === "fr" ? "Correct!" : "Correct!") : `Incorrect. Answer: ${current.answer}`);
+        const explanation = judgeResult.explanation || (isCorrect ? (progress.language === "fr" ? "Correct!" : "Correct!") : `Incorrect. Answer: ${current.answer}`);
 
         let new_consec = Number(progress.consecutive_correct || 0);
         let new_step = Number(progress.current_step || 1);
@@ -289,7 +298,7 @@ export default {
             new_step += 1;
             new_consec = 0;
           }
-          await env.server.prepare("DELETE FROM current_quiz WHERE session_id = ?").bind(session_id).run();
+          await env.server.prepare("DELETE FROM current_quiz WHERE session_id = ?").bind(session_id).run().catch(()=>{});
         } else {
           new_consec = 0;
         }
