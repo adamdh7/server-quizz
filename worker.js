@@ -2,7 +2,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin");
-    const allowedOrigin = "https://teste777.pages.dev";
+    const allowedOrigin = "https://quiz.adamdh7.org";
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": allowedOrigin,
