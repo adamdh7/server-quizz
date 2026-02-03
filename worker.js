@@ -250,7 +250,7 @@ Mark as 'Correct' if the response is relevant to the question, otherwise 'Incorr
 IMPORTANT: Output ONLY valid JSON:
 {"correct": boolean, "explanation": "Short feedback in ${langName}"}`;
 
-        const judgeResp = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
+        const judgeResp = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
           messages: [
             { role: "system", content: "You are a JSON-only output machine." },
             { role: "user", content: judgePrompt }
