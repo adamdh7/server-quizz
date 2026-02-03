@@ -140,7 +140,7 @@ export default {
             en: "Who is this person?",
             fr: "Qui est cette personne ?",
             es: "¿Quién es esta persona?",
-            ht: "Kiyès moun sa?"
+            ht: "Kiyès moun sa a ye?"
           };
 
           let questionText = questionTexts[language] || questionTexts.en;
@@ -328,6 +328,6 @@ IMPORTANT: Output ONLY valid JSON:
       }), { status: 500, headers: errorHeaders });
     }
 
-    return new Response("Not Found", { status: 404, headers: });
+    return new Response("Not Found", { status: 404, headers: corsHeaders });
   }
 };
