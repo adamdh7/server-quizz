@@ -1,4 +1,4 @@
-name = "server4"
+name = "server-quizz"
 main = "worker.js"
 compatibility_date = "2026-01-06"
 
