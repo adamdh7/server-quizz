@@ -242,9 +242,9 @@ Format:
           ht: "Haitian Creole"
         }[progress.language] || "English";
 
-        const judgePrompt = `Role: If the response is similar to the original, validate it as correct, otherwise incorrect ;
-Question: "${current.question}"
-User Answer: "${user_answer}"
+        const judgePrompt = `Role: Validate the user's answer. If an image description is provided, compare the user's input to the person described. Reply "Correct" if it matches, otherwise "Incorrect" : 
+Question : "${current.question}"
+User Answer : "${user_answer}"
 
 Output ONLY valid JSON:
 {"correct": boolean, "explanation": "Short feedback in ${langName}"}`;
@@ -254,7 +254,7 @@ Output ONLY valid JSON:
             { role: "system", content: "You are a JSON-only output machine." },
             { role: "user", content: judgePrompt }
           ],
-          max_tokens: 500
+          max_tokens: 1000
         });
 
         let judgeResult = { correct: false, explanation: "" };
