@@ -2,7 +2,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin");
-    const allowedOrigin = "https://v7test.pages.dev";
+    const allowedOrigin = "https://quiz.adamdh7.org";
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": allowedOrigin,
@@ -156,7 +156,7 @@ export default {
           
           const systemPrompt = `Role: Quiz Generator.
 Target Language: ${langName}.
-Difficulty Level: ${current_step_num} (1=easy, 10=hard).
+Difficulty Level: ${current_step_num} (1=easy ... X=hard).
 Question Type: ${randomType}.
 
 Instructions:
@@ -244,7 +244,6 @@ Format:
 
         const judgePrompt = `Role: If the response is similar to the original, validate it as correct, otherwise incorrect ;
 Question: "${current.question}"
-Official Answer: "${current.answer}"
 User Answer: "${user_answer}"
 
 Output ONLY valid JSON:
