@@ -222,17 +222,10 @@ Format:
 
         const langName = progress.language === "fr" ? "French" : progress.language === "es" ? "Spanish" : "English";
 
-        const judgePrompt = `Role: Strict but fair Quiz Judge.
-Task: Compare USER ANSWER vs OFFICIAL ANSWER.
+        const judgePrompt = `Role: If the response is similar to the original, validate it as correct, otherwise incorrect ;
 Question: "${current.question}"
 Official Answer: "${current.answer}"
 User Answer: "${user_answer}"
-
-Rules:
-1. Ignore Case Sensitivity, small typos, and punctuation.
-2. Focus on SEMANTIC meaning. (e.g., if answer is "False" and user says "Faut", it is CORRECT).
-3. If the user answer matches the meaning of the official answer, return true.
-4. If the user is wrong, return false.
 
 Output ONLY valid JSON:
 {"correct": boolean, "explanation": "Short feedback in ${langName}"}`;
