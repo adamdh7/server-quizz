@@ -226,9 +226,7 @@ Strict JSON only.`;
           ht: "Haitian Creole"
         }[progress.language] || "English";
 
-        const judgePrompt = `Role: Judge.
-Task: Compare User Answer vs Correct Answer.
-Question: "${current.question}"
+        const judgePrompt = `Question: "${current.question}"
 Correct Answer: "${current.answer}" Validate the user's answer Mark as 'Correct' if the response is relevant to the question, otherwise 'Incorrect
 User Answer: "${user_answer}"
 Output JSON: {"correct": boolean, "explanation": "Short feedback in ${langName}"}`;
