@@ -155,7 +155,7 @@ NO other text.`;
 Lang: ${langName}.
 Diff: ${current_step_num} As the level increases, the questions should become more difficult, and previously asked questions should not be repeated.
 Type: ${randomType}.
-JSON Structure: { "question": "str", "options": ["A","B","C","D"] or null, "answer": "str", "explanation": "str" }.
+JSON Structure: { "question": "texte", "options": ["texte","other texte", "ect"] or null, "answer": "str", "explanation": "str" }.
 Strict JSON only.`;
 
           const aiResponse = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
@@ -236,7 +236,7 @@ Output JSON: {"correct": boolean, "explanation": "Short feedback in ${langName}"
             { role: "system", content: "You output valid JSON only." },
             { role: "user", content: judgePrompt }
           ],
-          max_tokens: 500
+          max_tokens: 700
         });
 
         let judgeResult = { correct: false, explanation: "" };
