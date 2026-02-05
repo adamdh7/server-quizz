@@ -151,7 +151,7 @@ NO other text.`;
 
         } else {
           
-          const systemPrompt = `Task: Generate Quiz Question.
+          const systemPrompt = `Task: Generate ONE quiz question. Randomly pick ONE topic from this list: anime, politics, movies, series, the world, countries, nature, or other interesting topics.
 Lang: ${langName}.
 Diff: ${current_step_num} As the level increases, the questions should become more difficult, and previously asked questions should not be repeated.
 Type: ${randomType}.
