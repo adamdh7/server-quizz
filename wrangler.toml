@@ -7,9 +7,5 @@ binding = "server"
 database_name = "server"
 database_id = "8d15e597-4b2d-4e66-974d-fc49073383fc"
 
-[[r2_buckets]]
-binding = "server2"
-bucket_name = "server2"
-
 [ai]
 binding = "AI"
