@@ -231,7 +231,7 @@ Correct Answer: "${current.answer}" Validate the user's answer Mark as 'Correct'
 User Answer: "${user_answer}"
 Output JSON: {"correct": boolean, "explanation": "Short feedback in ${langName}"}`;
 
-        const judgeResp = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        const judgeResp = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
           messages: [
             { role: "system", content: "You output valid JSON only." },
             { role: "user", content: judgePrompt }
