@@ -229,7 +229,9 @@ Strict JSON only.`;
         const judgePrompt = `Question: "${current.question}"
 Correct Answer: "${current.answer}" Validate the user's answer Mark as 'Correct' if the response is relevant to the question, otherwise 'Incorrect
 User Answer: "${user_answer}"
-Output JSON: {"correct": boolean, "explanation": "Short feedback in ${langName}"}`;
+Output JSON: 
+{"correct": boolean, "explanation": "Short feedback in ${langName}"}
+{"incorrect": boolean, "explanation": "Short feedback in ${langName}"}`;
 
         const judgeResp = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
           messages: [
