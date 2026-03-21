@@ -221,7 +221,7 @@ app.post("/quizz", async (req, res) => {
         }
       } catch(e) {}
 
-      const imagePrompt = `Professional portrait of ${personName}.`;
+      const imagePrompt = `Cinematic, photorealistic, 8k professional portrait of ${personName}, natural skin texture, detailed facial features, studio lighting, highly detailed photograph, realistic gaze.`;
       
       let imageUrl = "";
       
@@ -288,7 +288,11 @@ app.post("/quizz", async (req, res) => {
       quizData.image_url = imageUrl;
 
     } else {
-      const systemPrompt = `Create a quiz question about a random topic. Language: ${langName}. Type: ${randomType}. Level: ${current_step_num}. You MUST return ONLY valid JSON in this exact structure: {"question":"text","options":["opt1","opt2"],"answer":"text","explanation":"text"}. Do not write anything outside this JSON.`;
+      const systemPrompt = `Generate a ${randomType} quiz question on a random general.
+Language: ${langName}
+Difficulty: Level ${current_step_num}
+Constraint: Return ONLY a strictly valid JSON object. No intro, no outro, no markdown blocks.
+Schema: {"question":"string","options":["string"],"answer":"string","explanation":"string"}`;
 
       let parsed = null;
       try {
@@ -364,16 +368,7 @@ app.post("/validate", async (req, res) => {
     const isSimpleType = current.q_type === "TRUE_FALSE" || current.q_type === "MCQ";
     const modelToUse = isSimpleType ? "fast" : "powerful";
 
-    const judgePrompt = `Evaluate the user's answer.
-Question: "${current.question}"
-Correct Answer: "${current.answer}"
-User's Answer: "${user_answer}"
-
-Rules:
-1. Is the user's answer correct based on the Correct Answer?
-2. Explain why in ${langName}. Gently correct if wrong, praise if right.
-3. Return ONLY a valid JSON object. DO NOT include markdown tags like \`\`\`json or any other text.
-{"correct": true, "explanation": "your explanation here"}`;
+    const judgePrompt = `Evaluate user answer "{user_answer}" against "{current.answer}" for "${current.question}"; return ONLY a raw JSON {"correct":boolean,"explanation":"string"} in ${langName} (praise or gentle correction), NO markdown, NO intro.`;
 
     let judgeResult = { correct: false, explanation: "" };
     try {
