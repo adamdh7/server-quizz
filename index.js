@@ -236,9 +236,15 @@ app.post("/quizz", async (req, res) => {
         });
 
         if (extImgResponse.ok) {
-          const arrayBuffer = await extImgResponse.arrayBuffer();
-          const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
-          const blob = new Blob([arrayBuffer], { type: "image/png" });
+          const aiJson = await extImgResponse.json();
+          const base64Image = aiJson.result.image;
+          
+          if (!base64Image) throw new Error("No image in AI response");
+
+          const buffer = Buffer.from(base64Image, 'base64');
+          const filename = `img_${Date.now()}.png`;
+          const blob = new Blob([buffer], { type: "image/png" });
+          
           const formData = new FormData();
           formData.append("file", blob, filename);
           
@@ -247,28 +253,19 @@ app.post("/quizz", async (req, res) => {
             body: formData
           });
           
-          await new Promise(resolve => setTimeout(resolve, 7));
-          
-          let uploadJson = null;
-          let uploadText = null;
+          let uploadData = null;
           try {
-            uploadJson = await uploadRes.json();
+            uploadData = await uploadRes.json();
           } catch (e) {
-            try {
-              uploadText = await uploadRes.text();
-            } catch (e2) {
-              uploadText = null;
-            }
+            const text = await uploadRes.text();
+            if (text.startsWith("http")) uploadData = { url: text };
           }
           
-          const returnedUrl = uploadJson?.url || uploadJson?.link || uploadText || null;
-          if (!returnedUrl) {
-            throw new Error("Upload failed or no URL returned by the upload service.");
-          }
-          imageUrl = returnedUrl;
+          imageUrl = uploadData?.url || uploadData?.link || uploadData?.file?.url || null;
+          if (!imageUrl) throw new Error("Upload failed to return URL");
         }
       } catch(e) {
-        imageUrl = `${SERVER_URL}/local-image/default.jpg`;
+        imageUrl = "https://placehold.co/600x400?text=Image+Error";
       }
 
       db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, personName);
@@ -276,7 +273,7 @@ app.post("/quizz", async (req, res) => {
       const questionTexts = {
         en: "Who is this person?",
         fr: "Qui est cette personne ?",
-        es: "¿Quién es esta persona?",
+        es: "¿Quién est esta persona?",
         ht: "Kiyès moun sa a ye?"
       };
 
