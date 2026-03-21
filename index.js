@@ -1,10 +1,17 @@
 import express from "express";
 import Database from "better-sqlite3";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 app.use(express.json());
 
-const db = new Database("quiz_data.sqlite");
+const dataDir = path.join(process.cwd(), "data");
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const db = new Database(path.join(dataDir, "quiz_data.sqlite"));
 
 db.exec("CREATE TABLE IF NOT EXISTS user_progress (session_id TEXT PRIMARY KEY, language TEXT, current_step INTEGER, consecutive_correct INTEGER)");
 db.exec("CREATE TABLE IF NOT EXISTS used_persons (session_id TEXT, person_name TEXT)");
@@ -12,8 +19,7 @@ db.exec("CREATE TABLE IF NOT EXISTS current_quiz (session_id TEXT PRIMARY KEY, q
 db.exec("CREATE TABLE IF NOT EXISTS used_questions (session_id TEXT, question TEXT)");
 
 const cfAccountId = process.env.CF_ACCOUNT_ID || "REPLACE_WITH_YOUR_ACCOUNT_ID";
-const cfToken = "cfut_PkxDXlTK6zC6iAaDG2jtZj73oOB5f2HBKDrQ0Pxb073c4bf5";
-const r2BaseUrl = process.env.R2_BASE_URL || "https://r2.adamdh7.org";
+const cfToken = process.env.CF_TOKEN || "cfut_PkxDXlTK6zC6iAaDG2jtZj73oOB5f2HBKDrQ0Pxb073c4bf5";
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -47,20 +53,12 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/r2/:key", async (req, res) => {
-  try {
-    const key = req.params.key;
-    const response = await fetch(`${r2BaseUrl}/${key}`);
-    if (!response.ok) {
-      return res.status(404).send("Image Not Found");
-    }
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    res.setHeader("Content-Type", response.headers.get("Content-Type") || "image/jpeg");
-    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-    res.send(buffer);
-  } catch (e) {
-    res.status(500).send("Error fetching from R2");
+app.get("/local-image/:filename", (req, res) => {
+  const filePath = path.join(dataDir, req.params.filename);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send("Image Not Found");
   }
 });
 
@@ -148,16 +146,19 @@ app.post("/quizz", async (req, res) => {
         ], 300);
 
         let candidates = [];
-        const raw = (nameResp.response || "").replace(/```json|```/g, "").trim();
-        candidates = JSON.parse(raw);
+        const raw = nameResp.response || "";
+        const arrayMatch = raw.match(/\[[\s\S]*\]/);
         
-        if (Array.isArray(candidates)) {
-           for (const name of candidates) {
-              if (!usedList.includes(name)) {
-                 personName = name;
-                 break;
-              }
-           }
+        if (arrayMatch) {
+          candidates = JSON.parse(arrayMatch[0]);
+          if (Array.isArray(candidates)) {
+             for (const name of candidates) {
+                if (!usedList.includes(name)) {
+                   personName = name;
+                   break;
+                }
+             }
+          }
         }
       } catch(e) {}
 
@@ -174,7 +175,45 @@ app.post("/quizz", async (req, res) => {
       }
 
       const imgJson = await extImgResponse.json();
-      const imageUrl = imgJson.url;
+      const generatedImageUrl = imgJson.url;
+
+      const imgDataRes = await fetch(generatedImageUrl);
+      const arrayBuffer = await imgDataRes.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const randomDigits = Math.floor(1000000 + Math.random() * 9000000);
+      const filename = `TF-${randomDigits}.jpg`;
+      const filePath = path.join(dataDir, filename);
+
+      fs.writeFileSync(filePath, buffer);
+
+      let imageUrl = `/local-image/${filename}`;
+
+      try {
+        const formData = new FormData();
+        const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
+        formData.append("file", blob, filename);
+
+        const uploadApiUrl = process.env.UPLOAD_API_URL || "https://v1bref.onrender.com/upload";
+        const uploadRes = await fetch(uploadApiUrl, {
+          method: "POST",
+          body: formData
+        });
+        
+        const textRes = await uploadRes.text();
+        try {
+          const jsonRes = JSON.parse(textRes);
+          if (jsonRes.url) {
+            imageUrl = jsonRes.url;
+          } else if (jsonRes.fileUrl) {
+            imageUrl = jsonRes.fileUrl;
+          }
+        } catch (parseError) {
+          if (textRes.startsWith("http")) {
+            imageUrl = textRes.trim();
+          }
+        }
+      } catch (uploadError) {}
 
       db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, personName);
 
@@ -207,8 +246,14 @@ app.post("/quizz", async (req, res) => {
           { role: "user", content: systemPrompt }
         ], 1000);
 
-        let rawResponse = (aiResponse.response || "").replace(/```json/g, "").replace(/```/g, "").trim();
-        parsed = JSON.parse(rawResponse);
+        const rawResponse = aiResponse.response || "";
+        const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+        
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("No JSON structure found");
+        }
       } catch (e) {
         parsed = {
           question: "Error generating question.",
@@ -263,10 +308,16 @@ app.post("/validate", async (req, res) => {
       const judgeResp = await runAI([
         { role: "system", content: "You output strictly JSON." },
         { role: "user", content: judgePrompt }
-    ], 700);
+      ], 700);
 
-      let text = (judgeResp.response || "").replace(/```json|```/g, "").trim();
-      judgeResult = JSON.parse(text);
+      const text = judgeResp.response || "";
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        judgeResult = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error("No JSON structure found");
+      }
     } catch (e) {
        judgeResult = { correct: false, explanation: "Validation error." };
     }
