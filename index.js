@@ -223,18 +223,19 @@ app.post("/quizz", async (req, res) => {
       let imageUrl = "";
       
       try {
-        const extImgResponse = await fetch("https://server4.adamdh7.org/jerere", {
+        const cfImgUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
+        
+        const extImgResponse = await fetch(cfImgUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Authorization": `Bearer ${cfToken}`,
+            "Content-Type": "application/json" 
+          },
           body: JSON.stringify({ prompt: imagePrompt })
         });
 
         if (extImgResponse.ok) {
-          const imgJson = await extImgResponse.json();
-          const generatedImageUrl = imgJson.url;
-
-          const imgDataRes = await fetch(generatedImageUrl);
-          const arrayBuffer = await imgDataRes.arrayBuffer();
+          const arrayBuffer = await extImgResponse.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
 
           const randomDigits = Math.floor(1000000 + Math.random() * 9000000);
