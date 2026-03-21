@@ -221,7 +221,7 @@ app.post("/quizz", async (req, res) => {
         }
       } catch(e) {}
 
-      const imagePrompt = `Professional portrait of ${personName}, realistic, 8k, studio lighting`;
+      const imagePrompt = `Professional portrait of ${personName}.`;
       
       let imageUrl = "";
       
@@ -276,7 +276,7 @@ app.post("/quizz", async (req, res) => {
         en: "Who is this person?",
         fr: "Qui est cette personne ?",
         es: "¿Quién es esta persona?",
-        ht: "Kiyès moun sa a ye?"
+        ht: "Kiyès moun sa?"
       };
 
       let questionText = questionTexts[language] || questionTexts.en;
@@ -310,7 +310,7 @@ app.post("/quizz", async (req, res) => {
         }
       } catch (e) {
         parsed = {
-          question: "Erreur de génération. La somme de 2 + 2 est-elle 4 ?",
+          question: "La somme de 2 + 2 est-elle 4 ?",
           options: ["Oui", "Non"],
           answer: "Oui",
           explanation: "Mode de récupération d'urgence."
@@ -328,11 +328,11 @@ app.post("/quizz", async (req, res) => {
 
     return res.json(quizData);
   } catch (e) {
-    db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation) VALUES (?, 'TRUE_FALSE', 'Erreur serveur. Cliquez sur Vrai pour continuer.', '[\"Vrai\",\"Faux\"]', NULL, 'Vrai', 'Système de récupération.')").run(req.body.session_id || "default");
+    db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation) VALUES (?, 'TRUE_FALSE', 'Cliquez sur Vrai pour continuer.', '[\"Vrai\",\"Faux\"]', NULL, 'Vrai', 'Système de récupération.')").run(req.body.session_id || "default");
     
     return res.json({
       type: "TRUE_FALSE",
-      question: "Erreur serveur. Cliquez sur Vrai pour continuer.",
+      question: "Cliquez sur Vrai pour continuer.",
       options: ["Vrai", "Faux"],
       error_msg: e.message
     });
@@ -397,7 +397,7 @@ Rules:
        const safeUser = user_answer ? user_answer.toLowerCase() : "";
        judgeResult = { 
          correct: safeAnswer !== "" && safeUser.includes(safeAnswer), 
-         explanation: `Validation automatique. La réponse était: ${current.answer}`
+         explanation: `${current.answer}`
        };
     }
 
