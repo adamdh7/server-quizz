@@ -2,6 +2,7 @@ import express from "express";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 
 const app = express();
 app.use(express.json());
@@ -236,20 +237,35 @@ app.post("/quizz", async (req, res) => {
 
         if (extImgResponse.ok) {
           const arrayBuffer = await extImgResponse.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-
-          const randomDigits = Math.floor(1000000 + Math.random() * 9000000);
-          const filename = `TF-${randomDigits}.jpg`;
-          const filePath = path.join(dataDir, filename);
-
-          fs.writeFileSync(filePath, buffer);
-          imageUrl = `${SERVER_URL}/local-image/${filename}`;
-
-          setTimeout(() => {
-            if (fs.existsSync(filePath)) {
-              fs.unlinkSync(filePath);
+          const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
+          const blob = new Blob([arrayBuffer], { type: "image/png" });
+          const formData = new FormData();
+          formData.append("file", blob, filename);
+          
+          const uploadRes = await fetch("https://v1bref.onrender.com/upload", {
+            method: "POST",
+            body: formData
+          });
+          
+          await new Promise(resolve => setTimeout(resolve, 7));
+          
+          let uploadJson = null;
+          let uploadText = null;
+          try {
+            uploadJson = await uploadRes.json();
+          } catch (e) {
+            try {
+              uploadText = await uploadRes.text();
+            } catch (e2) {
+              uploadText = null;
             }
-          }, 7000);
+          }
+          
+          const returnedUrl = uploadJson?.url || uploadJson?.link || uploadText || null;
+          if (!returnedUrl) {
+            throw new Error("Upload failed or no URL returned by the upload service.");
+          }
+          imageUrl = returnedUrl;
         }
       } catch(e) {
         imageUrl = `${SERVER_URL}/local-image/default.jpg`;
