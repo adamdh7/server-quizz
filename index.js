@@ -194,20 +194,22 @@ app.post("/quizz", async (req, res) => {
 
       let personName = "Albert Einstein";
       
-      const personPrompt = `Generate a JSON array of 5 totally random famous historical figures. Exclude: ${usedList.join(",")}. Output strictly JSON array format. No extra text.`;
+      const personPrompt = `Return ONLY a valid JSON array containing 5 random famous historical figures. Do not include: ${usedList.join(",")}. Do not write any text outside the JSON array. Example format: ["Name1", "Name2", "Name3", "Name4", "Name5"]`;
 
       try {
         const nameResp = await runAI([
-          { role: "system", content: "Strict JSON output only." },
+          { role: "system", content: "You output only raw JSON arrays. No markdown, no greetings." },
           { role: "user", content: personPrompt }
         ], 300, "fast");
 
         let candidates = [];
         const raw = nameResp.response || "";
-        const arrayMatch = raw.match(/\[[\s\S]*\]/);
+        const firstBracket = raw.indexOf('[');
+        const lastBracket = raw.lastIndexOf(']');
         
-        if (arrayMatch) {
-          candidates = JSON.parse(arrayMatch[0]);
+        if (firstBracket !== -1 && lastBracket !== -1) {
+          const jsonStr = raw.substring(firstBracket, lastBracket + 1);
+          candidates = JSON.parse(jsonStr);
           if (Array.isArray(candidates)) {
              for (const name of candidates) {
                 if (!usedList.includes(name)) {
@@ -273,7 +275,7 @@ app.post("/quizz", async (req, res) => {
       const questionTexts = {
         en: "Who is this person?",
         fr: "Qui est cette personne ?",
-        es: "¿Quién est esta persona?",
+        es: "¿Quién es esta persona?",
         ht: "Kiyès moun sa a ye?"
       };
 
@@ -286,30 +288,32 @@ app.post("/quizz", async (req, res) => {
       quizData.image_url = imageUrl;
 
     } else {
-      const systemPrompt = `Generate a quiz question. Topic: Completely random. Output language: ${langName}. Type: ${randomType}. Level: ${current_step_num}. Output strictly JSON: {"question":"text","options":["opt1","opt2"],"answer":"text","explanation":"text"}. No extra text.`;
+      const systemPrompt = `Create a quiz question about a random topic. Language: ${langName}. Type: ${randomType}. Level: ${current_step_num}. You MUST return ONLY valid JSON in this exact structure: {"question":"text","options":["opt1","opt2"],"answer":"text","explanation":"text"}. Do not write anything outside this JSON.`;
 
       let parsed = null;
       try {
         const aiResponse = await runAI([
-          { role: "system", content: "Strict JSON output only." },
+          { role: "system", content: "You output only raw JSON objects. No markdown, no greetings." },
           { role: "user", content: systemPrompt }
         ], 1000, "powerful");
 
         const rawResponse = aiResponse.response || "";
-        const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+        const firstBrace = rawResponse.indexOf('{');
+        const lastBrace = rawResponse.lastIndexOf('}');
         
-        if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[0]);
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          const jsonStr = rawResponse.substring(firstBrace, lastBrace + 1);
+          parsed = JSON.parse(jsonStr);
           if (!parsed.question || !parsed.answer) throw new Error("Invalid format");
         } else {
           throw new Error("No JSON structure found");
         }
       } catch (e) {
         parsed = {
-          question: "Fallback Question: Does 1+1 = 2?",
-          options: ["Yes", "No"],
-          answer: "Yes",
-          explanation: "Math logic fallback."
+          question: "Erreur de génération. La somme de 2 + 2 est-elle 4 ?",
+          options: ["Oui", "Non"],
+          answer: "Oui",
+          explanation: "Mode de récupération d'urgence."
         };
       }
 
@@ -324,10 +328,12 @@ app.post("/quizz", async (req, res) => {
 
     return res.json(quizData);
   } catch (e) {
+    db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation) VALUES (?, 'TRUE_FALSE', 'Erreur serveur. Cliquez sur Vrai pour continuer.', '[\"Vrai\",\"Faux\"]', NULL, 'Vrai', 'Système de récupération.')").run(req.body.session_id || "default");
+    
     return res.json({
-      type: "ERROR_FALLBACK",
-      question: "Temporary Error, click True to continue.",
-      options: ["True", "False"],
+      type: "TRUE_FALSE",
+      question: "Erreur serveur. Cliquez sur Vrai pour continuer.",
+      options: ["Vrai", "Faux"],
       error_msg: e.message
     });
   }
@@ -358,40 +364,44 @@ app.post("/validate", async (req, res) => {
     const isSimpleType = current.q_type === "TRUE_FALSE" || current.q_type === "MCQ";
     const modelToUse = isSimpleType ? "fast" : "powerful";
 
-    const judgePrompt = `You are a helpful and engaging educational tutor.
-Evaluate the user's answer.
+    const judgePrompt = `Evaluate the user's answer.
 Question: "${current.question}"
 Correct Answer: "${current.answer}"
 User's Answer: "${user_answer}"
 
 Rules:
-1. Determine if the user's answer is correct or close enough.
-2. Write a clear, educational, and natural explanation entirely in ${langName}. If they are wrong, gently correct them and explain why. If right, encourage them. This message is sent directly to the user to help them learn.
-3. Output STRICTLY ONLY valid JSON in this exact format: {"correct": true/false, "explanation": "your detailed feedback here"}. No intro, no markdown outside the JSON.`;
+1. Is the user's answer correct based on the Correct Answer?
+2. Explain why in ${langName}. Gently correct if wrong, praise if right.
+3. Return ONLY a valid JSON object. DO NOT include markdown tags like \`\`\`json or any other text.
+{"correct": true, "explanation": "your explanation here"}`;
 
     let judgeResult = { correct: false, explanation: "" };
     try {
       const judgeResp = await runAI([
-        { role: "system", content: "You are an educational tutor. Strict JSON output only." },
+        { role: "system", content: "You are an educational tutor. You output only raw JSON objects. No markdown." },
         { role: "user", content: judgePrompt }
       ], 800, modelToUse);
 
       const text = judgeResp.response || "";
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
       
-      if (jsonMatch) {
-        judgeResult = JSON.parse(jsonMatch[0]);
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        const jsonStr = text.substring(firstBrace, lastBrace + 1);
+        judgeResult = JSON.parse(jsonStr);
       } else {
         throw new Error("No JSON structure found");
       }
     } catch (e) {
+       const safeAnswer = current.answer ? current.answer.toLowerCase() : "";
+       const safeUser = user_answer ? user_answer.toLowerCase() : "";
        judgeResult = { 
-         correct: user_answer.toLowerCase().includes(current.answer.toLowerCase()), 
-         explanation: "System validation fallback." 
+         correct: safeAnswer !== "" && safeUser.includes(safeAnswer), 
+         explanation: `Validation automatique. La réponse était: ${current.answer}`
        };
     }
 
-    const isCorrect = !!judgeResult.correct;
+    const isCorrect = judgeResult.correct === true || judgeResult.correct === "true";
     const explanation = judgeResult.explanation || (isCorrect ? "Correct!" : `Incorrect. Answer: ${current.answer}`);
 
     let new_consec = progress.consecutive_correct;
