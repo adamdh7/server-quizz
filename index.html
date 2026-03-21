@@ -682,10 +682,42 @@
             try {
                 const res = await fetchQuizAPI(`/step?session_id=${sessionId}`);
                 const data = await res.json();
-                state.step = data.current_step || 1;
-                state.progress = data.consecutive_correct || 0;
+                
+                let sStep = data.current_step;
+                let sProg = data.consecutive_correct;
+                let lData = JSON.parse(localStorage.getItem('dh7_progress'));
+                
+                if (!sStep || sStep === 0 || (sStep === 1 && (!sProg || sProg === 0))) {
+                    if (lData && (lData.step !== sStep || lData.progress !== sProg)) {
+                        fetch('https://server.quiz.adamdh7.org/user-info', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                "DH7": state.user ? state.user.identifier : "",
+                                "level": lData.step,
+                                "nivo": lData.progress,
+                                "TFID": state.user && state.user.tfid ? state.user.tfid : ""
+                            })
+                        }).catch(e => e);
+                        
+                        state.step = lData.step;
+                        state.progress = lData.progress;
+                    } else {
+                        state.step = sStep || 1;
+                        state.progress = sProg || 0;
+                        localStorage.setItem('dh7_progress', JSON.stringify({step: state.step, progress: state.progress}));
+                    }
+                } else {
+                    state.step = sStep || 1;
+                    state.progress = sProg || 0;
+                    localStorage.setItem('dh7_progress', JSON.stringify({step: state.step, progress: state.progress}));
+                }
             } catch(e) {
-                console.error("Failed to fetch progress");
+                let lData = JSON.parse(localStorage.getItem('dh7_progress'));
+                if(lData) {
+                    state.step = lData.step;
+                    state.progress = lData.progress;
+                }
             }
 
             const levelLabel = (translations[state.lang] && translations[state.lang].level_label) ? translations[state.lang].level_label : "Level";
@@ -839,6 +871,7 @@
 
                 state.step = data.current_step;
                 state.progress = data.consecutive_correct;
+                localStorage.setItem('dh7_progress', JSON.stringify({step: state.step, progress: state.progress}));
 
                 if(uiElement && uiElement.classList.contains('opt-btn')) {
                     if (data.correct) {
