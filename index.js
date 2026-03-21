@@ -22,6 +22,19 @@ const cfAccountId = process.env.CF_ACCOUNT_ID || "REPLACE_WITH_YOUR_ACCOUNT_ID";
 const cfToken = process.env.CF_TOKEN || "cfut_PkxDXlTK6zC6iAaDG2jtZj73oOB5f2HBKDrQ0Pxb073c4bf5";
 const SERVER_URL = "https://server.quiz.adamdh7.org";
 
+app.get("/local-image/:filename", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+
+  const filePath = path.join(dataDir, req.params.filename);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send("Image Not Found");
+  }
+});
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const authHeader = req.headers.authorization;
@@ -52,15 +65,6 @@ app.use((req, res, next) => {
   }
 
   next();
-});
-
-app.get("/local-image/:filename", (req, res) => {
-  const filePath = path.join(dataDir, req.params.filename);
-  if (fs.existsSync(filePath)) {
-    res.sendFile(filePath);
-  } else {
-    res.status(404).send("Image Not Found");
-  }
 });
 
 async function runAI(messages, max_tokens, modelType = "fast") {
@@ -240,31 +244,11 @@ app.post("/quizz", async (req, res) => {
           fs.writeFileSync(filePath, buffer);
           imageUrl = `${SERVER_URL}/local-image/${filename}`;
 
-          try {
-            const formData = new FormData();
-            const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
-            formData.append("file", blob, filename);
-
-            const uploadApiUrl = process.env.UPLOAD_API_URL || "https://v1bref.onrender.com/upload";
-            const uploadRes = await fetch(uploadApiUrl, {
-              method: "POST",
-              body: formData
-            });
-            
-            const textRes = await uploadRes.text();
-            try {
-              const jsonRes = JSON.parse(textRes);
-              if (jsonRes.url) {
-                imageUrl = jsonRes.url;
-              } else if (jsonRes.fileUrl) {
-                imageUrl = jsonRes.fileUrl;
-              }
-            } catch (parseError) {
-              if (textRes.startsWith("http")) {
-                imageUrl = textRes.trim();
-              }
+          setTimeout(() => {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
             }
-          } catch (uploadError) {}
+          }, 7000);
         }
       } catch(e) {
         imageUrl = `${SERVER_URL}/local-image/default.jpg`;
