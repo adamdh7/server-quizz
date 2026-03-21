@@ -17,6 +17,7 @@ db.exec("CREATE TABLE IF NOT EXISTS user_progress (session_id TEXT PRIMARY KEY, 
 db.exec("CREATE TABLE IF NOT EXISTS used_persons (session_id TEXT, person_name TEXT)");
 db.exec("CREATE TABLE IF NOT EXISTS current_quiz (session_id TEXT PRIMARY KEY, q_type TEXT, question TEXT, options TEXT, image_url TEXT, answer TEXT, explanation TEXT)");
 db.exec("CREATE TABLE IF NOT EXISTS used_questions (session_id TEXT, question TEXT)");
+db.exec("CREATE TABLE IF NOT EXISTS user_info (session_id TEXT PRIMARY KEY, data TEXT)");
 
 const cfAccountId = process.env.CF_ACCOUNT_ID || "REPLACE_WITH_YOUR_ACCOUNT_ID";
 const cfToken = process.env.CF_TOKEN || "cfut_PkxDXlTK6zC6iAaDG2jtZj73oOB5f2HBKDrQ0Pxb073c4bf5";
@@ -62,22 +63,64 @@ app.get("/local-image/:filename", (req, res) => {
   }
 });
 
-async function runAI(messages, max_tokens) {
-  const aiUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/meta/llama-3.2-3b-instruct`;
-  const aiResponse = await fetch(aiUrl, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${cfToken}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ messages, max_tokens })
-  });
-  const aiJson = await aiResponse.json();
-  if (aiJson.success && aiJson.result) {
-    return aiJson.result;
+async function runAI(messages, max_tokens, modelType = "fast") {
+  const models = {
+    powerful: "@cf/meta/llama-3.1-8b-instruct",
+    fast: "@cf/meta/llama-3.2-1b-instruct"
+  };
+
+  const primaryModel = models[modelType] || models.fast;
+  const fallbackModel = models.fast;
+
+  const executeFetch = async (aiModel, timeoutMs) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const aiUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/${aiModel}`;
+    
+    const response = await fetch(aiUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${cfToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ messages, max_tokens }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeout);
+    const json = await response.json();
+    
+    if (json.success && json.result) {
+      return json.result;
+    }
+    throw new Error("AI Request Failed");
+  };
+
+  try {
+    return await executeFetch(primaryModel, 12000);
+  } catch (e) {
+    try {
+      return await executeFetch(fallbackModel, 6000);
+    } catch (fallbackError) {
+      return { response: "{}" };
+    }
   }
-  throw new Error("AI Request Failed");
 }
+
+app.post("/user-info", (req, res) => {
+  try {
+    const body = req.body;
+    const session_id = body.session_id?.trim();
+    if (!session_id) return res.status(400).json({ error: "session_id required" });
+
+    const dataString = JSON.stringify(body);
+    db.prepare("REPLACE INTO user_info (session_id, data) VALUES (?, ?)").run(session_id, dataString);
+
+    return res.json({ success: true, message: "User info saved successfully" });
+  } catch (e) {
+    return res.json({ success: false, error: "Database error" });
+  }
+});
 
 app.post("/quizz", async (req, res) => {
   try {
@@ -137,13 +180,13 @@ app.post("/quizz", async (req, res) => {
 
       let personName = "Albert Einstein";
       
-      const personPrompt = `Generate a JSON array of 5 globally famous historical figures. Exclude: ${usedList.join(", ")}. Format: ["Name1", "Name2", "Name3", "Name4", "Name5"]. NO EXTRA TEXT.`;
+      const personPrompt = `Generate a JSON array of 5 totally random famous historical figures. Exclude: ${usedList.join(",")}. Output strictly JSON array format. No extra text.`;
 
       try {
         const nameResp = await runAI([
-          { role: "system", content: "You output strict JSON arrays." },
+          { role: "system", content: "Strict JSON output only." },
           { role: "user", content: personPrompt }
-        ], 300);
+        ], 300, "fast");
 
         let candidates = [];
         const raw = nameResp.response || "";
@@ -164,56 +207,59 @@ app.post("/quizz", async (req, res) => {
 
       const imagePrompt = `Professional portrait of ${personName}, realistic, 8k, studio lighting`;
       
-      const extImgResponse = await fetch("https://server4.adamdh7.org/jerere", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: imagePrompt })
-      });
-
-      if (!extImgResponse.ok) {
-         return res.status(500).json({ error: "External image generation failed" });
-      }
-
-      const imgJson = await extImgResponse.json();
-      const generatedImageUrl = imgJson.url;
-
-      const imgDataRes = await fetch(generatedImageUrl);
-      const arrayBuffer = await imgDataRes.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      const randomDigits = Math.floor(1000000 + Math.random() * 9000000);
-      const filename = `TF-${randomDigits}.jpg`;
-      const filePath = path.join(dataDir, filename);
-
-      fs.writeFileSync(filePath, buffer);
-
-      let imageUrl = `/local-image/${filename}`;
-
+      let imageUrl = "";
+      
       try {
-        const formData = new FormData();
-        const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
-        formData.append("file", blob, filename);
-
-        const uploadApiUrl = process.env.UPLOAD_API_URL || "https://v1bref.onrender.com/upload";
-        const uploadRes = await fetch(uploadApiUrl, {
+        const extImgResponse = await fetch("https://server4.adamdh7.org/jerere", {
           method: "POST",
-          body: formData
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: imagePrompt })
         });
-        
-        const textRes = await uploadRes.text();
-        try {
-          const jsonRes = JSON.parse(textRes);
-          if (jsonRes.url) {
-            imageUrl = jsonRes.url;
-          } else if (jsonRes.fileUrl) {
-            imageUrl = jsonRes.fileUrl;
-          }
-        } catch (parseError) {
-          if (textRes.startsWith("http")) {
-            imageUrl = textRes.trim();
-          }
+
+        if (extImgResponse.ok) {
+          const imgJson = await extImgResponse.json();
+          const generatedImageUrl = imgJson.url;
+
+          const imgDataRes = await fetch(generatedImageUrl);
+          const arrayBuffer = await imgDataRes.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          const randomDigits = Math.floor(1000000 + Math.random() * 9000000);
+          const filename = `TF-${randomDigits}.jpg`;
+          const filePath = path.join(dataDir, filename);
+
+          fs.writeFileSync(filePath, buffer);
+          imageUrl = `/local-image/${filename}`;
+
+          try {
+            const formData = new FormData();
+            const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
+            formData.append("file", blob, filename);
+
+            const uploadApiUrl = process.env.UPLOAD_API_URL || "https://v1bref.onrender.com/upload";
+            const uploadRes = await fetch(uploadApiUrl, {
+              method: "POST",
+              body: formData
+            });
+            
+            const textRes = await uploadRes.text();
+            try {
+              const jsonRes = JSON.parse(textRes);
+              if (jsonRes.url) {
+                imageUrl = jsonRes.url;
+              } else if (jsonRes.fileUrl) {
+                imageUrl = jsonRes.fileUrl;
+              }
+            } catch (parseError) {
+              if (textRes.startsWith("http")) {
+                imageUrl = textRes.trim();
+              }
+            }
+          } catch (uploadError) {}
         }
-      } catch (uploadError) {}
+      } catch(e) {
+        imageUrl = "/local-image/default.jpg";
+      }
 
       db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, personName);
 
@@ -237,29 +283,30 @@ app.post("/quizz", async (req, res) => {
       const usedQRes = db.prepare("SELECT question FROM used_questions WHERE session_id = ? ORDER BY rowid DESC LIMIT 10").all(session_id);
       const usedQList = usedQRes.map(r => r.question).join(" | ");
 
-      const systemPrompt = `Task: Create ONE unique quiz question. Topic: Random. Lang: ${langName}. Level: ${current_step_num}. Type: ${randomType}. Do NOT repeat these questions: ${usedQList}. Output STRICT JSON format: { "question": "text", "options": ["opt1","opt2"], "answer": "text", "explanation": "text" }. No markdown, no extra text.`;
+      const systemPrompt = `Generate a quiz question. Topic: Completely random. Output language: ${langName}. Type: ${randomType}. Level: ${current_step_num}. Exclude questions: ${usedQList}. Output strictly JSON: {"question":"text","options":["opt1","opt2"],"answer":"text","explanation":"text"}. No extra text.`;
 
       let parsed = null;
       try {
         const aiResponse = await runAI([
-          { role: "system", content: "You are a strict JSON quiz generator." },
+          { role: "system", content: "Strict JSON output only." },
           { role: "user", content: systemPrompt }
-        ], 1000);
+        ], 1000, "powerful");
 
         const rawResponse = aiResponse.response || "";
         const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
         
         if (jsonMatch) {
           parsed = JSON.parse(jsonMatch[0]);
+          if (!parsed.question || !parsed.answer) throw new Error("Invalid format");
         } else {
           throw new Error("No JSON structure found");
         }
       } catch (e) {
         parsed = {
-          question: "Error generating question.",
-          options: null,
-          answer: "Error",
-          explanation: ""
+          question: "Fallback Question: Does 1+1 = 2?",
+          options: ["Yes", "No"],
+          answer: "Yes",
+          explanation: "Math logic fallback."
         };
       }
 
@@ -275,7 +322,12 @@ app.post("/quizz", async (req, res) => {
 
     return res.json(quizData);
   } catch (e) {
-    res.status(500).json({ error: "Internal Server Error", message: e.message });
+    return res.json({
+      type: "ERROR_FALLBACK",
+      question: "Temporary Error, click True to continue.",
+      options: ["True", "False"],
+      error_msg: e.message
+    });
   }
 });
 
@@ -301,14 +353,17 @@ app.post("/validate", async (req, res) => {
       ht: "Haitian Creole"
     }[progress.language] || "English";
 
-    const judgePrompt = `Validate the user answer. Question: "${current.question}". Correct Answer: "${current.answer}". User Answer: "${user_answer}". Output STRICT JSON: {"correct": true, "explanation": "Short feedback in ${langName}"}`;
+    const isSimpleType = current.q_type === "TRUE_FALSE" || current.q_type === "MCQ";
+    const modelToUse = isSimpleType ? "fast" : "powerful";
+
+    const judgePrompt = `Validate user answer. Question: "${current.question}". Correct: "${current.answer}". User: "${user_answer}". Output strictly JSON: {"correct": true, "explanation": "Brief feedback in ${langName}"}. No extra text.`;
 
     let judgeResult = { correct: false, explanation: "" };
     try {
       const judgeResp = await runAI([
-        { role: "system", content: "You output strictly JSON." },
+        { role: "system", content: "Strict JSON output only." },
         { role: "user", content: judgePrompt }
-      ], 700);
+      ], 500, modelToUse);
 
       const text = judgeResp.response || "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -319,7 +374,10 @@ app.post("/validate", async (req, res) => {
         throw new Error("No JSON structure found");
       }
     } catch (e) {
-       judgeResult = { correct: false, explanation: "Validation error." };
+       judgeResult = { 
+         correct: user_answer.toLowerCase().includes(current.answer.toLowerCase()), 
+         explanation: "System validation fallback." 
+       };
     }
 
     const isCorrect = !!judgeResult.correct;
@@ -350,7 +408,14 @@ app.post("/validate", async (req, res) => {
       language: progress.language
     });
   } catch (e) {
-    res.status(500).json({ error: "Internal Server Error", message: e.message });
+    return res.json({
+      correct: false,
+      explanation: "Internal validation skipped due to error. Please try again.",
+      consecutive_correct: 0,
+      needed_for_next_level: 7,
+      current_step: 1,
+      language: "en"
+    });
   }
 });
 
@@ -372,7 +437,7 @@ app.get("/step", async (req, res) => {
       needed_for_next_level: Math.max(0, 7 - progress.consecutive_correct)
     });
   } catch (e) {
-    res.status(500).json({ error: "Internal Server Error", message: e.message });
+    return res.json({ error: "Internal Server Error", message: e.message });
   }
 });
 
