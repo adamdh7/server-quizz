@@ -16,11 +16,11 @@ const db = new Database(path.join(dataDir, "quiz_data.sqlite"));
 db.exec("CREATE TABLE IF NOT EXISTS user_progress (session_id TEXT PRIMARY KEY, language TEXT, current_step INTEGER, consecutive_correct INTEGER)");
 db.exec("CREATE TABLE IF NOT EXISTS used_persons (session_id TEXT, person_name TEXT)");
 db.exec("CREATE TABLE IF NOT EXISTS current_quiz (session_id TEXT PRIMARY KEY, q_type TEXT, question TEXT, options TEXT, image_url TEXT, answer TEXT, explanation TEXT)");
-db.exec("CREATE TABLE IF NOT EXISTS used_questions (session_id TEXT, question TEXT)");
 db.exec("CREATE TABLE IF NOT EXISTS user_info (session_id TEXT PRIMARY KEY, data TEXT)");
 
 const cfAccountId = process.env.CF_ACCOUNT_ID || "REPLACE_WITH_YOUR_ACCOUNT_ID";
 const cfToken = process.env.CF_TOKEN || "cfut_PkxDXlTK6zC6iAaDG2jtZj73oOB5f2HBKDrQ0Pxb073c4bf5";
+const SERVER_URL = "https://server.quiz.adamdh7.org";
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -110,10 +110,19 @@ async function runAI(messages, max_tokens, modelType = "fast") {
 app.post("/user-info", (req, res) => {
   try {
     const body = req.body;
-    const session_id = body.session_id?.trim();
-    if (!session_id) return res.status(400).json({ error: "session_id required" });
+    const session_id = body.DH7?.trim();
+    
+    if (!session_id) {
+      return res.status(400).json({ error: "DH7 required" });
+    }
 
-    const dataString = JSON.stringify(body);
+    const userData = {
+      level: body.level || null,
+      nivo: body.nivo || null,
+      TFID: body.TFID || null
+    };
+
+    const dataString = JSON.stringify(userData);
     db.prepare("REPLACE INTO user_info (session_id, data) VALUES (?, ?)").run(session_id, dataString);
 
     return res.json({ success: true, message: "User info saved successfully" });
@@ -229,7 +238,7 @@ app.post("/quizz", async (req, res) => {
           const filePath = path.join(dataDir, filename);
 
           fs.writeFileSync(filePath, buffer);
-          imageUrl = `/local-image/${filename}`;
+          imageUrl = `${SERVER_URL}/local-image/${filename}`;
 
           try {
             const formData = new FormData();
@@ -258,7 +267,7 @@ app.post("/quizz", async (req, res) => {
           } catch (uploadError) {}
         }
       } catch(e) {
-        imageUrl = "/local-image/default.jpg";
+        imageUrl = `${SERVER_URL}/local-image/default.jpg`;
       }
 
       db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, personName);
@@ -279,11 +288,7 @@ app.post("/quizz", async (req, res) => {
       quizData.image_url = imageUrl;
 
     } else {
-      
-      const usedQRes = db.prepare("SELECT question FROM used_questions WHERE session_id = ? ORDER BY rowid DESC LIMIT 10").all(session_id);
-      const usedQList = usedQRes.map(r => r.question).join(" | ");
-
-      const systemPrompt = `Generate a quiz question. Topic: Completely random. Output language: ${langName}. Type: ${randomType}. Level: ${current_step_num}. Exclude questions: ${usedQList}. Output strictly JSON: {"question":"text","options":["opt1","opt2"],"answer":"text","explanation":"text"}. No extra text.`;
+      const systemPrompt = `Generate a quiz question. Topic: Completely random. Output language: ${langName}. Type: ${randomType}. Level: ${current_step_num}. Output strictly JSON: {"question":"text","options":["opt1","opt2"],"answer":"text","explanation":"text"}. No extra text.`;
 
       let parsed = null;
       try {
@@ -313,7 +318,6 @@ app.post("/quizz", async (req, res) => {
       const optionsStr = parsed.options ? JSON.stringify(parsed.options) : null;
 
       db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation) VALUES (?, ?, ?, ?, NULL, ?, ?)").run(session_id, randomType, parsed.question, optionsStr, parsed.answer, parsed.explanation || null);
-      db.prepare("INSERT INTO used_questions (session_id, question) VALUES (?, ?)").run(session_id, parsed.question);
 
       quizData.type = randomType;
       quizData.question = parsed.question;
@@ -356,14 +360,23 @@ app.post("/validate", async (req, res) => {
     const isSimpleType = current.q_type === "TRUE_FALSE" || current.q_type === "MCQ";
     const modelToUse = isSimpleType ? "fast" : "powerful";
 
-    const judgePrompt = `Validate user answer. Question: "${current.question}". Correct: "${current.answer}". User: "${user_answer}". Output strictly JSON: {"correct": true, "explanation": "Brief feedback in ${langName}"}. No extra text.`;
+    const judgePrompt = `You are a helpful and engaging educational tutor.
+Evaluate the user's answer.
+Question: "${current.question}"
+Correct Answer: "${current.answer}"
+User's Answer: "${user_answer}"
+
+Rules:
+1. Determine if the user's answer is correct or close enough.
+2. Write a clear, educational, and natural explanation entirely in ${langName}. If they are wrong, gently correct them and explain why. If right, encourage them. This message is sent directly to the user to help them learn.
+3. Output STRICTLY ONLY valid JSON in this exact format: {"correct": true/false, "explanation": "your detailed feedback here"}. No intro, no markdown outside the JSON.`;
 
     let judgeResult = { correct: false, explanation: "" };
     try {
       const judgeResp = await runAI([
-        { role: "system", content: "Strict JSON output only." },
+        { role: "system", content: "You are an educational tutor. Strict JSON output only." },
         { role: "user", content: judgePrompt }
-      ], 500, modelToUse);
+      ], 800, modelToUse);
 
       const text = judgeResp.response || "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
