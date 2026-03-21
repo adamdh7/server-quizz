@@ -1,7 +1,7 @@
 {
-  "name": "quiz-adamdh7-api",
+  "name": "server.quiz",
   "version": "1.0.0",
-  "description": "API Quiz pour Render avec SQLite et Cloudflare AI",
+  "description": "Quiz API with SQLite and Cloudflare AI",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -10,10 +10,11 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "better-sqlite3": "^9.4.3"
+    "better-sqlite3": "^11.0.0",
+    "dotenv": "^16.4.5"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x"
   },
   "author": "Adamdh7",
   "license": "ISC"
