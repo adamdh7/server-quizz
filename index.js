@@ -96,7 +96,7 @@ async function runAI(messages, max_tokens) {
     clearTimeout(timeout);
     return { response: "{}" };
   }
-}
+});
 
 app.post("/user-info", (req, res) => {
   try {
@@ -116,15 +116,19 @@ app.post("/user-info", (req, res) => {
     const dataString = JSON.stringify(userData);
     db.prepare("REPLACE INTO user_info (session_id, data) VALUES (?, ?)").run(session_id, dataString);
 
-    let progress = db.prepare("SELECT * FROM user_progress WHERE session_id = ?").get(session_id);
-    
-    let newStep = body.level !== undefined && body.level !== null ? parseInt(body.level) : (progress ? progress.current_step : 1);
-    let newConsec = body.nivo !== undefined && body.nivo !== null ? parseInt(body.nivo) : (progress ? progress.consecutive_correct : 0);
-
-    if (!progress) {
-      db.prepare("INSERT INTO user_progress (session_id, language, current_step, consecutive_correct) VALUES (?, 'en', ?, ?)").run(session_id, newStep, newConsec);
-    } else {
-      db.prepare("UPDATE user_progress SET current_step = ?, consecutive_correct = ? WHERE session_id = ?").run(newStep, newConsec, session_id);
+    let incomingLevel = null;
+    if (body.level !== undefined) {
+      incomingLevel = Number(body.level);
+    } else if (body.nivo !== undefined) {
+      incomingLevel = Number(body.nivo);
+    }
+    if (incomingLevel !== null && !isNaN(incomingLevel)) {
+      let progress = db.prepare("SELECT * FROM user_progress WHERE session_id = ?").get(session_id);
+      if (!progress) {
+        db.prepare("INSERT INTO user_progress (session_id, language, current_step, consecutive_correct) VALUES (?, 'en', ?, 0)").run(session_id, incomingLevel);
+      } else if (progress.current_step !== incomingLevel) {
+        db.prepare("UPDATE user_progress SET current_step = ? WHERE session_id = ?").run(incomingLevel, session_id);
+      }
     }
 
     return res.json({ success: true, message: "User info saved successfully" });
