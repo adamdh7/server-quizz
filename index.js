@@ -68,20 +68,13 @@ app.use((req, res, next) => {
   next();
 });
 
-async function runAI(messages, max_tokens, modelType = "fast") {
-  const models = {
-    powerful: "@cf/meta/llama-3.1-8b-instruct",
-    fast: "@cf/meta/llama-3.2-1b-instruct"
-  };
+async function runAI(messages, max_tokens) {
+  const aiModel = "@cf/meta/llama-3.1-8b-instruct";
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  const aiUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/${aiModel}`;
 
-  const primaryModel = models[modelType] || models.fast;
-  const fallbackModel = models.fast;
-
-  const executeFetch = async (aiModel, timeoutMs) => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    const aiUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/${aiModel}`;
-    
+  try {
     const response = await fetch(aiUrl, {
       method: "POST",
       headers: {
@@ -99,16 +92,9 @@ async function runAI(messages, max_tokens, modelType = "fast") {
       return json.result;
     }
     throw new Error("AI Request Failed");
-  };
-
-  try {
-    return await executeFetch(primaryModel, 12000);
   } catch (e) {
-    try {
-      return await executeFetch(fallbackModel, 6000);
-    } catch (fallbackError) {
-      return { response: "{}" };
-    }
+    clearTimeout(timeout);
+    return { response: "{}" };
   }
 }
 
@@ -200,7 +186,7 @@ app.post("/quizz", async (req, res) => {
         const nameResp = await runAI([
           { role: "system", content: "You output only raw JSON arrays. No markdown, no greetings." },
           { role: "user", content: personPrompt }
-        ], 300, "fast");
+        ], 300);
 
         let candidates = [];
         const raw = nameResp.response || "";
@@ -299,7 +285,7 @@ Schema: {"question":"string","options":["string"],"answer":"string","explanation
         const aiResponse = await runAI([
           { role: "system", content: "You output only raw JSON objects. No markdown, no greetings." },
           { role: "user", content: systemPrompt }
-        ], 1000, "powerful");
+        ], 1000);
 
         const rawResponse = aiResponse.response || "";
         const firstBrace = rawResponse.indexOf('{');
@@ -365,17 +351,14 @@ app.post("/validate", async (req, res) => {
       ht: "Haitian Creole"
     }[progress.language] || "English";
 
-    const isSimpleType = current.q_type === "TRUE_FALSE" || current.q_type === "MCQ";
-    const modelToUse = isSimpleType ? "fast" : "powerful";
-
-    const judgePrompt = `Evaluate user answer "{user_answer}" against "{current.answer}" for "${current.question}"; return ONLY a raw JSON {"correct":boolean,"explanation":"string"} in ${langName} (praise or gentle correction), NO markdown, NO intro.`;
+    const judgePrompt = `Evaluate user answer "${user_answer}" against "${current.answer}" for the question "${current.question}"; return ONLY a raw JSON {"correct":boolean,"explanation":"string"} in ${langName} (praise or gentle correction), NO markdown, NO intro.`;
 
     let judgeResult = { correct: false, explanation: "" };
     try {
       const judgeResp = await runAI([
         { role: "system", content: "You are an educational tutor. You output only raw JSON objects. No markdown." },
         { role: "user", content: judgePrompt }
-      ], 800, modelToUse);
+      ], 800);
 
       const text = judgeResp.response || "";
       const firstBrace = text.indexOf('{');
