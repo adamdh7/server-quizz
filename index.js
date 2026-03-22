@@ -276,6 +276,7 @@ app.post("/quizz", async (req, res) => {
     } else {
       const systemPrompt = `Generate a ${randomType} quiz question on a random general.
 Language: ${langName}
+Generate unique, deep questions on World History, Cinema, Anime, Political Series, and Global Affairs; scale complexity and analytical depth strictly with the user's level to ensure high-level mastery is rewarded with intellectually challenging reflection.
 Difficulty: Level ${current_step_num}
 Constraint: Return ONLY a strictly valid JSON object. No intro, no outro, no markdown blocks.
 Schema: {"question":"string","options":["string"],"answer":"string","explanation":"string"}`;
