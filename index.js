@@ -201,10 +201,11 @@ app.post("/quizz", async (req, res) => {
 
         let candidates = [];
         const raw = nameResp.response || "";
-        const match = raw.match(/\[[\s\S]*\]/);
+        const firstBracket = raw.indexOf('[');
+        const lastBracket = raw.lastIndexOf(']');
         
-        if (match) {
-          candidates = JSON.parse(match[0]);
+        if (firstBracket !== -1 && lastBracket !== -1) {
+          candidates = JSON.parse(raw.substring(firstBracket, lastBracket + 1));
           if (Array.isArray(candidates)) {
              for (const name of candidates) {
                 if (!usedList.includes(name)) {
@@ -238,28 +239,14 @@ app.post("/quizz", async (req, res) => {
           
           if (!base64Image) throw new Error("No image");
 
-          const buffer = Buffer.from(base64Image, 'base64');
+          const buffer = Buffer.from(base64Image, "base64");
           const filename = `img_${Date.now()}.png`;
-          const blob = new Blob([buffer], { type: "image/png" });
+          const filePath = path.join(dataDir, filename);
+          fs.writeFileSync(filePath, buffer);
           
-          const formData = new FormData();
-          formData.append("file", blob, filename);
-          
-          const uploadRes = await fetch("https://v1bref.onrender.com/upload", {
-            method: "POST",
-            body: formData
-          });
-          
-          let uploadData = null;
-          try {
-            uploadData = await uploadRes.json();
-          } catch (e) {
-            const text = await uploadRes.text();
-            if (text.startsWith("http")) uploadData = { url: text };
-          }
-          
-          imageUrl = uploadData?.url || uploadData?.link || uploadData?.file?.url || null;
-          if (!imageUrl) throw new Error("Upload failed");
+          imageUrl = `${SERVER_URL}/local-image/${filename}`;
+        } else {
+          throw new Error("Cloudflare image API failed");
         }
       } catch(e) {
         imageUrl = "https://placehold.co/600x400?text=Image+Error";
@@ -293,10 +280,11 @@ app.post("/quizz", async (req, res) => {
         ], 1000);
 
         const rawResponse = aiResponse.response || "";
-        const match = rawResponse.match(/\{[\s\S]*\}/);
+        const firstBrace = rawResponse.indexOf('{');
+        const lastBrace = rawResponse.lastIndexOf('}');
         
-        if (match) {
-          parsed = JSON.parse(match[0]);
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
           if (!parsed.question || !parsed.answer) throw new Error("Invalid format");
         } else {
           throw new Error("No JSON structure");
@@ -355,34 +343,41 @@ app.post("/validate", async (req, res) => {
       ht: "Haitian Creole"
     }[progress.language] || "English";
 
-    const judgePrompt = `Question: "${current.question}"
+    const cleanUser = user_answer.toLowerCase().trim();
+    const cleanAnswer = current.answer ? current.answer.toLowerCase().trim() : "";
+
+    let judgeResult = { correct: false, explanation: "" };
+
+    if (cleanAnswer !== "" && cleanUser === cleanAnswer) {
+      judgeResult = { correct: true, explanation: "Correct!" };
+    } else {
+      const judgePrompt = `Question: "${current.question}"
 Expected Answer: "${current.answer}"
 User Answer: "${user_answer}"
 Task: Determine if the User Answer is correct or means the same thing as the Expected Answer.
 Return ONLY valid JSON: {"correct": true or false, "explanation": "Brief explanation in ${langName}"}`;
 
-    let judgeResult = { correct: false, explanation: "" };
-    try {
-      const judgeResp = await runAI([
-        { role: "system", content: "You evaluate answers. Output ONLY strict JSON." },
-        { role: "user", content: judgePrompt }
-      ], 800);
+      try {
+        const judgeResp = await runAI([
+          { role: "system", content: "You evaluate answers. Output ONLY strict JSON." },
+          { role: "user", content: judgePrompt }
+        ], 800);
 
-      const text = judgeResp.response || "";
-      const match = text.match(/\{[\s\S]*\}/);
-      
-      if (match) {
-        judgeResult = JSON.parse(match[0]);
-      } else {
-        throw new Error("No JSON found");
+        const text = judgeResp.response || "";
+        const firstBrace = text.indexOf('{');
+        const lastBrace = text.lastIndexOf('}');
+        
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          judgeResult = JSON.parse(text.substring(firstBrace, lastBrace + 1));
+        } else {
+          throw new Error("No JSON found");
+        }
+      } catch (e) {
+         judgeResult = { 
+           correct: cleanAnswer !== "" && (cleanUser.includes(cleanAnswer) || cleanAnswer.includes(cleanUser)), 
+           explanation: current.answer
+         };
       }
-    } catch (e) {
-       const safeAnswer = current.answer ? current.answer.toLowerCase().trim() : "";
-       const safeUser = user_answer.toLowerCase().trim();
-       judgeResult = { 
-         correct: safeAnswer !== "" && (safeUser.includes(safeAnswer) || safeAnswer.includes(safeUser)), 
-         explanation: current.answer
-       };
     }
 
     const correctValue = judgeResult.correct ?? judgeResult.Correct ?? false;
