@@ -71,7 +71,7 @@ app.use((req, res, next) => {
 async function runAI(messages, max_tokens) {
   const aiModel = "@cf/meta/llama-3.1-8b-instruct";
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
+  const timeout = setTimeout(() => controller.abort(), 25000);
   const aiUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/${aiModel}`;
 
   try {
@@ -96,7 +96,7 @@ async function runAI(messages, max_tokens) {
     clearTimeout(timeout);
     return { response: "{}" };
   }
-});
+}
 
 app.post("/user-info", (req, res) => {
   try {
@@ -116,19 +116,15 @@ app.post("/user-info", (req, res) => {
     const dataString = JSON.stringify(userData);
     db.prepare("REPLACE INTO user_info (session_id, data) VALUES (?, ?)").run(session_id, dataString);
 
-    let incomingLevel = null;
-    if (body.level !== undefined) {
-      incomingLevel = Number(body.level);
-    } else if (body.nivo !== undefined) {
-      incomingLevel = Number(body.nivo);
-    }
-    if (incomingLevel !== null && !isNaN(incomingLevel)) {
-      let progress = db.prepare("SELECT * FROM user_progress WHERE session_id = ?").get(session_id);
-      if (!progress) {
-        db.prepare("INSERT INTO user_progress (session_id, language, current_step, consecutive_correct) VALUES (?, 'en', ?, 0)").run(session_id, incomingLevel);
-      } else if (progress.current_step !== incomingLevel) {
-        db.prepare("UPDATE user_progress SET current_step = ? WHERE session_id = ?").run(incomingLevel, session_id);
-      }
+    let progress = db.prepare("SELECT * FROM user_progress WHERE session_id = ?").get(session_id);
+    
+    let newStep = body.level !== undefined && body.level !== null ? parseInt(body.level) : (progress ? progress.current_step : 1);
+    let newConsec = body.nivo !== undefined && body.nivo !== null ? parseInt(body.nivo) : (progress ? progress.consecutive_correct : 0);
+
+    if (!progress) {
+      db.prepare("INSERT INTO user_progress (session_id, language, current_step, consecutive_correct) VALUES (?, 'en', ?, ?)").run(session_id, newStep, newConsec);
+    } else {
+      db.prepare("UPDATE user_progress SET current_step = ?, consecutive_correct = ? WHERE session_id = ?").run(newStep, newConsec, session_id);
     }
 
     return res.json({ success: true, message: "User info saved successfully" });
@@ -195,22 +191,20 @@ app.post("/quizz", async (req, res) => {
 
       let personName = "Albert Einstein";
       
-      const personPrompt = `Return ONLY a valid JSON array containing 5 random famous historical figures. Do not include: ${usedList.join(",")}. Do not write any text outside the JSON array. Example format: ["Name1", "Name2", "Name3", "Name4", "Name5"]`;
+      const personPrompt = `Return ONLY a valid JSON array containing 5 random famous historical figures. Exclude: ${usedList.join(",")}. Format: ["Name1", "Name2", "Name3", "Name4", "Name5"]`;
 
       try {
         const nameResp = await runAI([
-          { role: "system", content: "You output only raw JSON arrays. No markdown, no greetings." },
+          { role: "system", content: "Output ONLY raw JSON. No markdown." },
           { role: "user", content: personPrompt }
         ], 300);
 
         let candidates = [];
         const raw = nameResp.response || "";
-        const firstBracket = raw.indexOf('[');
-        const lastBracket = raw.lastIndexOf(']');
+        const match = raw.match(/\[[\s\S]*\]/);
         
-        if (firstBracket !== -1 && lastBracket !== -1) {
-          const jsonStr = raw.substring(firstBracket, lastBracket + 1);
-          candidates = JSON.parse(jsonStr);
+        if (match) {
+          candidates = JSON.parse(match[0]);
           if (Array.isArray(candidates)) {
              for (const name of candidates) {
                 if (!usedList.includes(name)) {
@@ -222,7 +216,7 @@ app.post("/quizz", async (req, res) => {
         }
       } catch(e) {}
 
-      const imagePrompt = `A 100% authentic, real-life photograph of ${personName}, taken with a camera. Ultra-realistic documentary photography, real human features, natural lighting, absolutely NO painting, NO drawing, NO digital art, lifelike real human being.`;
+      const imagePrompt = `A 100% authentic photograph of ${personName}, ultra-realistic documentary style, lifelike real human being, no digital art.`;
       
       let imageUrl = "";
       
@@ -242,7 +236,7 @@ app.post("/quizz", async (req, res) => {
           const aiJson = await extImgResponse.json();
           const base64Image = aiJson.result.image;
           
-          if (!base64Image) throw new Error("No image in AI response");
+          if (!base64Image) throw new Error("No image");
 
           const buffer = Buffer.from(base64Image, 'base64');
           const filename = `img_${Date.now()}.png`;
@@ -265,7 +259,7 @@ app.post("/quizz", async (req, res) => {
           }
           
           imageUrl = uploadData?.url || uploadData?.link || uploadData?.file?.url || null;
-          if (!imageUrl) throw new Error("Upload failed to return URL");
+          if (!imageUrl) throw new Error("Upload failed");
         }
       } catch(e) {
         imageUrl = "https://placehold.co/600x400?text=Image+Error";
@@ -289,57 +283,51 @@ app.post("/quizz", async (req, res) => {
       quizData.image_url = imageUrl;
 
     } else {
-      const systemPrompt = `Generate a ${randomType} quiz question on a random general.
-Language: ${langName}
-Generate unique, deep questions on World History, Cinema, Anime, Political Series, and Global Affairs; scale complexity and analytical depth strictly with the user's level to ensure high-level mastery is rewarded with intellectually challenging reflection.
-Difficulty: Level ${current_step_num}
-Constraint: Return ONLY a strictly valid JSON object. No intro, no outro, no markdown blocks.
-Schema: {"question":"string","options":["string"],"answer":"string","explanation":"string"}`;
+      const systemPrompt = `Create a ${randomType} quiz question. Topic: General Knowledge. Language: ${langName}. Difficulty: Level ${current_step_num}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Do not write anything else.`;
 
       let parsed = null;
       try {
         const aiResponse = await runAI([
-          { role: "system", content: "You output only raw JSON objects. No markdown, no greetings." },
+          { role: "system", content: "You are a JSON API. Return ONLY valid JSON." },
           { role: "user", content: systemPrompt }
         ], 1000);
 
         const rawResponse = aiResponse.response || "";
-        const firstBrace = rawResponse.indexOf('{');
-        const lastBrace = rawResponse.lastIndexOf('}');
+        const match = rawResponse.match(/\{[\s\S]*\}/);
         
-        if (firstBrace !== -1 && lastBrace !== -1) {
-          const jsonStr = rawResponse.substring(firstBrace, lastBrace + 1);
-          parsed = JSON.parse(jsonStr);
+        if (match) {
+          parsed = JSON.parse(match[0]);
           if (!parsed.question || !parsed.answer) throw new Error("Invalid format");
         } else {
-          throw new Error("No JSON structure found");
+          throw new Error("No JSON structure");
         }
       } catch (e) {
         parsed = {
-          question: "La somme de 2 + 2 est-elle 4 ?",
-          options: ["Oui", "Non"],
-          answer: "Oui",
-          explanation: "Mode de récupération d'urgence."
+          question: language === "fr" ? "Quelle est la capitale de la France ?" : "What is the capital of France?",
+          options: language === "fr" ? ["Paris", "Lyon", "Marseille"] : ["Paris", "London", "Berlin"],
+          answer: "Paris",
+          explanation: language === "fr" ? "Question de secours chargée suite à une erreur réseau." : "Fallback question loaded due to network error."
         };
       }
 
-      const optionsStr = parsed.options ? JSON.stringify(parsed.options) : null;
+      const safeOptions = Array.isArray(parsed.options) ? parsed.options : [];
+      const optionsStr = JSON.stringify(safeOptions);
 
       db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation) VALUES (?, ?, ?, ?, NULL, ?, ?)").run(session_id, randomType, parsed.question, optionsStr, parsed.answer, parsed.explanation || null);
 
       quizData.type = randomType;
       quizData.question = parsed.question;
-      if (parsed.options) quizData.options = parsed.options;
+      if (safeOptions.length > 0) quizData.options = safeOptions;
     }
 
     return res.json(quizData);
   } catch (e) {
-    db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation) VALUES (?, 'TRUE_FALSE', 'Cliquez sur Vrai pour continuer.', '[\"Vrai\",\"Faux\"]', NULL, 'Vrai', 'Système de récupération.')").run(req.body.session_id || "default");
+    db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation) VALUES (?, 'TRUE_FALSE', 'Error loading question. True to continue.', '[\"True\",\"False\"]', NULL, 'True', 'System recovery.')").run(req.body.session_id || "default");
     
     return res.json({
       type: "TRUE_FALSE",
-      question: "Cliquez sur Vrai pour continuer.",
-      options: ["Vrai", "Faux"],
+      question: "Error loading question. True to continue.",
+      options: ["True", "False"],
       error_msg: e.message
     });
   }
@@ -367,39 +355,38 @@ app.post("/validate", async (req, res) => {
       ht: "Haitian Creole"
     }[progress.language] || "English";
 
-    const judgePrompt = `Question: ${current.question}
-Expected Result: ${current.answer}
-User Answer: ${user_answer}
-
-Evaluate if the User Answer matches the Expected Result for this Question. Be forgiving of minor variations. Return ONLY a raw JSON {"correct":boolean,"explanation":"string"} in ${langName}, NO markdown, NO intro.`;
+    const judgePrompt = `Question: "${current.question}"
+Expected Answer: "${current.answer}"
+User Answer: "${user_answer}"
+Task: Determine if the User Answer is correct or means the same thing as the Expected Answer.
+Return ONLY valid JSON: {"correct": true or false, "explanation": "Brief explanation in ${langName}"}`;
 
     let judgeResult = { correct: false, explanation: "" };
     try {
       const judgeResp = await runAI([
-        { role: "system", content: "You are an educational tutor. You output only raw JSON objects. No markdown." },
+        { role: "system", content: "You evaluate answers. Output ONLY strict JSON." },
         { role: "user", content: judgePrompt }
       ], 800);
 
       const text = judgeResp.response || "";
-      const firstBrace = text.indexOf('{');
-      const lastBrace = text.lastIndexOf('}');
+      const match = text.match(/\{[\s\S]*\}/);
       
-      if (firstBrace !== -1 && lastBrace !== -1) {
-        const jsonStr = text.substring(firstBrace, lastBrace + 1);
-        judgeResult = JSON.parse(jsonStr);
+      if (match) {
+        judgeResult = JSON.parse(match[0]);
       } else {
-        throw new Error("No JSON structure found");
+        throw new Error("No JSON found");
       }
     } catch (e) {
-       const safeAnswer = current.answer ? current.answer.toLowerCase() : "";
-       const safeUser = user_answer ? user_answer.toLowerCase() : "";
+       const safeAnswer = current.answer ? current.answer.toLowerCase().trim() : "";
+       const safeUser = user_answer.toLowerCase().trim();
        judgeResult = { 
-         correct: safeAnswer !== "" && safeUser.includes(safeAnswer), 
-         explanation: `${current.answer}`
+         correct: safeAnswer !== "" && (safeUser.includes(safeAnswer) || safeAnswer.includes(safeUser)), 
+         explanation: current.answer
        };
     }
 
-    const isCorrect = judgeResult.correct === true || judgeResult.correct === "true";
+    const correctValue = judgeResult.correct ?? judgeResult.Correct ?? false;
+    const isCorrect = correctValue === true || String(correctValue).toLowerCase() === "true";
     const explanation = judgeResult.explanation || (isCorrect ? "Correct!" : `Incorrect. Answer: ${current.answer}`);
 
     let new_consec = progress.consecutive_correct;
@@ -429,7 +416,7 @@ Evaluate if the User Answer matches the Expected Result for this Question. Be fo
   } catch (e) {
     return res.json({
       correct: false,
-      explanation: "Internal validation skipped due to error. Please try again.",
+      explanation: "Validation error. Please try again.",
       consecutive_correct: 0,
       needed_for_next_level: 7,
       current_step: 1,
