@@ -207,7 +207,7 @@ app.post("/quizz", async (req, res) => {
         }
       } catch(e) {}
 
-      const imagePrompt = `Cinematic, photorealistic, 8k professional portrait of ${personName}, natural skin texture, detailed facial features, studio lighting, highly detailed photograph, realistic gaze.`;
+      const imagePrompt = `A 100% authentic, real-life photograph of ${personName}, taken with a camera. Ultra-realistic documentary photography, real human features, natural lighting, absolutely NO painting, NO drawing, NO digital art, lifelike real human being.`;
       
       let imageUrl = "";
       
@@ -351,7 +351,11 @@ app.post("/validate", async (req, res) => {
       ht: "Haitian Creole"
     }[progress.language] || "English";
 
-    const judgePrompt = `Evaluate user answer "${user_answer}" against "${current.answer}" for the question "${current.question}"; return ONLY a raw JSON {"correct":boolean,"explanation":"string"} in ${langName} (praise or gentle correction), NO markdown, NO intro.`;
+    const judgePrompt = `Question: ${current.question}
+Expected Result: ${current.answer}
+User Answer: ${user_answer}
+
+Evaluate if the User Answer matches the Expected Result for this Question. Be forgiving of minor variations. Return ONLY a raw JSON {"correct":boolean,"explanation":"string"} in ${langName}, NO markdown, NO intro.`;
 
     let judgeResult = { correct: false, explanation: "" };
     try {
