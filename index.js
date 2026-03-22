@@ -442,6 +442,69 @@ app.get("/step", async (req, res) => {
   }
 });
 
+app.post("/jerere", async (req, res) => {
+  try {
+    const prompt = req.body.prompt?.trim();
+    if (!prompt) return res.status(400).json({ error: "No prompt provided" });
+
+    const inputs = { prompt: prompt, num_steps: 4 };
+
+    const cfImgUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
+    const aiReq = await fetch(cfImgUrl, {
+      method: "POST",
+      headers: { 
+        "Authorization": `Bearer ${cfToken}`,
+        "Content-Type": "application/json" 
+      },
+      body: JSON.stringify(inputs)
+    });
+    
+    const aiJson = await aiReq.json();
+    const aiResponse = aiJson.result;
+
+    await new Promise(resolve => setTimeout(resolve, 7));
+
+    if (!aiResponse || !aiResponse.image) {
+      throw new Error("The AI did not return a valid image.");
+    }
+
+    const binaryString = atob(aiResponse.image);
+    const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
+    const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
+    const blob = new Blob([bytes.buffer], { type: "image/png" });
+    const formData = new FormData();
+    formData.append("file", blob, filename);
+
+    const uploadRes = await fetch("https://v1bref.onrender.com/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 7));
+
+    let uploadJson = null;
+    let uploadText = null;
+    try {
+      uploadJson = await uploadRes.json();
+    } catch (e) {
+      try {
+        uploadText = await uploadRes.text();
+      } catch (e2) {
+        uploadText = null;
+      }
+    }
+
+    const returnedUrl = uploadJson?.url || uploadJson?.link || uploadText || null;
+    if (!returnedUrl) {
+      throw new Error("Upload failed or no URL returned by the upload service.");
+    }
+
+    return res.json({ url: returnedUrl });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
