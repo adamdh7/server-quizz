@@ -118,6 +118,41 @@
             position: fixed;
         }
 
+        .home-loading-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        
+        .home-loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .home-loading-logo {
+            width: clamp(92px, 25vw, 142px);
+            max-width: 40vw;
+            display: block;
+            object-fit: contain;
+        }
+
+        @media (prefers-color-scheme: light) {
+            .home-loading-screen { background: #ffffff; }
+            .home-loading-logo { content: url('https://adamdh7.org/adamdh7.png'); }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .home-loading-screen { background: #000000; }
+            .home-loading-logo { content: url('https://adamdh7.org/asset/nwa.png'); }
+        }
+
         .brand-text {
             font-weight: 900;
             font-style: italic;
@@ -137,6 +172,16 @@
         }
         .modern-input:focus {
             border-color: var(--text-sec);
+        }
+
+        input[type="date"] {
+            -webkit-appearance: none;
+            color: white;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.6;
+            cursor: pointer;
         }
 
         .hidden { display: none !important; }
@@ -176,20 +221,19 @@
 
         .menu-user-name {
             font-size: 1.5rem; font-weight: 700; color: white;
-            margin-bottom: 40px; line-height: 1.2;
+            line-height: 1.2;
             word-wrap: break-word;
         }
 
         .menu-btn-item {
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex; align-items: center; justify-content: center;
             width: 100%; padding: 20px 0;
             background: transparent; border: none;
-            border-bottom: 1px solid var(--border);
             color: var(--text-sec); font-size: 1.1rem; font-weight: 500;
-            cursor: pointer; text-align: left;
+            cursor: pointer; text-align: center;
         }
         .menu-btn-item:hover, .menu-btn-item:active { color: white; }
-        .menu-btn-item.logout { color: var(--error); border-bottom: none; margin-top: auto; }
+        .menu-btn-item.logout { color: var(--error); margin-top: auto; }
 
         .dash-content {
             flex: 1; display: flex; flex-direction: column;
@@ -326,21 +370,69 @@
         }
         .backdrop.active { opacity: 1; pointer-events: auto; }
 
-        .lang-modal {
+        .lang-modal, .ios-info-modal {
             position: fixed; bottom: 0; left: 0; width: 100%;
-            background: #111; z-index: 300;
-            border-radius: 24px 24px 0 0; padding-bottom: 20px;
-            transform: translateY(100%); transition: transform 0.3s;
+            background: #161617; z-index: 300;
+            border-radius: 24px 24px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            transform: translateY(100%); 
+            transition: transform 0.35s cubic-bezier(0.15, 0.85, 0.35, 1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.7);
+            will-change: transform;
         }
-        .lang-modal.active { transform: translateY(0); }
+        .lang-modal.active, .ios-info-modal.active { transform: translateY(0); }
+        
+        .swipe-handle-area {
+            width: 100%;
+            padding: 16px 0 20px 0;
+            display: flex;
+            justify-content: center;
+            cursor: grab;
+            touch-action: none;
+        }
+        
         .lang-opt {
-            padding: 20px; text-align: center; border-bottom: 1px solid #222;
-            color: var(--text-sec); font-weight: 500;
+            padding: 18px; text-align: center;
+            color: white; font-weight: 600;
+            cursor: pointer;
+            font-size: 1.1rem;
         }
-        .lang-opt:active { color: white; background: #1a1a1a; }
+        .lang-opt:active { background: #2c2c2e; border-radius: 12px; margin: 0 12px; }
+
+        .ios-toast {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(28, 28, 30, 0.9);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding: 14px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            z-index: 999999;
+            transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+        .ios-toast.show {
+            top: 40px;
+            opacity: 1;
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
+
+    <div id="loading-screen" class="home-loading-screen">
+        <img id="loading-logo" class="home-loading-logo" alt="D'H7">
+    </div>
+
+    <div id="ios-toast" class="ios-toast"></div>
 
     <div id="view-auth" class="page-view flex-col items-center justify-center p-8">
         <div class="w-full max-w-sm text-center">
@@ -351,7 +443,7 @@
                 <input type="text" id="login-id" data-key="placeholder-tfid" placeholder="TFID / DH7" class="modern-input" onkeydown="handleEnter(event, 'login-pass')">
                 <input type="password" id="login-pass" data-key="placeholder-password" placeholder="Password" class="modern-input" onkeydown="handleEnter(event, null, handleLogin)">
                 
-                <button onclick="actionWithLang(handleLogin)" class="w-full bg-white text-black font-black py-4 rounded-xl mt-4 text-lg" data-key="connect">LOG IN</button>
+                <button id="login-btn" onclick="actionWithLang(handleLogin)" class="w-full bg-white text-black font-black py-4 rounded-xl mt-4 text-lg flex justify-center items-center h-[60px]" data-key="connect">LOG IN</button>
                 <button onclick="toggleAuthMode()" class="w-full text-zinc-600 text-sm mt-6 font-bold" data-key="register">CREER UN COMPTE</button>
             </div>
 
@@ -361,7 +453,7 @@
                     <input type="text" id="reg-prenom" placeholder="Prénom" class="modern-input" onkeydown="handleEnter(event, 'reg-dh7')">
                 </div>
                 <input type="text" id="reg-dh7" placeholder="DH7 ID" class="modern-input" onkeydown="handleEnter(event, 'reg-age')">
-                <input type="number" id="reg-age" placeholder="Age" class="modern-input" onkeydown="handleEnter(event, 'reg-pass')">
+                <input type="date" id="reg-age" class="modern-input" onkeydown="handleEnter(event, 'reg-pass')">
                 <input type="password" id="reg-pass" placeholder="Password" class="modern-input" onkeydown="handleEnter(event, null, handleRegister)">
                 
                 <button onclick="actionWithLang(handleRegister)" class="w-full bg-white text-black font-black py-4 rounded-xl mt-4" data-key="create-account">JOIN</button>
@@ -395,7 +487,7 @@
 
     <div id="view-quiz" class="page-view">
         <header class="app-header">
-            <button class="menu-btn" onclick="router.navigate('/dashboard')">
+            <button class="menu-btn" onclick="window.history.back()">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
@@ -412,26 +504,71 @@
         </div>
     </div>
 
-    <div id="side-menu" class="side-menu">
-        <div id="menu-name-display" class="menu-user-name"></div>
-        <div id="menu-level-display" style="color:var(--text-sec); margin-bottom:18px;"></div>
+    <div id="side-menu" class="side-menu text-center">
+        <div id="menu-name-display" class="menu-user-name mb-4 cursor-pointer hover:opacity-80 transition" onclick="openInfoModal()"></div>
+        <div id="menu-user-details-summary" class="text-xs text-zinc-500 mb-8 cursor-pointer" onclick="openInfoModal()" data-key="view-profile-btn">Klike pou wè pwofil ou</div>
         
-        <button class="menu-btn-item" onclick="openLangModal()" data-key="change-lang">
+        <button class="menu-btn-item justify-center mt-4" onclick="openLangModal()" data-key="change-lang">
             Langue
-            <span>→</span>
         </button>
         
-        <button class="menu-btn-item logout" onclick="logout()" data-key="logout">
+        <button class="menu-btn-item logout justify-center mt-auto" onclick="logout()" data-key="logout">
             LOG OUT
         </button>
     </div>
 
+    <div id="ios-info-modal" class="ios-info-modal">
+        <div class="swipe-handle-area">
+            <div class="w-12 h-1 bg-zinc-600 rounded-full"></div>
+        </div>
+        <div class="px-6 py-2 pt-0">
+            <h3 class="text-xl font-bold text-white text-center mb-6" data-key="profile-title">Enfòmasyon Pwofil</h3>
+            
+            <div class="space-y-3 mb-8">
+                <div class="bg-zinc-900 p-4 rounded-xl flex justify-between items-center cursor-pointer active:bg-zinc-800 transition" onclick="copyTextFromElement('info-name-txt', 'Non')">
+                    <div>
+                        <span class="text-xs text-zinc-500 font-bold block" data-key="info-label-name">NON AK SIYEN</span>
+                        <span id="info-name-txt" class="text-white font-semibold text-base">-</span>
+                    </div>
+                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </div>
+
+                <div id="info-tfid-box" class="bg-zinc-900 p-4 rounded-xl flex justify-between items-center cursor-pointer active:bg-zinc-800 transition" onclick="copyTextFromElement('info-tfid-txt', 'TFID')">
+                    <div>
+                        <span class="text-xs text-zinc-500 font-bold block">TFID</span>
+                        <span id="info-tfid-txt" class="text-white font-semibold text-base">-</span>
+                    </div>
+                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </div>
+
+                <div class="bg-zinc-900 p-4 rounded-xl flex justify-between items-center cursor-pointer active:bg-zinc-800 transition" onclick="copyTextFromElement('info-dh7-txt', 'DH7 ID')">
+                    <div>
+                        <span class="text-xs text-zinc-500 font-bold block">DH7 ID</span>
+                        <span id="info-dh7-txt" class="text-white font-semibold text-base">-</span>
+                    </div>
+                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </div>
+
+                <div class="bg-zinc-900 p-4 rounded-xl flex justify-between items-center">
+                    <div>
+                        <span class="text-xs text-zinc-500 font-bold block" data-key="info-label-progression">PROGRESYON</span>
+                        <span id="info-prog-txt" class="text-white font-semibold text-base">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="lang-modal" class="lang-modal">
-        <div class="lang-opt" onclick="setLang('ht')">Kreyòl Ayisyen</div>
-        <div class="lang-opt" onclick="setLang('fr')">Français</div>
-        <div class="lang-opt" onclick="setLang('en')">English</div>
-        <div class="lang-opt" onclick="setLang('es')">Español</div>
-        <div class="p-4 text-center text-zinc-500 font-bold text-sm cursor-pointer" onclick="closeOverlays()">FERMER</div>
+        <div class="swipe-handle-area">
+            <div class="w-12 h-1 bg-zinc-600 rounded-full"></div>
+        </div>
+        <div class="pb-6">
+            <div class="lang-opt" onclick="setLang('ht')">Kreyòl Ayisyen</div>
+            <div class="lang-opt" onclick="setLang('fr')">Français</div>
+            <div class="lang-opt" onclick="setLang('en')">English</div>
+            <div class="lang-opt" onclick="setLang('es')">Español</div>
+        </div>
     </div>
 
     <div id="feedback-sheet" class="feedback-overlay">
@@ -443,6 +580,18 @@
     <div id="backdrop" class="backdrop" onclick="closeOverlays()"></div>
 
     <script>
+        const appStartTime = Date.now();
+
+        function showSplash() { 
+            const screen = document.getElementById('loading-screen'); 
+            if (screen) screen.classList.remove('hidden'); 
+        }
+
+        function hideSplash() { 
+            const screen = document.getElementById('loading-screen'); 
+            if (screen) screen.classList.add('hidden'); 
+        }
+
         document.addEventListener('keydown', function(e) {
             if (
                 e.key === 'F5' || 
@@ -486,18 +635,49 @@
         ];
 
         const translations = {
-            ht: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID oswa DH7", "placeholder-password": "Modpas", connect: "Konekte", register: "KREYE YON KONT", "create-account": "JOIN", "back-to-login": "RETOUNEN", "change-lang": "Chanje Lang", logout: "Dekonekte", error_title: "ERÈ", success_title: "KÒRÈK", valider: "VALIDE", level_label: "Nivo" },
-            fr: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID ou DH7", "placeholder-password": "Mot de passe", connect: "Se connecter", register: "CRÉER UN COMPTE", "create-account": "REJOINDRE", "back-to-login": "RETOUR", "change-lang": "Changer Langue", logout: "Déconnexion", error_title: "ERREUR", success_title: "EXCELLENT", valider: "VALIDER", level_label: "Niveau" },
-            en: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID or DH7", "placeholder-password": "Password", connect: "Login", register: "CREATE ACCOUNT", "create-account": "JOIN", "back-to-login": "BACK", "change-lang": "Change Language", logout: "Log Out", error_title: "WRONG", success_title: "CORRECT", valider: "SUBMIT", level_label: "Level" },
-            es: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID o DH7", "placeholder-password": "Contraseña", connect: "Conectar", register: "CREAR CUENTA", "create-account": "UNIRSE", "back-to-login": "VOLVER", "change-lang": "Cambiar Idioma", logout: "Cerrar Sesión", error_title: "ERROR", success_title: "CORRECTO", valider: "VALIDAR", level_label: "Nivel" }
+            ht: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID oswa DH7", "placeholder-password": "Modpas", connect: "Konekte", register: "KREYE YON KONT", "create-account": "JOIN", "back-to-login": "RETOUNEN", "change-lang": "Chanje Lang", logout: "Dekonekte", error_title: "ERÈ", success_title: "KÒRÈK", valider: "VALIDE", level_label: "Nivo", "copied-toast": "Ou kopye", "view-profile-btn": "Klike pou wè pwofil ou", "profile-title": "Enfòmasyon Pwofil", "info-label-name": "NON AK SIYEN", "info-label-progression": "PROGRESYON", "placeholder-dob": "Dat nesans" },
+            fr: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID ou DH7", "placeholder-password": "Mot de passe", connect: "Se connecter", register: "CRÉER UN COMPTE", "create-account": "REJOINDRE", "back-to-login": "RETOUR", "change-lang": "Changer Langue", logout: "Déconnexion", error_title: "ERREUR", success_title: "EXCELLENT", valider: "VALIDER", level_label: "Niveau", "copied-toast": "Vous avez copié", "view-profile-btn": "Cliquez pour voir votre profil", "profile-title": "Informations Profil", "info-label-name": "NOM ET PRÉNOM", "info-label-progression": "PROGRESSION", "placeholder-dob": "Date de naissance" },
+            en: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID or DH7", "placeholder-password": "Password", connect: "Login", register: "CREATE ACCOUNT", "create-account": "JOIN", "back-to-login": "BACK", "change-lang": "Change Language", logout: "Log Out", error_title: "WRONG", success_title: "CORRECT", valider: "SUBMIT", level_label: "Level", "copied-toast": "You copied", "view-profile-btn": "Click to view your profile", "profile-title": "Profile Information", "info-label-name": "FULL NAME", "info-label-progression": "PROGRESSION", "placeholder-dob": "Date of birth" },
+            es: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID o DH7", "placeholder-password": "Contraseña", connect: "Conectar", register: "CREAR CUENTA", "create-account": "UNIRSE", "back-to-login": "VOLVER", "change-lang": "Cambiar Idioma", logout: "Cerrar Sesión", error_title: "ERROR", success_title: "CORRECTO", valider: "VALIDAR", level_label: "Nivel", "copied-toast": "Has copiado", "view-profile-btn": "Haz clic para ver tu perfil", "profile-title": "Información del Perfil", "info-label-name": "NOMBRE Y APELLIDO", "info-label-progression": "PROGRESO", "placeholder-dob": "Fecha de nacimiento" }
         };
 
         let state = {
             user: JSON.parse(localStorage.getItem('dh7_session')) || null,
-            lang: localStorage.getItem('language') || 'ht',
+            lang: 'ht',
             step: 1,
             progress: 0
         };
+
+        function initLanguage() {
+            let savedLang = localStorage.getItem('language');
+            if (!savedLang) {
+                let navLang = (navigator.language || navigator.userLanguage).slice(0, 2).toLowerCase();
+                savedLang = ['fr', 'en', 'es', 'ht'].includes(navLang) ? navLang : 'ht';
+                localStorage.setItem('language', savedLang);
+            }
+            state.lang = savedLang;
+        }
+
+        initLanguage();
+
+        function showToast(text) {
+            const toast = document.getElementById('ios-toast');
+            const prefix = translations[state.lang]["copied-toast"] || "Copied";
+            toast.innerText = `${prefix}: ${text}`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function copyText(text) {
+            if(!text) return;
+            const textToCopy = text.replace(/^(TFID: |DH7: )/, '');
+            navigator.clipboard.writeText(textToCopy).then(() => showToast(textToCopy)).catch(e => console.log(e));
+        }
+
+        function copyTextFromElement(elemId) {
+            const el = document.getElementById(elemId);
+            if(el && el.innerText && el.innerText !== '-') copyText(el.innerText);
+        }
 
         let isInteractionLocked = false; 
         let pendingAction = null;
@@ -548,6 +728,10 @@
                 let path = window.location.pathname;
                 if(path === '/' || path === '') path = state.user ? '/dashboard' : '/login';
                 this.navigate(path, true);
+                
+                const elapsed = Date.now() - appStartTime;
+                const delay = Math.max(0, 1500 - elapsed);
+                setTimeout(hideSplash, delay);
             },
             navigate: function(path, replace = false) {
                 if(!state.user && path !== '/login') path = '/login';
@@ -578,6 +762,10 @@
             if(!id || !pass) return;
             if (!id.includes('@') && !id.startsWith('TF-')) id += '@dh7.tf';
 
+            const btn = document.getElementById('login-btn');
+            const originalText = btn.innerText;
+            btn.innerHTML = `<svg class="w-6 h-6 mx-auto text-gray-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
             try {
                 const res = await fetch(`${AUTH_API}/login`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -594,6 +782,8 @@
                 }
             } catch(e) { 
                 alert("Erreur de connexion au serveur"); 
+            } finally {
+                if (btn) btn.innerText = originalText;
             }
         }
 
@@ -601,10 +791,10 @@
             const nom = document.getElementById('reg-nom').value.trim();
             const prenom = document.getElementById('reg-prenom').value.trim();
             let dh7Input = document.getElementById('reg-dh7').value.trim().toLowerCase().replace(/@dh7\.tf$/i, '');
-            const ageVal = document.getElementById('reg-age').value.trim();
+            const dateVal = document.getElementById('reg-age').value.trim();
             const password = document.getElementById('reg-pass').value;
 
-            if(!nom || !prenom || !dh7Input || !ageVal || !password) {
+            if(!nom || !prenom || !dh7Input || !dateVal || !password) {
                 alert("Veuillez remplir tous les champs obligatoires.");
                 return;
             }
@@ -625,7 +815,7 @@
                         nom: nom,
                         prenom: prenom,
                         dh7: dh7Input,
-                        age: parseInt(ageVal),
+                        age: dateVal,
                         password: password
                     })
                 });
@@ -638,7 +828,7 @@
                         nom: nom,
                         prenom: prenom,
                         identifier: fullIdentifier,
-                        age: parseInt(ageVal)
+                        age: dateVal
                     };
                     if (data.tfid) {
                         state.user.tfid = data.tfid;
@@ -669,10 +859,10 @@
 
         function logout() {
             localStorage.clear();
-            state.user = null;
-            state.progress = 0;
-            router.navigate('/login');
-            location.reload(); 
+            showSplash();
+            setTimeout(() => {
+                location.reload(); 
+            }, 1500);
         }
 
         async function updateDashboard() {
@@ -724,8 +914,14 @@
 
             if (state.user) {
                 const fullName = `${state.user.prenom || ''} ${state.user.nom || ''}`.trim();
-                document.getElementById('menu-name-display').innerText = fullName || '';
-                document.getElementById('menu-level-display').innerText = `${levelLabel} ${state.step}`;
+                document.getElementById('menu-name-display').innerText = fullName || 'User';
+                
+                document.getElementById('info-name-txt').innerText = fullName || 'User';
+                document.getElementById('info-tfid-txt').innerText = state.user.tfid || '-';
+                document.getElementById('info-dh7-txt').innerText = state.user.identifier || '-';
+                document.getElementById('info-tfid-box').style.display = state.user.tfid ? 'flex' : 'none';
+                document.getElementById('info-prog-txt').innerText = `${levelLabel} ${state.step} | Points: ${state.progress}`;
+                
                 document.getElementById('dash-level').innerText = `${fullName || 'User'} — ${levelLabel} ${state.step}`;
             } else {
                 document.getElementById('dash-level').innerText = `${levelLabel} ${state.step}`;
@@ -750,6 +946,12 @@
                 menu.classList.remove('open');
                 bd.classList.remove('active');
             }
+        }
+
+        function openInfoModal() {
+            toggleMenu(false);
+            document.getElementById('backdrop').classList.add('active');
+            document.getElementById('ios-info-modal').classList.add('active');
         }
 
         async function loadQuizQuestion() {
@@ -923,28 +1125,71 @@
             document.getElementById('lang-modal').classList.add('active');
         }
 
-        function setLang(l) {
+        async function setLang(l) {
+            showSplash();
+            const startT = Date.now();
             state.lang = l;
             localStorage.setItem('language', l);
             closeOverlays();
             applyTranslations();
             if (document.getElementById('view-quiz').classList.contains('active')) {
-                loadQuizQuestion();
+                await loadQuizQuestion();
             }
             if (document.getElementById('view-dashboard').classList.contains('active')) {
-                updateDashboard();
+                await updateDashboard();
             }
             if (pendingAction) {
                 const action = pendingAction;
                 pendingAction = null;
                 action();
             }
+            const elap = Date.now() - startT;
+            setTimeout(hideSplash, Math.max(0, 1500 - elap));
         }
+
+        let swipeModal = null;
+        let startY = 0;
+        let currentY = 0;
+
+        document.querySelectorAll('.lang-modal, .ios-info-modal').forEach(modal => {
+            modal.addEventListener('touchstart', (e) => {
+                if (modal.scrollTop === 0) {
+                    swipeModal = modal;
+                    startY = e.touches[0].clientY;
+                    swipeModal.style.transition = 'none';
+                }
+            }, {passive: true});
+            
+            modal.addEventListener('touchmove', (e) => {
+                if (!swipeModal) return;
+                currentY = e.touches[0].clientY - startY;
+                if (currentY > 0) {
+                    swipeModal.style.transform = `translateY(${currentY}px)`;
+                }
+            }, {passive: true});
+            
+            modal.addEventListener('touchend', (e) => {
+                if (!swipeModal) return;
+                swipeModal.style.transition = 'transform 0.35s cubic-bezier(0.15, 0.85, 0.35, 1)';
+                
+                if (currentY > 100 || (currentY > 20 && e.changedTouches[0].clientY - startY > 50)) {
+                    closeOverlays();
+                } else {
+                    swipeModal.style.transform = 'translateY(0)';
+                }
+                
+                swipeModal = null;
+                currentY = 0;
+            });
+        });
 
         function closeOverlays() {
             document.getElementById('backdrop').classList.remove('active');
             document.getElementById('side-menu').classList.remove('open');
-            document.getElementById('lang-modal').classList.remove('active');
+            document.querySelectorAll('.lang-modal, .ios-info-modal').forEach(m => {
+                m.classList.remove('active');
+                setTimeout(() => m.style.transform = '', 350);
+            });
         }
 
         function applyTranslations() {
@@ -960,10 +1205,10 @@
 
         let touchX = 0;
         const menuEl = document.getElementById('side-menu');
-        menuEl.addEventListener('touchstart', e => touchX = e.changedTouches[0].screenX);
+        menuEl.addEventListener('touchstart', e => touchX = e.changedTouches[0].screenX, {passive: true});
         menuEl.addEventListener('touchend', e => {
             if(touchX - e.changedTouches[0].screenX > 50) toggleMenu(false);
-        });
+        }, {passive: true});
 
         router.init();
         applyTranslations();
