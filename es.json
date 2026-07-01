@@ -1,42 +1,57 @@
 [
   {
-    "qType": "IDENTITY_IMAGE",
-    "question": "¿Quién es esta persona?",
-    "options": [],
-    "imageUrl": "imaj/Albert Einstein.JPG",
-    "answer": "Albert Einstein",
-    "explanation": "Este es Albert Einstein, el famoso físico teórico que desarrolló la teoría de la relatividad.",
-    "successMsg": "¡Excelente! Has reconocido a Albert Einstein.",
-    "errorMsg": "Incorrecto. Este es Albert Einstein."
-  },
-  {
+    "level": 1,
     "qType": "MCQ",
-    "question": "¿En qué campo ganó Albert Einstein su Premio Nobel en 1921?",
-    "options": ["Teoría de la Relatividad", "Efecto Fotoeléctrico", "Movimiento Browniano", "Fisión Nuclear"],
+    "question": "¿Cuál es el planeta más grande de nuestro sistema solar?",
+    "options": ["Tierra", "Marte", "Júpiter", "Saturno"],
     "imageUrl": "",
-    "answer": "Efecto Fotoeléctrico",
-    "explanation": "Albert Einstein fue galardonado con el Premio Nobel de Física de 1921 por sus servicios a la física teórica, y especialmente por su descubrimiento de la ley del efecto fotoeléctrico.",
-    "successMsg": "¡Brillante! Conoces bien la historia de la ciencia.",
-    "errorMsg": "Opción incorrecta. De hecho, lo ganó por el Efecto Fotoeléctrico."
+    "answer": "Júpiter",
+    "explanation": "Júpiter es un gigante gaseoso y el planeta más grande de nuestro sistema solar, con una masa más de dos veces y media superior a la de todos los demás planetas juntos.",
+    "successMsg": "¡Genial! Conoces muy bien los planetas.",
+    "errorMsg": "No exactamente. La respuesta correcta es Júpiter."
   },
   {
+    "level": 1,
     "qType": "TRUE_FALSE",
-    "question": "Albert Einstein nació en Alemania.",
+    "question": "El agua hierve a 100 grados Celsius al nivel del mar.",
     "options": ["Verdadero", "Falso"],
     "imageUrl": "",
     "answer": "Verdadero",
-    "explanation": "Einstein nació en Ulm, en el Reino de Wurtemberg dentro del Imperio Alemán, el 14 de marzo de 1879.",
-    "successMsg": "¡Correcto! De hecho nació en Alemania.",
-    "errorMsg": "Incorrecto. Albert Einstein nació en Alemania."
+    "explanation": "Bajo presión atmosférica estándar al nivel del mar, el punto de ebullición del agua pura es de 100°C.",
+    "successMsg": "¡Correcto! Es física básica.",
+    "errorMsg": "Incorrecto. Es Verdadero."
   },
   {
+    "level": 2,
+    "qType": "IDENTITY_IMAGE",
+    "question": "¿Quién es este personaje histórico?",
+    "options": [],
+    "imageUrl": "imaj/Marie Curie.JPG",
+    "answer": "Marie Curie",
+    "explanation": "Marie Curie fue una física y química pionera que llevó a cabo investigaciones fundamentales sobre la radiactividad y fue la primera mujer en ganar un Premio Nobel.",
+    "successMsg": "¡Exacto! Es Marie Curie.",
+    "errorMsg": "Incorrecto. Es Marie Curie."
+  },
+  {
+    "level": 2,
     "qType": "FILL_BLANK",
-    "question": "Completa la famosa ecuación de equivalencia masa-energía formulada por Einstein: E = ___",
+    "question": "El símbolo químico del oro es ___.",
     "options": [],
     "imageUrl": "",
-    "answer": "mc^2",
-    "explanation": "La fórmula E = mc² expresa el hecho de que la masa y la energía son la misma entidad física y pueden transformarse entre sí.",
-    "successMsg": "¡Perfecto! E = mc² es la ecuación más famosa del mundo.",
-    "errorMsg": "No, la respuesta correcta es mc^2."
+    "answer": "Au",
+    "explanation": "El símbolo 'Au' proviene de la palabra latina 'aurum', que significa oro.",
+    "successMsg": "¡Perfecto! 'Au' es correcto.",
+    "errorMsg": "No, el símbolo correcto es Au."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "¿En qué año se hundió el Titanic en el océano Atlántico?",
+    "options": ["1905", "1912", "1920", "1898"],
+    "imageUrl": "",
+    "answer": "1912",
+    "explanation": "El RMS Titanic se hundió en la madrugada del 15 de abril de 1912, tras chocar con un iceberg durante su viaje inaugural.",
+    "successMsg": "¡Excelente conocimiento histórico!",
+    "errorMsg": "Incorrecto. Se hundió en 1912."
   }
 ]
