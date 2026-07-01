@@ -30,6 +30,9 @@ const MONGO_URI = process.env.MONGO_URI;
 let aiLockoutUntil = 0;
 let contactCounter = 0;
 
+// The perfect fusion: Applying the ultra-strict constraint requested globally.
+const STRICT_JSON_SYSTEM_PROMPT = "You are a strict JSON data generator. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting. Output ONLY raw valid JSON.";
+
 const s3 = new S3Client({
   region: "auto",
   endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -174,22 +177,70 @@ function analyzeJsonParseError(rawStr, err) {
   console.log("LOGS-ERR: Diagnosis -> Miscellaneous syntax error (mismatched quotes, unescaped special characters, or truncation).");
 }
 
-async function massBackgroundQuizGeneration() {
-  if (Date.now() < aiLockoutUntil) return;
-  console.log("LOGS-SYS: Executing background task: massBackgroundQuizGeneration");
-  let targetLevels = [1, 2, 3];
-  try {
-    const rows = db.prepare("SELECT current_step FROM user_progress ORDER BY RANDOM() LIMIT 7").all();
-    if (rows.length > 0) {
-      targetLevels = rows.map(r => r.current_step);
+function parseAIJsonResponse(rawResponse, expectedKeys) {
+  const rawText = typeof rawResponse === "string" ? rawResponse : JSON.stringify(rawResponse || {});
+  const firstBracket = rawText.indexOf('{');
+  const lastBracket = rawText.lastIndexOf('}');
+  const firstSquare = rawText.indexOf('[');
+  const lastSquare = rawText.lastIndexOf(']');
+  
+  let extractedJson = "";
+  let isArrayExpected = expectedKeys.includes("ARRAY_FORMAT_ONLY");
+
+  if (isArrayExpected) {
+    if (firstSquare !== -1 && lastSquare !== -1 && lastSquare > firstSquare) {
+      extractedJson = rawText.substring(firstSquare, lastSquare + 1);
+    } else {
+      throw new Error(`[Parse Error] Array structure '[...]' not found. Raw AI Output: ${rawText}`);
     }
-  } catch (e) {}
+  } else {
+    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+      extractedJson = rawText.substring(firstBracket, lastBracket + 1);
+    } else {
+      throw new Error(`[Parse Error] JSON structure '{...}' not found. Raw AI Output: ${rawText}`);
+    }
+  }
+
+  let parsedData = null;
+  try {
+    parsedData = JSON.parse(extractedJson);
+  } catch (err) {
+    analyzeJsonParseError(rawText, err);
+    throw new Error(`[Parse Error] SyntaxError during JSON parsing: ${err.message}. Raw AI Output: ${rawText}`);
+  }
+
+  if (!isArrayExpected) {
+    for (const key of expectedKeys) {
+      if (parsedData[key] === undefined || parsedData[key] === null) {
+        throw new Error(`[Parse Error] Missing required JSON key '${key}'. Raw AI Output: ${rawText}`);
+      }
+    }
+  }
+
+  return parsedData;
+}
+
+async function executeBackgroundMassGeneration(isTrigger) {
+  if (Date.now() < aiLockoutUntil) return;
+  const processName = isTrigger ? "Trigger" : "Auto";
+  console.log(`[MODE_BACKGROUND_MASS_GENERATION] Initiation processus: ${processName}`);
+
+  let targetLevels = [1, 2, 3];
+  if (!isTrigger) {
+    try {
+      const rows = db.prepare("SELECT current_step FROM user_progress ORDER BY RANDOM() LIMIT 7").all();
+      if (rows.length > 0) {
+        targetLevels = rows.map(r => r.current_step);
+      }
+    } catch (e) {}
+  }
 
   const langs = ["en", "fr", "es", "ht"];
   const qTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK"];
 
   for (const lang of langs) {
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[lang] || "English";
+    
     for (let i = 0; i < 7; i++) {
       try {
         if (Date.now() < aiLockoutUntil) return;
@@ -204,148 +255,53 @@ async function massBackgroundQuizGeneration() {
           }
         } catch(e) {}
 
-        let formatExample = "";
+        let prompt = "";
+
         if (qType === "MCQ") {
-          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+          prompt = `Create a brand new unique MCQ quiz question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
         } else if (qType === "TRUE_FALSE") {
-          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+          prompt = `Create a brand new unique True or False statement in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
         } else {
-          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+          prompt = `Create a brand new unique Fill-in-the-blank question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Use ______ for the blank. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
         }
 
-        const prompt = `Create a brand new unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object strictly matching this schema format: ${formatExample}`;
-        console.log("LOGS-SYS: Requesting mass generation prompt: " + prompt);
+        console.log(`[MODE_BACKGROUND_MASS_GENERATION] Requete prompt : ${prompt}`);
 
         const aiResponse = await runAI([
-          { role: "system", content: "You are a JSON API. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." },
+          { role: "system", content: STRICT_JSON_SYSTEM_PROMPT },
           { role: "user", content: prompt }
         ], 1000);
 
-        const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-        const firstBrace = rawResponse.indexOf('{');
-        const lastBrace = rawResponse.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1) {
-          try {
-            const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-            if (parsed.question && parsed.answer && parsed.explanation) {
-              const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
-              const simCheck = isSimilarToExisting(parsed.question, existingItems);
-              if (!simCheck.similar || simCheck.pct <= 70) {
-                const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
-                if (!exists) {
-                  await BaseQuiz.create({
-                    lang: lang,
-                    level: parsed.level || level,
-                    qType: parsed.qType || qType,
-                    question: parsed.question,
-                    options: Array.isArray(parsed.options) ? parsed.options : [],
-                    answer: parsed.answer,
-                    explanation: parsed.explanation,
-                    successMsg: parsed.successMsg || "Correct!",
-                    errorMsg: parsed.errorMsg || "Incorrect."
-                  }).catch(() => {});
-                  console.log("LOGS-SYS: New question successfully saved in database.");
-                  if (simCheck.similar) {
-                    console.log("LOGS-SYS: Saved with partial similarity of " + simCheck.pct + "% with question: \"" + simCheck.matchedText + "\"");
-                  }
-                }
-              } else {
-                console.log("LOGS-SYS: Rejected! Similarity is " + simCheck.pct + "% (above 70%) with question: \"" + simCheck.matchedText + "\"");
-              }
-            }
-          } catch(err) {
-            analyzeJsonParseError(rawResponse, err);
-          }
-        } else {
-          console.log("LOGS-ERR: JSON delimiters not found in response: " + rawResponse);
-        }
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (e) {
-        console.log("LOGS-ERR: Error in background generation: " + e.message);
-      }
-    }
-  }
-}
-
-async function triggerMassAiGeneration() {
-  if (Date.now() < aiLockoutUntil) return;
-  console.log("LOGS-SYS: Executing triggered task: triggerMassAiGeneration");
-  const langs = ["en", "fr", "es", "ht"];
-  const qTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK"];
-  for (const lang of langs) {
-    const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[lang] || "English";
-    for (let i = 0; i < 7; i++) {
-      try {
-        if (Date.now() < aiLockoutUntil) return;
-        const level = Math.floor(Math.random() * 3) + 1;
-        const qType = qTypes[Math.floor(Math.random() * qTypes.length)];
-        
-        let seedText = "General Knowledge";
         try {
-          const seedItem = await BaseQuiz.aggregate([{ $match: { lang: lang } }, { $sample: { size: 1 } }]);
-          if (seedItem && seedItem.length > 0) {
-            seedText = seedItem[0].question;
-          }
-        } catch(e) {}
-
-        let formatExample = "";
-        if (qType === "MCQ") {
-          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
-        } else if (qType === "TRUE_FALSE") {
-          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
-        } else {
-          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
-        }
-
-        const prompt = `Create a brand new unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object strictly matching this schema format: ${formatExample}`;
-        console.log("LOGS-SYS: Requesting trigger generation prompt: " + prompt);
-        
-        const aiResponse = await runAI([
-          { role: "system", content: "You are a JSON API. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." },
-          { role: "user", content: prompt }
-        ], 1000);
-
-        const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-        const firstBrace = rawResponse.indexOf('{');
-        const lastBrace = rawResponse.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1) {
-          try {
-            const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-            if (parsed.question && parsed.answer && parsed.explanation) {
-              const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
-              const simCheck = isSimilarToExisting(parsed.question, existingItems);
-              if (!simCheck.similar || simCheck.pct <= 70) {
-                const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
-                if (!exists) {
-                  await BaseQuiz.create({
-                    lang: lang,
-                    level: parsed.level || level,
-                    qType: parsed.qType || qType,
-                    question: parsed.question,
-                    options: Array.isArray(parsed.options) ? parsed.options : [],
-                    answer: parsed.answer,
-                    explanation: parsed.explanation,
-                    successMsg: parsed.successMsg || "Correct!",
-                    errorMsg: parsed.errorMsg || "Incorrect."
-                  }).catch(() => {});
-                  console.log("LOGS-SYS: Trigger-based question successfully saved.");
-                  if (simCheck.similar) {
-                    console.log("LOGS-SYS: Saved with partial similarity of " + simCheck.pct + "% with question: \"" + simCheck.matchedText + "\"");
-                  }
-                }
-              } else {
-                console.log("LOGS-SYS: Rejected! Similarity is " + simCheck.pct + "% (above 70%) with question: \"" + simCheck.matchedText + "\"");
-              }
+          const parsed = parseAIJsonResponse(aiResponse.response, ["question", "answer", "explanation", "qType"]);
+          const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
+          const simCheck = isSimilarToExisting(parsed.question, existingItems);
+          
+          if (!simCheck.similar || simCheck.pct <= 70) {
+            const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
+            if (!exists) {
+              await BaseQuiz.create({
+                lang: lang,
+                level: parsed.level || level,
+                qType: parsed.qType || qType,
+                question: parsed.question,
+                options: Array.isArray(parsed.options) ? parsed.options : [],
+                answer: parsed.answer,
+                explanation: parsed.explanation,
+                successMsg: parsed.successMsg || "Correct!",
+                errorMsg: parsed.errorMsg || "Incorrect."
+              }).catch(() => {});
+              console.log(`[MODE_BACKGROUND_MASS_GENERATION] Nouvelle question sauvegardee. Similarite: ${simCheck.pct}%`);
             }
-          } catch(err) {
-            analyzeJsonParseError(rawResponse, err);
+          } else {
+            console.log(`[MODE_BACKGROUND_MASS_GENERATION] Annulee: Similarite de ${simCheck.pct}% superieure a 70%`);
           }
-        } else {
-          console.log("LOGS-ERR: JSON delimiters not found in response: " + rawResponse);
+        } catch (parseError) {
+          console.log(`[MODE_BACKGROUND_MASS_GENERATION] Echec AI Parse: ${parseError.message}`);
         }
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (e) {
-        console.log("LOGS-ERR: Error in trigger generation: " + e.message);
+        console.log(`[MODE_BACKGROUND_MASS_GENERATION] Erreur inattendue : ${e.message}`);
       }
     }
   }
@@ -353,8 +309,8 @@ async function triggerMassAiGeneration() {
 
 mongoose.connection.once("open", () => {
   syncJsonToMongo();
-  generateAndSaveAiQuizzes();
-  setInterval(massBackgroundQuizGeneration, 70 * 60 * 1000);
+  executeBackgroundMassGeneration(false);
+  setInterval(() => executeBackgroundMassGeneration(false), 70 * 60 * 1000);
 });
 
 async function getProgress(sessionId) {
@@ -406,10 +362,9 @@ app.get("/local-image/:filename", (req, res) => {
 });
 
 app.use((req, res, next) => {
-  console.log("LOGS-SYS: Request intercepted on: " + req.path);
-  console.log("LOGS-SYS: Request payload body: " + JSON.stringify(req.body));
-  
-  generateAndSaveAiQuizzes().catch(e => e);
+  console.log("Requete interceptée sur: " + req.path);
+  console.log("Corps de la requête (Body) : " + JSON.stringify(req.body));
+  executeBackgroundMassGeneration(false).catch(e => e);
 
   const origin = req.headers.origin;
   const authHeader = req.headers.authorization;
@@ -500,13 +455,13 @@ app.post("/quizz", async (req, res) => {
     const session_id = body.session_id?.trim();
     if (!session_id) return res.status(400).json({ error: "session_id required" });
 
-    console.log("LOGS-SYS: Starting quiz initialization...");
-    console.log("LOGS-SYS: Requesting User Session ID: " + session_id);
+    console.log("=== NOUVELRE REQUETE QUIZ ===");
+    console.log("Utilisateur demandeur: " + session_id);
 
     contactCounter++;
     if (contactCounter >= 7) {
       contactCounter = 0;
-      triggerMassAiGeneration().catch(() => {});
+      executeBackgroundMassGeneration(true).catch(() => {});
     }
 
     const rawLang = body.lang?.trim();
@@ -538,7 +493,7 @@ app.post("/quizz", async (req, res) => {
     const language = progress.language;
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[language] || "English";
     
-    console.log("LOGS-SYS: Querying MongoDB candidate list...");
+    console.log("Recherche de donnee source MongoDB commencee...");
 
     const servedRows = db.prepare("SELECT quiz_id FROM served_questions WHERE session_id = ?").all(session_id);
     const servedIds = servedRows.map(r => r.quiz_id).filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
@@ -567,7 +522,7 @@ app.post("/quizz", async (req, res) => {
     }
 
     if (dbItems.length === 0) {
-      console.log("LOGS-SYS: MongoDB is empty. Pulling fallback JSON data.");
+      console.log("Base de donnees vide, extraction d'une ressource aleatoire via fichiers JSON.");
       const randomJsonRecord = await getRandomFromJsonFile(language, current_step_num);
       if (randomJsonRecord) {
         dbItems = [randomJsonRecord];
@@ -577,10 +532,10 @@ app.post("/quizz", async (req, res) => {
     let randomItem = dbItems.length > 0 ? dbItems[0] : null;
     if (randomItem && randomItem._id) {
       db.prepare("INSERT OR IGNORE INTO served_questions (session_id, quiz_id) VALUES (?, ?)").run(session_id, randomItem._id.toString());
-      console.log("LOGS-SYS: Selected database seed item: " + JSON.stringify(randomItem));
+      console.log("Item source selectionne : " + JSON.stringify(randomItem));
     }
 
-    console.log("LOGS-SYS: Generating perfect Fisher-Yates strategy mapping...");
+    console.log("Mise en place du tableau aleatoire parfait pour les strategies...");
 
     let availableStrategies = [0, 1, 2, 3];
     for (let i = availableStrategies.length - 1; i > 0; i--) {
@@ -596,7 +551,7 @@ app.post("/quizz", async (req, res) => {
     };
 
     const orderedStrategyNames = availableStrategies.map(s => modeNames[s]);
-    console.log("LOGS-SYS: Shuffled strategy evaluation sequence: " + JSON.stringify(orderedStrategyNames));
+    console.log("Ordre aleatoire des strategies choisi pour cette requete : " + JSON.stringify(orderedStrategyNames));
 
     let parsed = null;
     let randomType = "MCQ";
@@ -609,15 +564,17 @@ app.post("/quizz", async (req, res) => {
     while (availableStrategies.length > 0 && !success) {
       const strategy = availableStrategies.shift();
       const currentStrategyName = modeNames[strategy];
-      console.log("LOGS-SYS: Testing strategy execution -> " + currentStrategyName);
+      console.log("Tentative d'utilisation de la strategie: " + currentStrategyName);
 
       if (!randomItem && strategy !== 3) {
-        console.log("LOGS-SYS: Retracting " + currentStrategyName + " because MongoDB seed item is null.");
+        console.log(`[MODE_${strategy}] impossible : Aucune donnee source MongoDB. Retrait de la strategie.`);
         continue;
       }
 
       try {
         if (strategy === 0) {
+          console.log("[MODE_0_PURE_DB] Execution commencee...");
+          if (!randomItem) throw new Error("Item introuvable");
           parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer };
           randomType = randomItem.qType || "MCQ";
           imgUrl = randomItem.imageUrl || null;
@@ -625,94 +582,68 @@ app.post("/quizz", async (req, res) => {
           finalError = randomItem.errorMsg || null;
           finalExplanation = randomItem.explanation || null;
           success = true;
-          console.log("LOGS-SYS: Successfully completed " + currentStrategyName);
+          console.log("[MODE_0_PURE_DB] Succes (Donnee MongoDB pure)");
         } else if (strategy === 1) {
-          const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Original: ${randomItem.question}`;
-          console.log("LOGS-SYS: Sending prompt for " + currentStrategyName + ": " + systemPrompt);
-          const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." }, { role: "user", content: systemPrompt }], 1000);
-          const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-          console.log("LOGS-SYS: Raw response for " + currentStrategyName + ": " + rawResponse);
-          const firstBrace = rawResponse.indexOf('{');
-          const lastBrace = rawResponse.lastIndexOf('}');
-          if (firstBrace !== -1 && lastBrace !== -1) {
-            try {
-              parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-              if (!parsed.question || !parsed.answer) throw new Error("Champs JSON manquants");
-              randomType = randomItem.qType || "MCQ";
-              finalSuccess = "";
-              finalError = "";
-              finalExplanation = "";
-              success = true;
-              console.log("LOGS-SYS: Successfully completed " + currentStrategyName);
-            } catch(err) {
-              analyzeJsonParseError(rawResponse, err);
-              throw err;
-            }
-          } else {
-            throw new Error("JSON delimiters not found.");
-          }
+          console.log("[MODE_1_IMPROVE_EXISTING] Execution commencee...");
+          if (!randomItem) throw new Error("Item introuvable");
+          const prompt = `Improve this quiz question slightly making it more clear without changing the actual answer. Language: ${langName}. Do NOT generate explanations, success messages, or error messages. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
+          console.log("[MODE_1_IMPROVE_EXISTING] Envoi du prompt: " + prompt);
+          const aiResponse = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: prompt }], 1000);
+          
+          parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+          randomType = randomItem.qType || "MCQ";
+          finalSuccess = "";
+          finalError = "";
+          finalExplanation = "";
+          success = true;
+          console.log("[MODE_1_IMPROVE_EXISTING] Succes (Amelioration de l'existant)");
         } else if (strategy === 2) {
-          const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Original: ${randomItem.question}`;
-          console.log("LOGS-SYS: Sending prompt for " + currentStrategyName + ": " + systemPrompt);
-          const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." }, { role: "user", content: systemPrompt }], 1000);
-          const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-          console.log("LOGS-SYS: Raw response for " + currentStrategyName + ": " + rawResponse);
-          const firstBrace = rawResponse.indexOf('{');
-          const lastBrace = rawResponse.lastIndexOf('}');
-          if (firstBrace !== -1 && lastBrace !== -1) {
-            try {
-              parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-              if (!parsed.question || !parsed.answer) throw new Error("Champs JSON manquants");
-              randomType = randomItem.qType || "MCQ";
-              finalSuccess = "";
-              finalError = "";
-              finalExplanation = "";
-              success = true;
-              console.log("LOGS-SYS: Successfully completed " + currentStrategyName);
-            } catch(err) {
-              analyzeJsonParseError(rawResponse, err);
-              throw err;
-            }
-          } else {
-            throw new Error("JSON delimiters not found.");
-          }
+          console.log("[MODE_2_CREATE_SIMILAR] Execution commencee...");
+          if (!randomItem) throw new Error("Item introuvable");
+          const prompt = `Create a completely new quiz question in the EXACT same style and general topic as this one. Language: ${langName}. Do NOT generate explanations. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
+          console.log("[MODE_2_CREATE_SIMILAR] Envoi du prompt: " + prompt);
+          const aiResponse = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: prompt }], 1000);
+          
+          parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+          randomType = randomItem.qType || "MCQ";
+          finalSuccess = "";
+          finalError = "";
+          finalExplanation = "";
+          success = true;
+          console.log("[MODE_2_CREATE_SIMILAR] Succes (Creation similaire)");
         } else if (strategy === 3) {
+          console.log("[MODE_3_PURE_AI_GENERATION] Execution commencee...");
           const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
           randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+          
           if (randomType === "IDENTITY_IMAGE") {
+            console.log("[MODE_3_PURE_AI_GENERATION] Sous-mode: IDENTITY_IMAGE");
             const usedRes = db.prepare("SELECT person_name FROM used_persons WHERE session_id = ?").all(session_id);
             const usedList = usedRes.map(r => r.person_name);
             let subjectName = "Eiffel Tower";
-            const personPrompt = `Return ONLY a valid JSON array containing 5 random visually distinct subjects: it can be famous historical figures, famous monuments, countries, flags, or iconic cities. Exclude: ${usedList.join(",")}. Format: ["Name1", "Name2", "Name3", "Name4", "Name5"]`;
-            console.log("LOGS-SYS: Requesting visual targets list: " + personPrompt);
-            const nameResp = await runAI([{ role: "system", content: "Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." }, { role: "user", content: personPrompt }], 300);
-            const raw = typeof nameResp.response === "string" ? nameResp.response : JSON.stringify(nameResp.response || nameResp || {});
-            console.log("LOGS-SYS: Visual targets raw response: " + raw);
-            const firstBracket = raw.indexOf('[');
-            const lastBracket = raw.lastIndexOf(']');
-            if (firstBracket !== -1 && lastBracket !== -1) {
-              try {
-                const candidates = JSON.parse(raw.substring(firstBracket, lastBracket + 1));
-                if (Array.isArray(candidates) && candidates.length > 0) {
-                   for (const name of candidates) {
-                      if (!usedList.includes(name)) {
-                         subjectName = name;
-                         break;
-                      }
-                   }
-                }
-              } catch(err) {
-                analyzeJsonParseError(raw, err);
-              }
+            
+            const personPrompt = `Return ONLY a valid JSON array of 5 visually distinct subjects (famous historical figures, famous monuments, or iconic cities). Exclude these: ${usedList.join(",")}. Example exact output format: ["Subject1", "Subject2", "Subject3", "Subject4", "Subject5"]`;
+            console.log("[MODE_3_PURE_AI_GENERATION] Prompt Subjects: " + personPrompt);
+            const nameResp = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: personPrompt }], 300);
+            
+            const candidates = parseAIJsonResponse(nameResp.response, ["ARRAY_FORMAT_ONLY"]);
+            if (Array.isArray(candidates) && candidates.length > 0) {
+               for (const name of candidates) {
+                  if (!usedList.includes(name)) {
+                     subjectName = name;
+                     break;
+                  }
+               }
             }
+            
             db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, subjectName);
             const imagePrompt = `A 100% authentic photograph or high quality image of ${subjectName}, ultra-realistic documentary style, lifelike, highly detailed, no digital art.`;
-            console.log("LOGS-SYS: Requesting Flux image rendering: " + imagePrompt);
+            console.log("[MODE_3_PURE_AI_GENERATION] Image Prompt: " + imagePrompt);
             const extImgResponse = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`, { method: "POST", headers: { "Authorization": `Bearer ${cfToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ prompt: imagePrompt }) });
             if (extImgResponse.ok) {
               const aiJson = await extImgResponse.json();
               const base64Image = aiJson.result.image;
-              if (!base64Image) throw new Error("Image base64 is missing");
+              if (!base64Image) throw new Error("Image base64 manquante de Flux AI");
               const buffer = Buffer.from(base64Image, "base64");
               const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
               const r2Key = `uploads/${filename}`;
@@ -723,62 +654,49 @@ app.post("/quizz", async (req, res) => {
                 ContentType: "image/png"
               }));
               imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
-            } else {
-              throw new Error("Flux image generator returned network error.");
-            }
-            const questionTexts = { en: "Who is this person or what is this?", fr: "Qui est cette personne, quelle est cette ville, ou quel est ce monument ?", es: "¿Quién es esta persona, qué es esta ciudad, o qué es este monumento?", ht: "Kiyès moun sa, ki vil sa, oswa ki moniman sa?" };
+            } else throw new Error("Echec requete image API Flux");
+            
+            const questionTexts = { en: "Who is this person or what is this?", fr: "Qui est cette personne, quelle est cette ville, ou quel est ce monument ?", es: "¿Quién es esta persona, qué es esta ciudad, o qué es este monument?", ht: "Kiyès moun sa, ki vil sa, oswa ki moniman sa?" };
             parsed = { question: questionTexts[language] || questionTexts.en, options: [], answer: subjectName };
             finalSuccess = "";
             finalError = "";
             finalExplanation = "";
             success = true;
-            console.log("LOGS-SYS: Successfully completed " + currentStrategyName + " with subcategory IDENTITY_IMAGE");
-          } else {
-            let pureTextExample = "";
-            let subTypePrompt = "";
-            if (randomType === "MCQ") {
-              pureTextExample = `{"question": "Write the MCQ question", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Correct answer"}`;
-              subTypePrompt = `Create a brand new unique Multiple Choice Quiz (MCQ) question in ${langName}. Difficulty Level: ${current_step_num}. Do NOT include explanations, You must provide exactly 4 options. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
-            } else if (randomType === "TRUE_FALSE") {
-              pureTextExample = `{"question": "Write the statement", "options": ["True", "False"], "answer": "False"}`;
-              subTypePrompt = `Create a brand new unique True/False quiz question in ${langName}. Difficulty Level: ${current_step_num}. You must provide exactly ["True", "False"] or native equivalents as options. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
-            } else {
-              pureTextExample = `{"question": "Write the sentence with blank represented by underscores", "options": [], "answer": "Expected blank word"}`;
-              subTypePrompt = `Create a brand new unique Fill in the Blank quiz question in ${langName}. Difficulty Level: ${current_step_num}. Options must be an empty array []. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
-            }
-
-            console.log("LOGS-SYS: Sending prompt for " + currentStrategyName + " (" + randomType + "): " + subTypePrompt);
-            const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." }, { role: "user", content: subTypePrompt }], 1000);
-            const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-            console.log("LOGS-SYS: Raw response for " + currentStrategyName + " (" + randomType + "): " + rawResponse);
-            const firstBrace = rawResponse.indexOf('{');
-            const lastBrace = rawResponse.lastIndexOf('}');
-            if (firstBrace !== -1 && lastBrace !== -1) {
-              try {
-                parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-                if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants");
-                finalSuccess = "";
-                finalError = "";
-                finalExplanation = "";
-                success = true;
-                console.log("LOGS-SYS: Successfully completed " + currentStrategyName + " (" + randomType + ")");
-              } catch(err) {
-                analyzeJsonParseError(rawResponse, err);
-                throw err;
-              }
-            } else {
-              throw new Error("JSON delimiters not found.");
-            }
+            console.log("[MODE_3_PURE_AI_GENERATION] Succes (Creation Image Identity)");
+            
+          } else if (randomType === "MCQ") {
+            console.log("[MODE_3_PURE_AI_GENERATION] Sous-mode: MCQ");
+            const mcqPrompt = `Create a brand new unique Multiple Choice Question (MCQ). Topic: General Knowledge. Language: ${langName}. Return ONLY a raw JSON object matching this schema: {"question":"Your question?","options":["Choice A","Choice B","Choice C","Choice D"],"answer":"Choice B"}`;
+            const aiResponse = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: mcqPrompt }], 1000);
+            parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+            finalSuccess = ""; finalError = ""; finalExplanation = ""; success = true;
+            console.log("[MODE_3_PURE_AI_GENERATION] Succes (MCQ)");
+            
+          } else if (randomType === "TRUE_FALSE") {
+            console.log("[MODE_3_PURE_AI_GENERATION] Sous-mode: TRUE_FALSE");
+            const tfPrompt = `Create a brand new unique True or False statement. Topic: General Knowledge. Language: ${langName}. Return ONLY a raw JSON object matching this schema: {"question":"Your statement.","options":["True","False"],"answer":"False"}`;
+            const aiResponse = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: tfPrompt }], 1000);
+            parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+            finalSuccess = ""; finalError = ""; finalExplanation = ""; success = true;
+            console.log("[MODE_3_PURE_AI_GENERATION] Succes (TRUE_FALSE)");
+            
+          } else if (randomType === "FILL_BLANK") {
+            console.log("[MODE_3_PURE_AI_GENERATION] Sous-mode: FILL_BLANK");
+            const fbPrompt = `Create a brand new unique Fill-in-the-blank question. Topic: General Knowledge. Language: ${langName}. Use ______ for the blank space. Return ONLY a raw JSON object matching this schema: {"question":"The capital of France is ______.","options":[],"answer":"Paris"}`;
+            const aiResponse = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: fbPrompt }], 1000);
+            parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+            finalSuccess = ""; finalError = ""; finalExplanation = ""; success = true;
+            console.log("[MODE_3_PURE_AI_GENERATION] Succes (FILL_BLANK)");
           }
         }
       } catch (e) {
-        console.log("LOGS-ERR: Failed " + currentStrategyName + " execution trace: " + e.message);
+        console.log(`[MODE_ERROR] Echec de la strategie ${strategy} : ${e.message}`);
         success = false;
       }
     }
 
     if (!success) {
-      console.log("LOGS-SYS: All strategies failed execution loops. Activating safety fallback.");
+      console.log("[MODE_FALLBACK] Toutes les strategies ont echoue. Application du fallback de securite.");
       if (randomItem) {
         parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer };
         randomType = randomItem.qType || "MCQ";
@@ -853,8 +771,9 @@ app.post("/quizz", async (req, res) => {
     if (imgUrl) quizData.image_url = imgUrl;
     if (safeOptions.length > 0) quizData.options = safeOptions;
 
-    console.log("LOGS-SYS: Sent quiz payload to user: " + parsed.question);
-    console.log("LOGS-SYS: Expected exact answer cached in SQL: " + parsed.answer);
+    console.log("Question finalisee et envoyee a l'utilisateur: " + parsed.question);
+    console.log("Reponse exacte sauvegardee en BD: " + parsed.answer);
+    console.log("Donnees json envoyees vers l'utilisateur: " + JSON.stringify(quizData));
 
     return res.json(quizData);
 
@@ -893,7 +812,7 @@ app.post("/validate", async (req, res) => {
     const cleanUser = user_answer.toLowerCase().trim();
     const cleanAnswer = current.answer ? current.answer.toLowerCase().trim() : "";
 
-    console.log("LOGS-SYS: Validating User Input [" + cleanUser + "] against True Value [" + cleanAnswer + "]");
+    console.log("Comparaison de la reponse utilisateur : [" + cleanUser + "] avec la reponse exacte sauvegardee : [" + cleanAnswer + "]");
 
     let isCorrect = false;
 
@@ -909,54 +828,40 @@ app.post("/validate", async (req, res) => {
       }
     }
 
-    console.log("LOGS-SYS: Matching output result: " + (isCorrect ? "CORRECT" : "INCORRECT"));
+    console.log("Resultat algorithmique de validation : " + (isCorrect ? "CORRECT" : "INCORRECT"));
 
     let finalFeedback = "";
     const isAiPur = (!current.success_msg && !current.error_msg && !current.explanation);
 
     if (isAiPur) {
-      console.log("LOGS-SYS: Pre-configured message tags are empty. Running validation correction engine.");
+      console.log("[MODE_VALIDATION_AI] Messages predefinis inexistants, appel a l'IA de Validation.");
       if (isCorrect) {
-        const sys = "You are a JSON API. Output ONLY valid JSON.";
-        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer: "${current.answer}". Write a short success message and brief explanation in ${langName} language. Return ONLY valid JSON matching this schema: {"successMsg": "encouraging correct word!", "explanation": "detailed response answer reason"}`;
-        console.log("LOGS-SYS: Dispatching prompt: " + usr);
+        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer was: "${current.answer}". Write a short success message and brief explanation in ${langName}. Return ONLY a valid JSON object matching this schema: {"successMsg": "encouraging text", "explanation": "detailed reason"}`;
+        console.log("[MODE_VALIDATION_AI] Prompt (Succes) : " + usr);
         try {
-          const aiResp = await runAI([{ role: "system", content: sys }, { role: "user", content: usr }], 800);
-          const txt = typeof aiResp.response === "string" ? aiResp.response : JSON.stringify(aiResp.response || {});
-          console.log("LOGS-SYS: Correction response raw trace: " + txt);
-          const fb = txt.indexOf('{');
-          const lb = txt.lastIndexOf('}');
-          if (fb !== -1 && lb !== -1) {
-            const parsedFeedback = JSON.parse(txt.substring(fb, lb + 1));
-            finalFeedback = `${parsedFeedback.successMsg}\n\n${parsedFeedback.explanation}`;
-          } else {
-            finalFeedback = "Correct!\n\n" + current.answer;
-          }
+          const aiResp = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: usr }], 800);
+          const parsedFeedback = parseAIJsonResponse(aiResp.response, ["successMsg", "explanation"]);
+          finalFeedback = `${parsedFeedback.successMsg}\n\n${parsedFeedback.explanation}`;
+          console.log("[MODE_VALIDATION_AI] Reponse Succes Generee.");
         } catch(e) {
+          console.log("[MODE_VALIDATION_AI] Erreur AI: " + e.message);
           finalFeedback = "Correct!\n\n" + current.answer;
         }
       } else {
-        const sys = "You are a JSON API. Output ONLY valid JSON.";
-        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". Write a brief error statement and educational explanation in ${langName} language. Return ONLY valid JSON matching this schema: {"errorMsg": "mistake feedback.", "explanation": "detailed correction and context why"}`;
-        console.log("LOGS-SYS: Dispatching prompt: " + usr);
+        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". Write a brief error statement and educational explanation in ${langName}. Return ONLY a valid JSON object matching this schema: {"errorMsg": "mistake feedback", "explanation": "detailed context"}`;
+        console.log("[MODE_VALIDATION_AI] Prompt (Erreur) : " + usr);
         try {
-          const aiResp = await runAI([{ role: "system", content: sys }, { role: "user", content: usr }], 800);
-          const txt = typeof aiResp.response === "string" ? aiResp.response : JSON.stringify(aiResp.response || {});
-          console.log("LOGS-SYS: Correction response raw trace: " + txt);
-          const fb = txt.indexOf('{');
-          const lb = txt.lastIndexOf('}');
-          if (fb !== -1 && lb !== -1) {
-            const parsedFeedback = JSON.parse(txt.substring(fb, lb + 1));
-            finalFeedback = `${parsedFeedback.errorMsg}\n\n${parsedFeedback.explanation}`;
-          } else {
-            finalFeedback = "Incorrect.\n\nLa bonne reponse etait : " + current.answer;
-          }
+          const aiResp = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: usr }], 800);
+          const parsedFeedback = parseAIJsonResponse(aiResp.response, ["errorMsg", "explanation"]);
+          finalFeedback = `${parsedFeedback.errorMsg}\n\n${parsedFeedback.explanation}`;
+          console.log("[MODE_VALIDATION_AI] Reponse Erreur Generee.");
         } catch(e) {
+          console.log("[MODE_VALIDATION_AI] Erreur AI: " + e.message);
           finalFeedback = "Incorrect.\n\nLa bonne reponse etait : " + current.answer;
         }
       }
     } else {
-      console.log("LOGS-SYS: Matched stored static feedback configurations.");
+      console.log("Messages predefinis trouves. Affichage direct sans IA de Validation.");
       const baseMessage = isCorrect ? current.success_msg : current.error_msg;
       finalFeedback = current.explanation ? `${baseMessage}\n\n${current.explanation}` : baseMessage;
     }
@@ -1049,7 +954,7 @@ app.post("/jerere", async (req, res) => {
     const formData = new FormData();
     formData.append("file", blob, filename);
 
-    const uploadRes = await fetch("https://v1bref.onrender.com/upload", { method: "POST", body: formData });
+    const uploadRes = await fetch("https://bref.adamdh7.org/upload", { method: "POST", body: formData });
     await new Promise(resolve => setTimeout(resolve, 7));
 
     let uploadJson = null;
