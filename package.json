@@ -1,7 +1,7 @@
 {
   "name": "server.quiz",
-  "version": "2.0.0",
-  "description": "Quiz API with Mongoose, SQLite fallback and Cloudflare AI",
+  "version": "2.1.0",
+  "description": "Quiz API with Mongoose, SQLite fallback, Cloudflare AI, and R2 Storage",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -12,11 +12,12 @@
     "express": "^4.18.2",
     "better-sqlite3": "^11.0.0",
     "dotenv": "^16.4.5",
-    "mongoose": "^8.0.0"
+    "mongoose": "^8.0.0",
+    "@aws-sdk/client-s3": "^3.500.0"
   },
   "engines": {
     "node": "20.x"
   },
-  "author": "Adam D'H7",
+  "author": "Adam_D'H7",
   "license": "ISC"
 }
