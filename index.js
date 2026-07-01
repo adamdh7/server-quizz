@@ -312,6 +312,9 @@ app.get("/local-image/:filename", (req, res) => {
 });
 
 app.use((req, res, next) => {
+  console.log("Requete interceptee sur: " + req.path + ". Generation d'IA declenchee en arriere-plan.");
+  generateAndSaveAiQuizzes().catch(e => e);
+
   const origin = req.headers.origin;
   const authHeader = req.headers.authorization;
   let isAllowed = false;
@@ -552,8 +555,8 @@ app.post("/quizz", async (req, res) => {
           if (randomType === "IDENTITY_IMAGE") {
             const usedRes = db.prepare("SELECT person_name FROM used_persons WHERE session_id = ?").all(session_id);
             const usedList = usedRes.map(r => r.person_name);
-            let personName = "Albert Einstein";
-            const personPrompt = `Return ONLY a valid JSON array containing 5 random famous historical figures. Exclude: ${usedList.join(",")}. Format: ["Name1", "Name2", "Name3", "Name4", "Name5"]`;
+            let subjectName = "Albert Einstein";
+            const personPrompt = `Return ONLY a valid JSON array containing 5 random famous historical figures, landmarks, countries, flags, or cities. Exclude: ${usedList.join(",")}. Format: ["Name1", "Name2", "Name3", "Name4", "Name5"]`;
             const nameResp = await runAI([{ role: "system", content: "Output ONLY raw JSON." }, { role: "user", content: personPrompt }], 300);
             const raw = typeof nameResp.response === "string" ? nameResp.response : JSON.stringify(nameResp.response || nameResp || {});
             const firstBracket = raw.indexOf('[');
@@ -563,14 +566,14 @@ app.post("/quizz", async (req, res) => {
               if (Array.isArray(candidates) && candidates.length > 0) {
                  for (const name of candidates) {
                     if (!usedList.includes(name)) {
-                       personName = name;
+                       subjectName = name;
                        break;
                     }
                  }
               }
             }
-            db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, personName);
-            const imagePrompt = `A 100% authentic photograph of ${personName}, ultra-realistic documentary style, lifelike real human being, no digital art.`;
+            db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, subjectName);
+            const imagePrompt = `A 100% authentic photograph of ${subjectName}, ultra-realistic documentary style, lifelike, no digital art.`;
             const extImgResponse = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`, { method: "POST", headers: { "Authorization": `Bearer ${cfToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ prompt: imagePrompt }) });
             if (extImgResponse.ok) {
               const aiJson = await extImgResponse.json();
@@ -587,8 +590,8 @@ app.post("/quizz", async (req, res) => {
               }));
               imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
             } else throw new Error("Echec reseau lors de la generation d'image API Flux : " + extImgResponse.status);
-            const questionTexts = { en: "Who is this person?", fr: "Qui est cette personne ?", es: "¿Quién es cette personne ?", ht: "Kiyès moun sa?" };
-            parsed = { question: questionTexts[language] || questionTexts.en, options: [], answer: personName, explanation: "" };
+            const questionTexts = { en: "Who is this person or what is this?", fr: "Qui est cette personne ou qu'est-ce que c'est ?", es: "¿Quién es esta persona o qué es esto?", ht: "Kiyès moun sa oswa kisa sa ye?" };
+            parsed = { question: questionTexts[language] || questionTexts.en, options: [], answer: subjectName, explanation: "" };
             success = true;
             console.log("L'aleatoire prend Ai pur (Generatif Image) - Strategie " + strategy);
           } else {
@@ -726,44 +729,63 @@ app.post("/validate", async (req, res) => {
 
     console.log("Comparaison de la reponse user: [" + cleanUser + "] avec la reponse exacte: [" + cleanAnswer + "]");
 
-    let judgeResult = { correct: false, explanation: "" };
+    let isCorrect = false;
 
     if (cleanAnswer !== "") {
       if (cleanAnswer.length <= 3) {
         if (cleanUser === cleanAnswer) {
-          judgeResult = { correct: true };
+          isCorrect = true;
         }
       } else {
-        if (cleanUser === cleanAnswer) {
-          judgeResult = { correct: true };
-        } else if (cleanUser.length >= 3 && (cleanUser.includes(cleanAnswer) || cleanAnswer.includes(cleanUser))) {
-          judgeResult = { correct: true };
+        if (cleanUser === cleanAnswer || (cleanUser.length >= 3 && (cleanUser.includes(cleanAnswer) || cleanAnswer.includes(cleanUser)))) {
+          isCorrect = true;
         }
       }
     }
 
-    if (!judgeResult.correct) {
-      const judgePrompt = `Question: "${current.question}"\nExpected Answer: "${current.answer}"\nUser Answer: "${user_answer}"\nTask: Determine if the User Answer is correct or means the same thing as the Expected Answer.\nReturn ONLY valid JSON: {"correct": true or false, "explanation": "Brief explanation in ${langName}"}`;
-      try {
-        const judgeResp = await runAI([{ role: "system", content: "You evaluate answers. Output ONLY strict JSON." }, { role: "user", content: judgePrompt }], 800);
-        const text = typeof judgeResp.response === "string" ? judgeResp.response : JSON.stringify(judgeResp.response || judgeResp || {});
-        const firstBrace = text.indexOf('{');
-        const lastBrace = text.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1) {
-          judgeResult = JSON.parse(text.substring(firstBrace, lastBrace + 1));
-        }
-      } catch (e) {
-        judgeResult = { correct: false };
-      }
-    }
-
-    const correctValue = judgeResult.correct ?? judgeResult.Correct ?? false;
-    const isCorrect = correctValue === true || String(correctValue).toLowerCase() === "true";
-    
     console.log("Resultat final de la validation : " + (isCorrect ? "CORRECT" : "INCORRECT"));
 
-    const baseMessage = judgeResult.explanation ? judgeResult.explanation : (isCorrect ? (current.success_msg || "Correct!") : (current.error_msg || `Incorrect. Answer: ${current.answer}`));
-    const explanation = current.explanation ? `${baseMessage}\n\n${current.explanation}` : baseMessage;
+    let finalFeedback = "";
+    const isAiPur = (!current.success_msg && !current.error_msg);
+
+    if (isAiPur) {
+      if (isCorrect) {
+        const sys = "You are a JSON API. Output ONLY valid JSON.";
+        const usr = `User had a CORRECT answer. Question: "${current.question}". Expected: "${current.answer}". Explanation text: "${current.explanation}". Write a concise success message and append the explanation text. Language: ${langName}. Schema: {"explanation": "string"}`;
+        try {
+          const aiResp = await runAI([{ role: "system", content: sys }, { role: "user", content: usr }], 800);
+          const txt = typeof aiResp.response === "string" ? aiResp.response : JSON.stringify(aiResp.response || {});
+          const fb = txt.indexOf('{');
+          const lb = txt.lastIndexOf('}');
+          if (fb !== -1 && lb !== -1) {
+            finalFeedback = JSON.parse(txt.substring(fb, lb + 1)).explanation;
+          } else {
+            finalFeedback = "Correct!\n\n" + current.explanation;
+          }
+        } catch(e) {
+          finalFeedback = "Correct!\n\n" + current.explanation;
+        }
+      } else {
+        const sys = "You are a JSON API. Output ONLY valid JSON.";
+        const usr = `User had a WRONG answer. Question: "${current.question}". Expected: "${current.answer}". User input: "${user_answer}". Explanation text: "${current.explanation}". Write a concise error message correcting the user and append the explanation text. Language: ${langName}. Schema: {"explanation": "string"}`;
+        try {
+          const aiResp = await runAI([{ role: "system", content: sys }, { role: "user", content: usr }], 800);
+          const txt = typeof aiResp.response === "string" ? aiResp.response : JSON.stringify(aiResp.response || {});
+          const fb = txt.indexOf('{');
+          const lb = txt.lastIndexOf('}');
+          if (fb !== -1 && lb !== -1) {
+            finalFeedback = JSON.parse(txt.substring(fb, lb + 1)).explanation;
+          } else {
+            finalFeedback = "Incorrect.\n\n" + current.explanation;
+          }
+        } catch(e) {
+          finalFeedback = "Incorrect.\n\n" + current.explanation;
+        }
+      }
+    } else {
+      const baseMessage = isCorrect ? current.success_msg : current.error_msg;
+      finalFeedback = current.explanation ? `${baseMessage}\n\n${current.explanation}` : baseMessage;
+    }
 
     let new_consec = progress.consecutive_correct;
     let new_step = progress.current_step;
@@ -783,7 +805,7 @@ app.post("/validate", async (req, res) => {
 
     return res.json({
       correct: isCorrect,
-      explanation: explanation,
+      explanation: finalFeedback,
       consecutive_correct: new_consec,
       needed_for_next_level: Math.max(0, 7 - new_consec),
       current_step: new_step,
