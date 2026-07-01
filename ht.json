@@ -1,0 +1,42 @@
+[
+  {
+    "qType": "IDENTITY_IMAGE",
+    "question": "Kiyès moun sa a?",
+    "options": [],
+    "imageUrl": "imaj/Albert Einstein.JPG",
+    "answer": "Albert Einstein",
+    "explanation": "Sa se Albert Einstein, pi popilè fizisyen teyorik ki te devlope teyori relativite a.",
+    "successMsg": "Ekselan! Ou rekonèt Albert Einstein.",
+    "errorMsg": "Li pa kòrèk. Sa se Albert Einstein."
+  },
+  {
+    "qType": "MCQ",
+    "question": "Nan ki domèn Albert Einstein te genyen Pri Nobèl li an 1921?",
+    "options": ["Teyori Relativite", "Efè Foto-elektrik", "Mouvman Brownien", "Fizyon Nikleyè"],
+    "imageUrl": "",
+    "answer": "Efè Foto-elektrik",
+    "explanation": "Albert Einstein te resevwa Pri Nobèl Fizik an 1921 pou sèvis li nan Fizik Teyorik, epi sitou pou dekouvèt li sou lwa efè foto-elektrik la.",
+    "successMsg": "Ekselan! Ou konnen istwa syans byen.",
+    "errorMsg": "Move chwa. Li te genyen l pou Efè Foto-elektrik la."
+  },
+  {
+    "qType": "TRUE_FALSE",
+    "question": "Albert Einstein te fèt an Almay.",
+    "options": ["Verite", "Manti"],
+    "imageUrl": "",
+    "answer": "Verite",
+    "explanation": "Einstein te fèt nan vil Ulm, nan Wayòm Württemberg nan Anpi Alman an, nan dat 14 mas 1879.",
+    "successMsg": "Kòrèk! Li te fèt an Almay vre.",
+    "errorMsg": "Li pa kòrèk. Albert Einstein te fèt an Almay."
+  },
+  {
+    "qType": "FILL_BLANK",
+    "question": "Ranpli fòmil pi popilè ekivalans mas-enèji Einstein te kreye a: E = ___",
+    "options": [],
+    "imageUrl": "",
+    "answer": "mc^2",
+    "explanation": "Fòmil E = mc² la montre ke mas ak enèji se menm bagay fizik la epi yo ka transfòme youn nan lòt.",
+    "successMsg": "Parfe! E = mc² se fòmil ki pi popilè nan mond lan.",
+    "errorMsg": "Non, bon repons lan se mc^2."
+  }
+]
