@@ -26,7 +26,6 @@ const cfToken = process.env.CF_TOKEN;
 const SERVER_URL = process.env.SERVER_URL;
 const MONGO_URI = process.env.MONGO_URI;
 
-let aiLockoutUntil = 0;
 let contactCounter = 0;
 
 const s3 = new S3Client({
@@ -142,7 +141,6 @@ async function syncJsonToMongo() {
 }
 
 async function generateAndSaveAiQuizzes() {
-  if (Date.now() < aiLockoutUntil) return;
   let targetLevels = [1, 2, 3];
   try {
     const rows = db.prepare("SELECT current_step FROM user_progress ORDER BY RANDOM() LIMIT 7").all();
@@ -159,7 +157,6 @@ async function generateAndSaveAiQuizzes() {
     
     for (let i = 0; i < 7; i++) {
       try {
-        if (Date.now() < aiLockoutUntil) return;
         const level = targetLevels[Math.floor(Math.random() * targetLevels.length)] || 1;
         const qType = qTypes[Math.floor(Math.random() * qTypes.length)];
 
@@ -205,14 +202,12 @@ async function generateAndSaveAiQuizzes() {
 }
 
 async function triggerMassAiGeneration() {
-  if (Date.now() < aiLockoutUntil) return;
   const langs = ["en", "fr", "es", "ht"];
   const qTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK"];
   for (const lang of langs) {
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[lang] || "English";
     for (let i = 0; i < 7; i++) {
       try {
-        if (Date.now() < aiLockoutUntil) return;
         const level = Math.floor(Math.random() * 3) + 1;
         const qType = qTypes[Math.floor(Math.random() * qTypes.length)];
         const prompt = `Create a quiz question in ${langName} language. Guidelines: - Difficulty Level: ${level} - Format/Type: ${qType} - The explanation field MUST be strictly between 300 and 400 characters long. - successMsg: short encouraging message. - errorMsg: short feedback. - For MCQ, provide exactly 4 options. For others, provide empty array []. Return ONLY a raw, valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "${qType}", "question": "question text", "options": ["option1", "option2", "option3", "option4"], "answer": "exact correct answer", "explanation": "detailed explanation between 300 and 400 chars", "successMsg": "bravo", "errorMsg": "mistake"}`;
@@ -337,9 +332,6 @@ app.use((req, res, next) => {
 });
 
 async function runAI(messages, max_tokens) {
-  if (Date.now() < aiLockoutUntil) {
-    throw new Error("AI Locked temporairement (Quota depasse)");
-  }
   const aiModel = "@cf/meta/llama-3-8b-instruct";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
@@ -356,21 +348,19 @@ async function runAI(messages, max_tokens) {
     });
     clearTimeout(timeout);
     if (response.status === 429 || response.status === 401 || response.status === 403) {
-      aiLockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
-      throw new Error("AI Quota Exceeded ou Token Invalide (" + response.status + ")");
+      throw new Error("Erreur d'authentification ou quota Cloudflare AI (" + response.status + ")");
     }
     const json = await response.json();
     if (json.errors && json.errors.length > 0) {
-      aiLockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
-      throw new Error("Erreur retourne par Cloudflare AI : " + JSON.stringify(json.errors));
+      throw new Error("Erreur API Cloudflare : " + JSON.stringify(json.errors));
     }
     if (json.success && json.result) {
       return json.result;
     }
-    throw new Error("Reponse AI incomplete ou structure inattendue : " + JSON.stringify(json));
+    throw new Error("Reponse AI incomplete");
   } catch (e) {
     clearTimeout(timeout);
-    throw new Error("Echec de la requete fetch vers l'IA : " + e.message);
+    throw new Error("Echec reseau ou service AI indisponible : " + e.message);
   }
 }
 
@@ -500,7 +490,7 @@ app.post("/quizz", async (req, res) => {
       console.log("Tentative d'utilisation du mode/strategie numero: " + strategy);
 
       if (!randomItem && strategy !== 3) {
-        console.log("Erreur Strategie " + strategy + " : Aucune donnee source trouvee. Abandon des modes dependants des donnees, passage direct a l'IA pure.");
+        console.log("Erreur Strategie " + strategy + " : Aucune donnee source trouvee. Passage direct a l'IA pure.");
         for (let i = availableStrategies.length - 1; i >= 0; i--) {
           if (availableStrategies[i] !== 3) {
             availableStrategies.splice(i, 1);
@@ -521,7 +511,6 @@ app.post("/quizz", async (req, res) => {
           console.log("L'aleatoire prend donne mongodb pur - Strategie " + strategy);
         } else if (strategy === 1) {
           if (!randomItem) throw new Error("Item MongoDB introuvable pour amelioration");
-          if (Date.now() < aiLockoutUntil) throw new Error("IA verrouillee temporairement");
           const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = aiResponse.response || "";
@@ -529,7 +518,7 @@ app.post("/quizz", async (req, res) => {
           const lastBrace = rawResponse.lastIndexOf('}');
           if (firstBrace !== -1 && lastBrace !== -1) {
             parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-            if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants");
+            if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants dans le retour de l'IA");
             randomType = randomItem.qType || "MCQ";
             finalSuccess = randomItem.successMsg || null;
             finalError = randomItem.errorMsg || null;
@@ -538,7 +527,6 @@ app.post("/quizz", async (req, res) => {
           } else throw new Error("Format JSON introuvable dans la reponse de l'IA : " + rawResponse);
         } else if (strategy === 2) {
           if (!randomItem) throw new Error("Item MongoDB introuvable pour duplication");
-          if (Date.now() < aiLockoutUntil) throw new Error("IA verrouillee temporairement");
           const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = aiResponse.response || "";
@@ -546,13 +534,12 @@ app.post("/quizz", async (req, res) => {
           const lastBrace = rawResponse.lastIndexOf('}');
           if (firstBrace !== -1 && lastBrace !== -1) {
             parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-            if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants");
+            if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants dans le retour de l'IA");
             randomType = randomItem.qType || "MCQ";
             success = true;
             console.log("L'aleatoire prend Ai + donne mongodb (Nouveau meme style) - Strategie " + strategy);
           } else throw new Error("Format JSON introuvable dans la reponse de l'IA : " + rawResponse);
         } else if (strategy === 3) {
-          if (Date.now() < aiLockoutUntil) throw new Error("IA verrouillee temporairement");
           const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
           randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
           if (randomType === "IDENTITY_IMAGE") {
@@ -573,7 +560,7 @@ app.post("/quizz", async (req, res) => {
             if (extImgResponse.ok) {
               const aiJson = await extImgResponse.json();
               const base64Image = aiJson.result.image;
-              if (!base64Image) throw new Error("Image base64 manquante dans la reponse API Image");
+              if (!base64Image) throw new Error("Image base64 manquante dans la reponse de l'API Image");
               const buffer = Buffer.from(base64Image, "base64");
               const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
               const r2Key = `uploads/${filename}`;
@@ -584,7 +571,7 @@ app.post("/quizz", async (req, res) => {
                 ContentType: "image/png"
               }));
               imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
-            } else throw new Error("Echec reseau lors de la generation d'image API Flux");
+            } else throw new Error("Echec reseau lors de la generation d'image API Flux : " + extImgResponse.status);
             const questionTexts = { en: "Who is this person?", fr: "Qui est cette personne ?", es: "¿Quién es esta persona?", ht: "Kiyès moun sa?" };
             parsed = { question: questionTexts[language] || questionTexts.en, options: [], answer: personName, explanation: "" };
             success = true;
@@ -597,10 +584,10 @@ app.post("/quizz", async (req, res) => {
             const lastBrace = rawResponse.lastIndexOf('}');
             if (firstBrace !== -1 && lastBrace !== -1) {
               parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-              if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants dans la reponse textuelle de l'IA");
+              if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants dans le retour de l'IA");
               success = true;
               console.log("L'aleatoire prend Ai pur (Generatif Texte) - Strategie " + strategy);
-            } else throw new Error("Format JSON introuvable dans la reponse de l'IA pur : " + rawResponse);
+            } else throw new Error("Format JSON introuvable dans la reponse de l'IA : " + rawResponse);
           }
         }
       } catch (e) {
@@ -739,7 +726,7 @@ app.post("/validate", async (req, res) => {
       }
     }
 
-    if (!judgeResult.correct && Date.now() >= aiLockoutUntil) {
+    if (!judgeResult.correct) {
       const judgePrompt = `Question: "${current.question}"\nExpected Answer: "${current.answer}"\nUser Answer: "${user_answer}"\nTask: Determine if the User Answer is correct or means the same thing as the Expected Answer.\nReturn ONLY valid JSON: {"correct": true or false}`;
       try {
         const judgeResp = await runAI([{ role: "system", content: "You evaluate answers. Output ONLY strict JSON." }, { role: "user", content: judgePrompt }], 800);
@@ -818,9 +805,6 @@ app.get("/step", async (req, res) => {
 
 app.post("/jerere", async (req, res) => {
   try {
-    if (Date.now() < aiLockoutUntil) {
-      return res.status(503).json({ error: "AI service currently unavailable due to limit quota restriction" });
-    }
     const prompt = req.body.prompt?.trim();
     if (!prompt) return res.status(400).json({ error: "No prompt provided" });
 
@@ -834,7 +818,6 @@ app.post("/jerere", async (req, res) => {
     });
     
     if (aiReq.status === 429 || aiReq.status === 401 || aiReq.status === 403) {
-      aiLockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
       return res.status(503).json({ error: "AI service limit reached" });
     }
 
