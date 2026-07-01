@@ -53,9 +53,6 @@ const BaseQuiz = mongoose.model("BaseQuiz", baseQuizSchema, "quiz");
 const progressSchema = new mongoose.Schema({ sessionId: String, language: String, currentStep: Number, consecutiveCorrect: Number });
 const Progress = mongoose.model("Progress", progressSchema);
 
-const quizSchema = new mongoose.Schema({ sessionId: String, qType: String, question: String, options: String, imageUrl: String, answer: String, explanation: String, successMsg: String, errorMsg: String });
-const CurrentQuiz = mongoose.model("CurrentQuiz", quizSchema);
-
 const userSchema = new mongoose.Schema({ sessionId: String, data: String });
 const UserInfo = mongoose.model("UserInfo", userSchema);
 
@@ -79,8 +76,86 @@ async function syncJsonToMongo() {
   }
 }
 
+async function generateAndSaveAiQuizzes() {
+  let targetLevels = [1, 2, 3];
+  try {
+    const rows = db.prepare("SELECT current_step FROM user_progress ORDER BY RANDOM() LIMIT 7").all();
+    if (rows.length > 0) {
+      targetLevels = rows.map(r => r.current_step);
+    }
+  } catch (e) {}
+
+  const langs = ["en", "fr", "es", "ht"];
+  const qTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK"];
+
+  for (const lang of langs) {
+    const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[lang] || "English";
+    
+    for (let i = 0; i < 7; i++) {
+      try {
+        const level = targetLevels[Math.floor(Math.random() * targetLevels.length)] || 1;
+        const qType = qTypes[Math.floor(Math.random() * qTypes.length)];
+
+        const prompt = `Create a quiz question in ${langName} language.
+        Guidelines:
+        - Difficulty Level: ${level} (Higher levels mean more difficult and advanced questions)
+        - Format/Type: ${qType} (Choose MCQ, TRUE_FALSE or FILL_BLANK)
+        - The explanation field MUST be strictly between 300 and 400 characters long.
+        - successMsg: short encouraging message for correct answer.
+        - errorMsg: short educational feedback message for wrong answer.
+        - For MCQ, provide exactly 4 options. For others, provide an empty array [].
+
+        Return ONLY a raw, valid JSON object matching this schema:
+        {
+          "level": ${level},
+          "lang": "${lang}",
+          "qType": "${qType}",
+          "question": "question text",
+          "options": ["option1", "option2", "option3", "option4"],
+          "answer": "exact correct answer",
+          "explanation": "detailed explanation between 300 and 400 chars",
+          "successMsg": "bravo text",
+          "errorMsg": "mistake explanation text"
+        }
+        No markdown code blocks, no comments, no external characters.`;
+
+        const aiResponse = await runAI([
+          { role: "system", content: "You are a JSON API. Return ONLY valid JSON." },
+          { role: "user", content: prompt }
+        ], 1000);
+
+        const rawResponse = aiResponse.response || "";
+        const firstBrace = rawResponse.indexOf('{');
+        const lastBrace = rawResponse.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
+          if (parsed.question && parsed.answer) {
+            const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
+            if (!exists) {
+              await BaseQuiz.create({
+                lang: lang,
+                level: parsed.level || level,
+                qType: parsed.qType || qType,
+                question: parsed.question,
+                options: Array.isArray(parsed.options) ? parsed.options : [],
+                answer: parsed.answer,
+                explanation: parsed.explanation,
+                successMsg: parsed.successMsg || "Correct!",
+                errorMsg: parsed.errorMsg || "Incorrect."
+              }).catch(e => e);
+            }
+          }
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (e) {}
+    }
+  }
+}
+
 mongoose.connection.once("open", () => {
   syncJsonToMongo();
+  generateAndSaveAiQuizzes();
+  setInterval(generateAndSaveAiQuizzes, 70 * 60 * 1000);
 });
 
 async function getProgress(sessionId) {
@@ -101,24 +176,14 @@ async function saveProgress(sessionId, lang, step, consec) {
 }
 
 async function getCurrentQuiz(sessionId) {
-  try {
-    const q = await CurrentQuiz.findOne({ sessionId: sessionId });
-    if (q) return q;
-  } catch (e) {}
   return db.prepare("SELECT * FROM current_quiz WHERE session_id = ?").get(sessionId);
 }
 
 async function saveCurrentQuiz(sessionId, qType, question, optionsStr, imageUrl, answer, explanation, successMsg, errorMsg) {
-  try {
-    await CurrentQuiz.findOneAndUpdate({ sessionId: sessionId }, { qType: qType, question: question, options: optionsStr, imageUrl: imageUrl, answer: answer, explanation: explanation, successMsg: successMsg, errorMsg: errorMsg }, { upsert: true });
-  } catch (e) {}
   db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation, success_msg, error_msg) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(sessionId, qType, question, optionsStr, imageUrl, answer, explanation, successMsg, errorMsg);
 }
 
 async function clearCurrentQuiz(sessionId) {
-  try {
-    await CurrentQuiz.deleteOne({ sessionId: sessionId });
-  } catch (e) {}
   db.prepare("DELETE FROM current_quiz WHERE session_id = ?").run(sessionId);
 }
 
@@ -253,11 +318,11 @@ app.post("/quizz", async (req, res) => {
     const language = progress.language;
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[language] || "English";
     
-    let dbItems = await BaseQuiz.aggregate([{ $match: { lang: language, level: current_step_num } }, { $sample: { size: 1 } }]).catch(e => []);
+    let dbItems = await BaseQuiz.aggregate([{ $match: { lang: language, level: current_step_num } }, { $sample: { size: 1 } }]).catch(() => []);
     if (dbItems.length === 0) {
-      dbItems = await BaseQuiz.aggregate([{ $match: { lang: language } }, { $sample: { size: 1 } }]).catch(e => []);
+      dbItems = await BaseQuiz.aggregate([{ $match: { lang: language } }, { $sample: { size: 1 } }]).catch(() => []);
     }
-    const randomItem = dbItems.length > 0 ? dbItems[0] : null;
+    let randomItem = dbItems.length > 0 ? dbItems[0] : null;
 
     let parsed = null;
     let randomType = "MCQ";
@@ -266,10 +331,10 @@ app.post("/quizz", async (req, res) => {
     let finalError = null;
     let success = false;
 
-    const strategies = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+    const availableStrategies = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
 
-    for (const strategy of strategies) {
-      if (success) break;
+    while (availableStrategies.length > 0 && !success) {
+      const strategy = availableStrategies.shift();
       try {
         if (strategy === 0 && randomItem) {
           parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer, explanation: randomItem.explanation };
@@ -367,21 +432,39 @@ app.post("/quizz", async (req, res) => {
     }
 
     if (imgUrl && !imgUrl.startsWith("http")) {
-      const localPath = path.join(process.cwd(), imgUrl);
-      if (fs.existsSync(localPath)) {
+      let resolvedPath = null;
+      const possiblePaths = [
+        path.join(process.cwd(), imgUrl),
+        path.join(process.cwd(), "data", imgUrl),
+        path.join(process.cwd(), "data", path.basename(imgUrl)),
+        path.join(process.cwd(), "imaj", path.basename(imgUrl))
+      ];
+      for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+          resolvedPath = p;
+          break;
+        }
+      }
+
+      if (resolvedPath) {
         try {
-          const fileBuffer = fs.readFileSync(localPath);
-          const ext = path.extname(localPath).toLowerCase();
-          const mimeType = ext === ".png" ? "image/png" : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "application/octet-stream";
-          const fileName = `uploads/${Date.now()}_${path.basename(localPath)}`;
+          const fileBuffer = fs.readFileSync(resolvedPath);
+          const ext = path.extname(resolvedPath).toLowerCase();
+          const mimeType = ext === ".png" ? "image/png" : (ext === ".jpg" || ext === ".jpeg") ? "image/jpeg" : "application/octet-stream";
+          const fileName = `uploads/${path.basename(resolvedPath)}`;
           await s3.send(new PutObjectCommand({
             Bucket: process.env.R2_BUCKET,
             Key: fileName,
             Body: fileBuffer,
             ContentType: mimeType
           }));
-          imgUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
-        } catch(e) {}
+          const uploadedUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+          
+          if (randomItem && randomItem._id) {
+            await BaseQuiz.updateOne({ _id: randomItem._id }, { imageUrl: uploadedUrl }).catch(() => {});
+          }
+          imgUrl = uploadedUrl;
+        } catch (e) {}
       }
     }
 
@@ -428,13 +511,23 @@ app.post("/validate", async (req, res) => {
     const cleanUser = user_answer.toLowerCase().trim();
     const cleanAnswer = current.answer ? current.answer.toLowerCase().trim() : "";
 
-    let judgeResult = { correct: false, explanation: "" };
+    let judgeResult = { correct: false };
 
-    if (cleanAnswer !== "" && cleanUser === cleanAnswer) {
-      judgeResult = { correct: true };
-    } else if (cleanAnswer !== "" && (cleanUser.includes(cleanAnswer) || cleanAnswer.includes(cleanUser))) {
-      judgeResult = { correct: true };
-    } else {
+    if (cleanAnswer !== "") {
+      if (cleanAnswer.length <= 3) {
+        if (cleanUser === cleanAnswer) {
+          judgeResult = { correct: true };
+        }
+      } else {
+        if (cleanUser === cleanAnswer) {
+          judgeResult = { correct: true };
+        } else if (cleanUser.length >= 3 && (cleanUser.includes(cleanAnswer) || cleanAnswer.includes(cleanUser))) {
+          judgeResult = { correct: true };
+        }
+      }
+    }
+
+    if (!judgeResult.correct) {
       const judgePrompt = `Question: "${current.question}"\nExpected Answer: "${current.answer}"\nUser Answer: "${user_answer}"\nTask: Determine if the User Answer is correct or means the same thing as the Expected Answer.\nReturn ONLY valid JSON: {"correct": true or false}`;
       try {
         const judgeResp = await runAI([{ role: "system", content: "You evaluate answers. Output ONLY strict JSON." }, { role: "user", content: judgePrompt }], 800);
@@ -443,18 +536,16 @@ app.post("/validate", async (req, res) => {
         const lastBrace = text.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
           judgeResult = JSON.parse(text.substring(firstBrace, lastBrace + 1));
-        } else {
-          throw new Error();
         }
       } catch (e) {
-         judgeResult = { correct: false };
+        judgeResult = { correct: false };
       }
     }
 
     const correctValue = judgeResult.correct ?? judgeResult.Correct ?? false;
     const isCorrect = correctValue === true || String(correctValue).toLowerCase() === "true";
     
-    const baseMessage = isCorrect ? (current.successMsg || current.success_msg || "Correct!") : (current.errorMsg || current.error_msg || `Incorrect. Answer: ${current.answer}`);
+    const baseMessage = isCorrect ? (current.success_msg || "Correct!") : (current.error_msg || `Incorrect. Answer: ${current.answer}`);
     const explanation = current.explanation ? `${baseMessage}\n\n${current.explanation}` : baseMessage;
 
     let new_consec = progress.consecutive_correct;
@@ -555,7 +646,7 @@ app.post("/jerere", async (req, res) => {
 
     const returnedUrl = uploadJson?.url || uploadJson?.link || uploadText || null;
     if (!returnedUrl) {
-      throw new Error();
+      `throw new Error()`;
     }
 
     return res.json({ url: returnedUrl });
