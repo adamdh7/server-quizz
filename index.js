@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import mongoose from "mongoose";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const app = express();
 app.use(express.json());
@@ -59,6 +59,25 @@ const Progress = mongoose.model("Progress", progressSchema);
 
 const userSchema = new mongoose.Schema({ sessionId: String, data: String });
 const UserInfo = mongoose.model("UserInfo", userSchema);
+
+function getKeyFromUrl(url) {
+  if (!url) return null;
+  const index = url.indexOf("uploads/");
+  if (index !== -1) {
+    return url.substring(index);
+  }
+  return null;
+}
+
+async function deleteFromR2(key) {
+  if (!key) return;
+  try {
+    await s3.send(new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: key
+    }));
+  } catch (e) {}
+}
 
 async function syncJsonToMongo() {
   const langs = ["en", "fr", "es", "ht"];
@@ -210,8 +229,8 @@ async function getCurrentQuiz(sessionId) {
   return db.prepare("SELECT * FROM current_quiz WHERE session_id = ?").get(sessionId);
 }
 
-async function saveCurrentQuiz(sessionId, qType, question, optionsStr, imageUrl, answer, explanation, successMsg, errorMsg) {
-  db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation, success_msg, error_msg) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(sessionId, qType, question, optionsStr, imageUrl, answer, explanation, successMsg, errorMsg);
+async function saveCurrentQuiz(sessionId, qType, question, optionsStr, imageUrl, answer, explanation, success_msg, error_msg) {
+  db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation, success_msg, error_msg) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(sessionId, qType, question, optionsStr, imageUrl, answer, explanation, success_msg, error_msg);
 }
 
 async function clearCurrentQuiz(sessionId) {
@@ -465,10 +484,15 @@ app.post("/quizz", async (req, res) => {
               const base64Image = aiJson.result.image;
               if (!base64Image) throw new Error();
               const buffer = Buffer.from(base64Image, "base64");
-              const filename = `img_${Date.now()}.png`;
-              const filePath = path.join(dataDir, filename);
-              fs.writeFileSync(filePath, buffer);
-              imgUrl = `${SERVER_URL}/local-image/${filename}`;
+              const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
+              const r2Key = `uploads/${filename}`;
+              await s3.send(new PutObjectCommand({
+                Bucket: process.env.R2_BUCKET,
+                Key: r2Key,
+                Body: buffer,
+                ContentType: "image/png"
+              }));
+              imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
             } else throw new Error();
             const questionTexts = { en: "Who is this person?", fr: "Qui est cette personne ?", es: "¿Quién es esta persona?", ht: "Kiyès moun sa?" };
             parsed = { question: questionTexts[language] || questionTexts.en, options: [], answer: personName, explanation: "" };
@@ -524,19 +548,15 @@ app.post("/quizz", async (req, res) => {
           const fileBuffer = fs.readFileSync(resolvedPath);
           const ext = path.extname(resolvedPath).toLowerCase();
           const mimeType = ext === ".png" ? "image/png" : (ext === ".jpg" || ext === ".jpeg") ? "image/jpeg" : "application/octet-stream";
-          const fileName = `uploads/${path.basename(resolvedPath)}`;
+          const uniqueFilename = `${Date.now()}_${crypto.randomUUID().split('-')[0]}_${path.basename(resolvedPath)}`;
+          const r2Key = `uploads/${uniqueFilename}`;
           await s3.send(new PutObjectCommand({
             Bucket: process.env.R2_BUCKET,
-            Key: fileName,
+            Key: r2Key,
             Body: fileBuffer,
             ContentType: mimeType
           }));
-          const uploadedUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
-          
-          if (randomItem && randomItem._id) {
-            await BaseQuiz.updateOne({ _id: randomItem._id }, { imageUrl: uploadedUrl }).catch(() => {});
-          }
-          imgUrl = uploadedUrl;
+          imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
         } catch (e) {}
       }
     }
@@ -545,6 +565,15 @@ app.post("/quizz", async (req, res) => {
     const optionsStr = JSON.stringify(safeOptions);
 
     await saveCurrentQuiz(session_id, randomType, parsed.question, optionsStr, imgUrl, parsed.answer, parsed.explanation || "", finalSuccess || "", finalError || "");
+
+    if (imgUrl) {
+      const scheduledKey = getKeyFromUrl(imgUrl);
+      if (scheduledKey) {
+        setTimeout(() => {
+          deleteFromR2(scheduledKey).catch(() => {});
+        }, 7 * 60 * 1000);
+      }
+    }
 
     const quizData = {
       current_step: current_step_num,
@@ -575,16 +604,10 @@ app.post("/validate", async (req, res) => {
     const current = await getCurrentQuiz(session_id);
     if (!current) return res.status(400).json({ error: "No active quiz" });
 
-    if (current.image_url && current.image_url.includes("/local-image/")) {
-      const splitParts = current.image_url.split("/local-image/");
-      if (splitParts.length > 1) {
-        const localFilename = splitParts[1];
-        const localFilePath = path.join(dataDir, localFilename);
-        if (fs.existsSync(localFilePath)) {
-          try {
-            fs.unlinkSync(localFilePath);
-          } catch (err) {}
-        }
+    if (current.image_url) {
+      const activeKey = getKeyFromUrl(current.image_url);
+      if (activeKey) {
+        deleteFromR2(activeKey).catch(() => {});
       }
     }
 
