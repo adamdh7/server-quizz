@@ -587,12 +587,12 @@ app.post("/quizz", async (req, res) => {
               }));
               imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
             } else throw new Error("Echec reseau lors de la generation d'image API Flux : " + extImgResponse.status);
-            const questionTexts = { en: "Who is this person?", fr: "Qui est cette personne ?", es: "¿Quién es esta persona?", ht: "Kiyès moun sa?" };
+            const questionTexts = { en: "Who is this person?", fr: "Qui est cette personne ?", es: "¿Quién es cette personne ?", ht: "Kiyès moun sa?" };
             parsed = { question: questionTexts[language] || questionTexts.en, options: [], answer: personName, explanation: "" };
             success = true;
             console.log("L'aleatoire prend Ai pur (Generatif Image) - Strategie " + strategy);
           } else {
-            const systemPrompt = `Create a ${randomType} quiz question. Topic: General Knowledge. Language: ${langName}. Difficulty: Level ${current_step_num}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Do not write anything else.`;
+            const systemPrompt = `Create a ${randomType} quiz question. Topic: General Knowledge. Language: ${langName}. Difficulty: Level ${current_step_num}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string","explanation":"string"}. Do not write anything else. Ensure you return 4 options if the type is MCQ, otherwise an empty array [].`;
             const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
             const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
             const firstBrace = rawResponse.indexOf('{');
@@ -702,7 +702,7 @@ app.post("/validate", async (req, res) => {
     const user_answer = body.user_answer?.trim() || "";
     if (!session_id || !user_answer) return res.status(400).json({ error: "session_id and user_answer required" });
 
-    console.log("=== NOUVELLE REQUETE VALIDATION ===");
+    console.log("=== NOUVELRE QUETE VALIDATION ===");
     console.log("L'utilisateur " + session_id + " a soumis la reponse: " + user_answer);
 
     const current = await getCurrentQuiz(session_id);
