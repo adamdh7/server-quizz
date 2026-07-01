@@ -81,43 +81,36 @@ async function deleteFromR2(key) {
 
 function calculateSimilarity(str1, str2) {
   if (!str1 || !str2) return 0;
-  const s1 = String(str1).toLowerCase().split(/\W+/).filter(w => w.length > 0);
-  const s2 = String(str2).toLowerCase().split(/\W+/).filter(w => w.length > 0);
-  if (s1.length === 0 && s2.length === 0) return 1;
-  let matches = 0;
-  const s2Copy = [...s2];
-  for (const w of s1) {
-    const idx = s2Copy.indexOf(w);
-    if (idx !== -1) {
-      matches++;
-      s2Copy.splice(idx, 1);
-    }
-  }
-  return matches / Math.max(s1.length, s2.length);
+  const set1 = new Set(str1.toLowerCase().split(/\s+/));
+  const set2 = new Set(str2.toLowerCase().split(/\s+/));
+  const intersection = new Set([...set1].filter(x => set2.has(x)));
+  const union = new Set([...set1, ...set2]);
+  if (union.size === 0) return 0;
+  return intersection.size / union.size;
 }
 
-function getRandomLocalJsonQuestion(lang) {
-  console.log("Lecture aleatoire dans les fichiers JSON lourds pour eviter le fallback");
+function isSimilarToExisting(newText, existingItems) {
+  if (!newText || !existingItems || existingItems.length === 0) return false;
+  for (const item of existingItems) {
+    if (!item.question) continue;
+    const sim = calculateSimilarity(newText, item.question);
+    if (sim > 0.5) return true;
+  }
+  return false;
+}
+
+async function getRandomFromJsonFile(lang, level) {
   try {
-    const langs = ["en", "fr", "es", "ht"];
-    const targetLang = langs.includes(lang) ? lang : langs[Math.floor(Math.random() * langs.length)];
-    const p = path.join(process.cwd(), "lang", `${targetLang}.json`);
+    const p = path.join(process.cwd(), "lang", `${lang}.json`);
     if (fs.existsSync(p)) {
       const content = fs.readFileSync(p, "utf-8");
       const data = JSON.parse(content);
-      if (data && data.length > 0) {
-        console.log("Une question a ete choisie aleatoirement depuis le fichier JSON lourd");
-        const item = data[Math.floor(Math.random() * data.length)];
-        return {
-          question: item.question,
-          options: item.options || [],
-          answer: item.answer,
-          explanation: item.explanation || "",
-          qType: item.qType || "MCQ",
-          imageUrl: item.imageUrl || null,
-          successMsg: item.successMsg || "Correct!",
-          errorMsg: item.errorMsg || "Incorrect."
-        };
+      let filtered = data.filter(d => (d.level || d.niveau || 1) === level);
+      if (filtered.length === 0) {
+        filtered = data;
+      }
+      if (filtered.length > 0) {
+        return filtered[Math.floor(Math.random() * filtered.length)];
       }
     }
   } catch(e) {}
@@ -133,21 +126,14 @@ async function syncJsonToMongo() {
       try {
         const content = fs.readFileSync(p, "utf-8");
         const data = JSON.parse(content);
-        const dbItems = await BaseQuiz.find({ lang: l }).limit(50).catch(e => []);
-        for (let i = 0; i < 15; i++) {
-          const randomIndex = Math.floor(Math.random() * data.length);
-          const item = data[randomIndex];
+        const existingItems = await BaseQuiz.find({ lang: l }).limit(500).lean().catch(() => []);
+        for (const item of data) {
           const itemLevel = item.level || item.niveau || 1;
-          let isTooSimilar = false;
-          for (const dbItem of dbItems) {
-            if (calculateSimilarity(item.question, dbItem.question) >= 0.5) {
-              isTooSimilar = true;
-              break;
+          if (!isSimilarToExisting(item.question, existingItems)) {
+            const exists = await BaseQuiz.findOne({ lang: l, explanation: item.explanation }).catch(() => true);
+            if (!exists) {
+              await BaseQuiz.create({ lang: l, level: itemLevel, ...item }).catch(() => {});
             }
-          }
-          if (!isTooSimilar) {
-            console.log("Sauvegarde autorisee : element JSON suffisamment different des donnees existantes");
-            await BaseQuiz.create({ lang: l, level: itemLevel, ...item }).catch(e => e);
           }
         }
       } catch (e) {}
@@ -190,19 +176,25 @@ async function generateAndSaveAiQuizzes() {
         if (firstBrace !== -1 && lastBrace !== -1) {
           const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
           if (parsed.question && parsed.answer && parsed.explanation && parsed.explanation.length >= 300 && parsed.explanation.length <= 400) {
-            const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
-            if (!exists) {
-              await BaseQuiz.create({
-                lang: lang,
-                level: parsed.level || level,
-                qType: parsed.qType || qType,
-                question: parsed.question,
-                options: Array.isArray(parsed.options) ? parsed.options : [],
-                answer: parsed.answer,
-                explanation: parsed.explanation,
-                successMsg: parsed.successMsg || "Correct!",
-                errorMsg: parsed.errorMsg || "Incorrect."
-              }).catch(e => e);
+            
+            const existingItems = await BaseQuiz.find({ lang: lang }).limit(150).lean().catch(() => []);
+            if (!isSimilarToExisting(parsed.question, existingItems)) {
+              const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
+              if (!exists) {
+                await BaseQuiz.create({
+                  lang: lang,
+                  level: parsed.level || level,
+                  qType: parsed.qType || qType,
+                  question: parsed.question,
+                  options: Array.isArray(parsed.options) ? parsed.options : [],
+                  answer: parsed.answer,
+                  explanation: parsed.explanation,
+                  successMsg: parsed.successMsg || "Correct!",
+                  errorMsg: parsed.errorMsg || "Incorrect."
+                }).catch(() => {});
+              }
+            } else {
+              console.log("Sauvegarde AI annulee: Similarite > 50% detectee.");
             }
           }
         }
@@ -236,19 +228,25 @@ async function triggerMassAiGeneration() {
         if (firstBrace !== -1 && lastBrace !== -1) {
           const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
           if (parsed.question && parsed.answer && parsed.explanation && parsed.explanation.length >= 300 && parsed.explanation.length <= 400) {
-            const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
-            if (!exists) {
-              await BaseQuiz.create({
-                lang: lang,
-                level: parsed.level || level,
-                qType: parsed.qType || qType,
-                question: parsed.question,
-                options: Array.isArray(parsed.options) ? parsed.options : [],
-                answer: parsed.answer,
-                explanation: parsed.explanation,
-                successMsg: parsed.successMsg || "Correct!",
-                errorMsg: parsed.errorMsg || "Incorrect."
-              }).catch(() => {});
+            
+            const existingItems = await BaseQuiz.find({ lang: lang }).limit(150).lean().catch(() => []);
+            if (!isSimilarToExisting(parsed.question, existingItems)) {
+              const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
+              if (!exists) {
+                await BaseQuiz.create({
+                  lang: lang,
+                  level: parsed.level || level,
+                  qType: parsed.qType || qType,
+                  question: parsed.question,
+                  options: Array.isArray(parsed.options) ? parsed.options : [],
+                  answer: parsed.answer,
+                  explanation: parsed.explanation,
+                  successMsg: parsed.successMsg || "Correct!",
+                  errorMsg: parsed.errorMsg || "Incorrect."
+                }).catch(() => {});
+              }
+            } else {
+              console.log("Sauvegarde Mass AI annulee: Similarite > 50% detectee.");
             }
           }
         }
@@ -472,16 +470,21 @@ app.post("/quizz", async (req, res) => {
       }
     }
 
-    let randomItem = dbItems.length > 0 ? dbItems[0] : null;
-    
-    if (!randomItem) {
+    if (dbItems.length === 0) {
       console.log("Base de donnees vide, extraction d'une ressource aleatoire via les fichiers JSON complets");
-      randomItem = getRandomLocalJsonQuestion(language);
+      console.log("Lecture aleatoire dans les fichiers JSON lourds pour eviter le fallback");
+      const randomJsonRecord = await getRandomFromJsonFile(language, current_step_num);
+      if (randomJsonRecord) {
+        dbItems = [randomJsonRecord];
+      }
     }
 
+    let randomItem = dbItems.length > 0 ? dbItems[0] : null;
     if (randomItem && randomItem._id) {
       db.prepare("INSERT OR IGNORE INTO served_questions (session_id, quiz_id) VALUES (?, ?)").run(session_id, randomItem._id.toString());
     }
+
+    console.log("Debut de l'aleatoire pour detecte le mode a prendre a commencer");
 
     let parsed = null;
     let randomType = "MCQ";
@@ -490,7 +493,6 @@ app.post("/quizz", async (req, res) => {
     let finalError = null;
     let success = false;
 
-    console.log("Debut de l'aleatoire pour detecte le mode a prendre a commencer");
     const availableStrategies = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
 
     while (availableStrategies.length > 0 && !success) {
@@ -498,15 +500,14 @@ app.post("/quizz", async (req, res) => {
       console.log("Tentative d'utilisation du mode/strategie numero: " + strategy);
       try {
         if (strategy === 0 && randomItem) {
-          console.log("Mode selectionne: Donnees pures (AI + JSON donne existante / MongoDB)");
           parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer, explanation: randomItem.explanation };
           randomType = randomItem.qType || "MCQ";
           imgUrl = randomItem.imageUrl || null;
           finalSuccess = randomItem.successMsg || null;
           finalError = randomItem.errorMsg || null;
           success = true;
+          console.log("L'aleatoire prend donne mongodb pur - Strategie " + strategy);
         } else if (strategy === 1 && randomItem && Date.now() >= aiLockoutUntil) {
-          console.log("Mode selectionne: AI + Donnees (Amelioration d'une question JSON existante)");
           const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = aiResponse.response || "";
@@ -519,9 +520,9 @@ app.post("/quizz", async (req, res) => {
             finalSuccess = randomItem.successMsg || null;
             finalError = randomItem.errorMsg || null;
             success = true;
+            console.log("L'aleatoire prend Ai + donne mongodb (Amelioration) - Strategie " + strategy);
           } else throw new Error();
         } else if (strategy === 2 && randomItem && Date.now() >= aiLockoutUntil) {
-          console.log("Mode selectionne: AI + Donnees (Creation d'une toute nouvelle question basee sur JSON existant)");
           const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = aiResponse.response || "";
@@ -532,9 +533,9 @@ app.post("/quizz", async (req, res) => {
             if (!parsed.question || !parsed.answer) throw new Error();
             randomType = randomItem.qType || "MCQ";
             success = true;
+            console.log("L'aleatoire prend Ai + donne mongodb (Nouveau meme style) - Strategie " + strategy);
           } else throw new Error();
         } else if (strategy === 3 && Date.now() >= aiLockoutUntil) {
-          console.log("Mode selectionne: AI pur (Generation 100% libre sans donnee initiale)");
           const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
           randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
           if (randomType === "IDENTITY_IMAGE") {
@@ -570,6 +571,7 @@ app.post("/quizz", async (req, res) => {
             const questionTexts = { en: "Who is this person?", fr: "Qui est cette personne ?", es: "¿Quién es esta persona?", ht: "Kiyès moun sa?" };
             parsed = { question: questionTexts[language] || questionTexts.en, options: [], answer: personName, explanation: "" };
             success = true;
+            console.log("L'aleatoire prend Ai pur (Generatif Image) - Strategie " + strategy);
           } else {
             const systemPrompt = `Create a ${randomType} quiz question. Topic: General Knowledge. Language: ${langName}. Difficulty: Level ${current_step_num}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Do not write anything else.`;
             const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
@@ -580,11 +582,11 @@ app.post("/quizz", async (req, res) => {
               parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
               if (!parsed.question || !parsed.answer) throw new Error();
               success = true;
+              console.log("L'aleatoire prend Ai pur (Generatif Texte) - Strategie " + strategy);
             } else throw new Error();
           }
         }
       } catch (e) {
-        console.log("Erreur durant l'execution de la strategie " + strategy + ", passage a la suivante.");
         success = false;
       }
     }
@@ -668,7 +670,6 @@ app.post("/quizz", async (req, res) => {
     return res.json(quizData);
 
   } catch (e) {
-    console.log("Erreur globale dans /quizz, generation du message d'erreur d'urgence");
     await saveCurrentQuiz(req.body.session_id || "default", "TRUE_FALSE", "Error loading question. True to continue.", JSON.stringify(["True","False"]), null, "True", "System recovery.", "", "");
     return res.json({ type: "TRUE_FALSE", question: "Error loading question. True to continue.", options: ["True", "False"], error_msg: e.message });
   }
@@ -721,7 +722,6 @@ app.post("/validate", async (req, res) => {
     }
 
     if (!judgeResult.correct && Date.now() >= aiLockoutUntil) {
-      console.log("Verification semantique via AI demarree car la comparaison basique a echoue");
       const judgePrompt = `Question: "${current.question}"\nExpected Answer: "${current.answer}"\nUser Answer: "${user_answer}"\nTask: Determine if the User Answer is correct or means the same thing as the Expected Answer.\nReturn ONLY valid JSON: {"correct": true or false}`;
       try {
         const judgeResp = await runAI([{ role: "system", content: "You evaluate answers. Output ONLY strict JSON." }, { role: "user", content: judgePrompt }], 800);
