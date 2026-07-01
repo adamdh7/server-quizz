@@ -91,15 +91,15 @@ function calculateSimilarity(str1, str2) {
 }
 
 function isSimilarToExisting(newText, existingItems) {
-  if (!newText || !existingItems || existingItems.length === 0) return { similar: false, pct: 0 };
+  if (!newText || !existingItems || existingItems.length === 0) return { similar: false, pct: 0, matchedText: "" };
   for (const item of existingItems) {
     if (!item.question) continue;
     const sim = calculateSimilarity(newText, item.question);
     if (sim > 0.20) {
-      return { similar: true, pct: Math.round(sim * 100) };
+      return { similar: true, pct: Math.round(sim * 100), matchedText: item.question };
     }
   }
-  return { similar: false, pct: 0 };
+  return { similar: false, pct: 0, matchedText: "" };
 }
 
 async function getRandomFromJsonFile(lang, level) {
@@ -133,7 +133,7 @@ async function syncJsonToMongo() {
         for (const item of data) {
           const itemLevel = item.level || item.niveau || 1;
           const simCheck = isSimilarToExisting(item.question, existingItems);
-          if (!simCheck.similar) {
+          if (!simCheck.similar || simCheck.pct <= 70) {
             const exists = await BaseQuiz.findOne({ lang: l, explanation: item.explanation }).catch(() => true);
             if (!exists) {
               await BaseQuiz.create({ lang: l, level: itemLevel, ...item }).catch(() => {});
@@ -175,7 +175,7 @@ async function generateAndSaveAiQuizzes() {
           }
         } catch(e) {}
 
-        const prompt = `Create a brand new, unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as an inspiration for the theme but make it completely different: "${seedText}". You MUST generate the full JSON format with explanations exactly like this example: {"level": ${level}, "lang": "${lang}", "qType": "${qType}", "question": "Quel est 2 + 2 ?", "options": ["3", "4", "5", "6"], "answer": "4", "explanation": "On additionne 2 et 2 pour obtenir 4.", "successMsg": "Bravo !", "errorMsg": "Ce n'est pas la bonne réponse."}. Return ONLY raw, valid JSON.`;
+        const prompt = `Create a brand new, unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as an inspiration for the theme but make it completely different: "${seedText}". You MUST generate the full JSON format with explanations exactly like this example: {"level": ${level}, "lang": "${lang}", "qType": "${qType}", "question": "Quel est 2 + 2 ?", "options": ["3", "4", "5", "6"], "answer": "4", "explanation": "On additionne deux et deux pour obtenir quatre.", "successMsg": "Bravo !", "errorMsg": "Ce n'est pas la bonne reponse."}. Return ONLY raw, valid JSON.`;
 
         console.log("Requete IA Generation Masse avec prompt : " + prompt);
 
@@ -194,7 +194,7 @@ async function generateAndSaveAiQuizzes() {
             
             const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
             const simCheck = isSimilarToExisting(parsed.question, existingItems);
-            if (!simCheck.similar) {
+            if (!simCheck.similar || simCheck.pct <= 70) {
               const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
               if (!exists) {
                 await BaseQuiz.create({
@@ -211,7 +211,7 @@ async function generateAndSaveAiQuizzes() {
                 console.log("Nouvelle question sauvegardee en BDD avec succes.");
               }
             } else {
-              console.log("Sauvegarde IA Masse annulee: Similarite de " + simCheck.pct + "% detectee avec une question existante.");
+              console.log("Sauvegarde IA Masse annulee: Similarite superieure au seuil maximal (sim: " + simCheck.pct + "%) avec la question existante: \"" + simCheck.matchedText + "\"");
             }
           }
         }
@@ -243,7 +243,7 @@ async function triggerMassAiGeneration() {
           }
         } catch(e) {}
 
-        const prompt = `Create a brand new, unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as an inspiration for the theme but make it completely different: "${seedText}". You MUST generate the full JSON format with explanations exactly like this example: {"level": ${level}, "lang": "${lang}", "qType": "${qType}", "question": "Quel est 2 + 2 ?", "options": ["3", "4", "5", "6"], "answer": "4", "explanation": "On additionne 2 et 2 pour obtenir 4.", "successMsg": "Bravo !", "errorMsg": "Ce n'est pas la bonne réponse."}. Return ONLY raw, valid JSON.`;
+        const prompt = `Create a brand new, unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as an inspiration for the theme but make it completely different: "${seedText}". You MUST generate the full JSON format with explanations exactly like this example: {"level": ${level}, "lang": "${lang}", "qType": "${qType}", "question": "Quel est 2 + 2 ?", "options": ["3", "4", "5", "6"], "answer": "4", "explanation": "On additionne deux et deux pour obtenir quatre.", "successMsg": "Bravo !", "errorMsg": "Ce n'est pas la bonne reponse."}. Return ONLY raw, valid JSON.`;
 
         console.log("Requete Trigger IA Masse avec prompt : " + prompt);
         
@@ -262,7 +262,7 @@ async function triggerMassAiGeneration() {
             
             const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
             const simCheck = isSimilarToExisting(parsed.question, existingItems);
-            if (!simCheck.similar) {
+            if (!simCheck.similar || simCheck.pct <= 70) {
               const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
               if (!exists) {
                 await BaseQuiz.create({
@@ -279,7 +279,7 @@ async function triggerMassAiGeneration() {
                 console.log("Nouvelle question via trigger sauvegardee en BDD avec succes.");
               }
             } else {
-              console.log("Sauvegarde Trigger IA annulee: Similarite de " + simCheck.pct + "% detectee avec une question existante.");
+              console.log("Sauvegarde Trigger IA annulee: Similarite superieure au seuil maximal (sim: " + simCheck.pct + "%) avec la question existante: \"" + simCheck.matchedText + "\"");
             }
           }
         }
@@ -558,7 +558,7 @@ app.post("/quizz", async (req, res) => {
           console.log("Succes avec Strategie 0 (Donnee MongoDB pure)");
         } else if (strategy === 1) {
           if (!randomItem) throw new Error("Item introuvable");
-          const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Do NOT generate explanations or success/error messages. Original: ${randomItem.question}`;
+          const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Do NOT generate explanations, success messages, or error messages. Original: ${randomItem.question}`;
           console.log("Envoi du prompt IA Strategie 1: " + systemPrompt);
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
@@ -577,7 +577,7 @@ app.post("/quizz", async (req, res) => {
           } else throw new Error("Format JSON introuvable");
         } else if (strategy === 2) {
           if (!randomItem) throw new Error("Item introuvable");
-          const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Do NOT generate explanations or success/error messages. Original: ${randomItem.question}`;
+          const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Do NOT generate explanations, success messages, or error messages. Original: ${randomItem.question}`;
           console.log("Envoi du prompt IA Strategie 2: " + systemPrompt);
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
@@ -646,16 +646,16 @@ app.post("/quizz", async (req, res) => {
             success = true;
             console.log("Succes avec Strategie 3 (Creation Image et Sujet Visuel)");
           } else {
-            const systemPrompt = `Create a ${randomType} quiz question. Topic: General Knowledge. Language: ${langName}. Difficulty: Level ${current_step_num}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Do NOT write explanations or success/error messages. Return exactly 4 options if MCQ, otherwise empty array [].`;
-            console.log("Envoi du prompt IA Strategie 3 (Texte): " + systemPrompt);
+            const systemPrompt = `Create a brand new unique quiz question of type ${randomType} in ${langName}. Do NOT include explanations, successMsg, or errorMsg in your output. If type is MCQ, you must provide exactly 4 options. For other types, options must be an empty array []. Return ONLY a valid JSON object strictly matching this schema: {"question": "string", "options": ["string"], "answer": "string"}`;
+            console.log("Envoi du prompt IA Strategie 3 (Texte Pur): " + systemPrompt);
             const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
             const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-            console.log("Reponse brute IA Strategie 3 (Texte): " + rawResponse);
+            console.log("Reponse brute IA Strategie 3 (Texte Pur): " + rawResponse);
             const firstBrace = rawResponse.indexOf('{');
             const lastBrace = rawResponse.lastIndexOf('}');
             if (firstBrace !== -1 && lastBrace !== -1) {
               parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-              if (!parsed.question || !parsed.answer) throw new Error("Champs JSON manquants");
+              if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants");
               finalSuccess = "";
               finalError = "";
               finalExplanation = "";
@@ -812,7 +812,7 @@ app.post("/validate", async (req, res) => {
       console.log("Aucun message de succes/erreur en base, l'IA de Validation est appelee pour generer le feedback.");
       if (isCorrect) {
         const sys = "You are a JSON API. Output ONLY valid JSON.";
-        const usr = `User answered CORRECTLY to the question: "${current.question}". The exact answer is "${current.answer}". Write a concise success message and a brief explanation of the answer. Language: ${langName}. Return ONLY valid JSON: {"explanation": "string"}`;
+        const usr = `User answered CORRECTLY to the question: "${current.question}". The correct answer is: "${current.answer}". Write a brief educational confirmation statement telling them why they are correct. Output in ${langName}. Schema: {"explanation": "string"}`;
         console.log("Prompt IA Validation (Succes) : " + usr);
         try {
           const aiResp = await runAI([{ role: "system", content: sys }, { role: "user", content: usr }], 800);
@@ -830,7 +830,7 @@ app.post("/validate", async (req, res) => {
         }
       } else {
         const sys = "You are a JSON API. Output ONLY valid JSON.";
-        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". Write a concise error message correcting the user and a brief explanation. Language: ${langName}. Return ONLY valid JSON: {"explanation": "string"}`;
+        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer is: "${current.answer}". User input was: "${user_answer}". Write a brief educational response correcting them. Output in ${langName}. Schema: {"explanation": "string"}`;
         console.log("Prompt IA Validation (Erreur) : " + usr);
         try {
           const aiResp = await runAI([{ role: "system", content: sys }, { role: "user", content: usr }], 800);
