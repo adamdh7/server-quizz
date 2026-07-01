@@ -389,11 +389,11 @@ async function executeBackgroundMassGeneration(isTrigger) {
         let prompt = "";
 
         if (qType === "MCQ") {
-          prompt = `Create a brand new unique MCQ quiz question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+          prompt = `Create a brand new unique MCQ quiz question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation, The explanation MUST be strictly between 300 and 400 characters long.", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
         } else if (qType === "TRUE_FALSE") {
-          prompt = `Create a brand new unique True or False statement in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+          prompt = `Create a brand new unique True or False statement in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation, The explanation MUST be strictly between 300 and 400 characters long.", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
         } else {
-          prompt = `Create a brand new unique Fill-in-the-blank question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Use ______ for the blank. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+          prompt = `Create a brand new unique Fill-in-the-blank question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Use ______ for the blank. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation, The explanation MUST be strictly between 300 and 400 characters long.", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
         }
 
         const aiResponse = await runAI([
@@ -575,7 +575,7 @@ async function executeMode0PureDB(randomItem) {
 async function executeMode1ImproveExisting(randomItem, langName) {
     logEvent("INFO", "MODE_1_IMPROVE_EXISTING", "Execution started");
     if (!randomItem) throw new Error("Source item missing");
-    const prompt = `Improve this quiz question slightly making it more clear without changing the actual answer. Language: ${langName}. Do NOT generate explanations, success messages, or error messages. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
+    const prompt = `Improve this quiz question slightly making it more clear without changing the actual answer. Language: ${langName}. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
     const aiResponse = await runAI([{ role: "system", content: "You are a strict JSON API generator. Output ONLY raw valid JSON." }, { role: "user", content: prompt }], 1000);
     const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     logEvent("SUCCESS", "MODE_1_IMPROVE_EXISTING", "Execution completed successfully");
@@ -585,7 +585,7 @@ async function executeMode1ImproveExisting(randomItem, langName) {
 async function executeMode2CreateSimilar(randomItem, langName) {
     logEvent("INFO", "MODE_2_CREATE_SIMILAR", "Execution started");
     if (!randomItem) throw new Error("Source item missing");
-    const prompt = `Create a completely new quiz question in the EXACT same style and general topic as this one. Language: ${langName}. Do NOT generate explanations. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
+    const prompt = `Create a completely new quiz question in the EXACT same style and general topic as this one. Language: ${langName}. orginal question :"${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
     const aiResponse = await runAI([{ role: "system", content: "You are a strict JSON API generator. Output ONLY raw valid JSON." }, { role: "user", content: prompt }], 1000);
     const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     logEvent("SUCCESS", "MODE_2_CREATE_SIMILAR", "Execution completed successfully");
@@ -659,7 +659,7 @@ async function executeMode3PureAIGeneration(session_id, language, langName) {
             throw new Error("Flux AI Image API failed");
         }
         
-        const questionPrompt = `Generate a very short, specific, and clear question in ${langName} asking the user to identify the subject in an image. The subject category is "${selectedCategory}". DO NOT include the actual name "${subjectName}" in the question. Return ONLY a valid JSON object matching this schema: {"question": "Your generated question here"}`;
+        const questionPrompt = `Generate a specific, and clear question in ${langName} asking the user to identify the subject in an image. The subject category is "${selectedCategory}". DO NOT include the actual name "${subjectName}" in the question. Return ONLY a valid JSON object matching this schema: {"question": "Your generated question here"}`;
         
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Requesting AI to formulate identity question text");
         const qResp = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: questionPrompt }], 300);
@@ -669,17 +669,27 @@ async function executeMode3PureAIGeneration(session_id, language, langName) {
         
     } else if (randomType === "MCQ") {
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Sub-mode: MCQ selected");
-        const mcqPrompt = `Create a brand new unique Multiple Choice Question (MCQ). Topic: General Knowledge. Language: ${langName}. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw JSON object matching this schema: {"question":"Your question?","options":["Choice A","Choice B","Choice C","Choice D"],"answer":"Choice B"}`;
+        const mcqPrompt = `Create a brand new unique Multiple Choice Question (MCQ). Topic: General Knowledge. Language: ${langName}. 
+        Return ONLY a raw JSON object matching this schema: {"question":"Your question, which would have the real answer in one of the choices","options":["Choice A","Choice B","Choice C","Choice D"],"answer":"Choice B"}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: mcqPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     } else if (randomType === "TRUE_FALSE") {
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Sub-mode: TRUE_FALSE selected");
-        const tfPrompt = `Create a brand new unique True or False statement. Topic: General Knowledge. Language: ${langName}. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw JSON object matching this schema: {"question":"Your statement.","options":["True","False"],"answer":"False"}`;
+        const tfPrompt = `Create a brand new unique True or False statement. Topic: General Knowledge. Language: ${langName}. 
+        Return ONLY a raw JSON object matching this schema: {
+  "question": "Your statement.",
+  "options": ["choice A", "choice B"],
+  "answer": "The right choice"
+}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: tfPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     } else if (randomType === "FILL_BLANK") {
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Sub-mode: FILL_BLANK selected");
-        const fbPrompt = `Create a brand new unique Fill-in-the-blank question. Topic: General Knowledge. Language: ${langName}. Use ______ for the blank space. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw JSON object matching this schema: {"question":"The capital of France is ______.","options":[],"answer":"Paris"}`;
+        const fbPrompt = `Create a brand new unique Fill-in-the-blank question. Topic: General Knowledge. Language: ${langName}. Use ______ for the blank space. 
+        Return ONLY a raw JSON object matching this schema: {
+  "question": "Your text with ______.",
+  "answer": "The exact word"
+}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: fbPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     }
@@ -958,7 +968,7 @@ app.post("/validate", async (req, res) => {
     if (isAiPur) {
       const sysStrict = "You are a strict JSON data generator. Output ONLY raw valid JSON without markdown formatting.";
       if (isCorrect) {
-        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer was: "${current.answer}". Write a short success message and brief explanation in ${langName}. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a valid JSON object matching this schema: {"successMsg": "encouraging text", "explanation": "detailed reason"}`;
+        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer was: "${current.answer}". Write a success message and brief explanation in ${langName}. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a valid JSON object matching this schema: {"successMsg": "encouraging text", "explanation": "detailed reason"}`;
         try {
           const aiResp = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: usr }], 800);
           const parsedFeedback = parseAIJsonResponse(aiResp.response, ["successMsg", "explanation"]);
