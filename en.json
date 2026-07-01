@@ -1,0 +1,42 @@
+[
+  {
+    "qType": "IDENTITY_IMAGE",
+    "question": "Who is this person?",
+    "options": [],
+    "imageUrl": "imaj/Albert Einstein.JPG",
+    "answer": "Albert Einstein",
+    "explanation": "This is Albert Einstein, the famous theoretical physicist who developed the theory of relativity.",
+    "successMsg": "Excellent! You recognized Albert Einstein.",
+    "errorMsg": "Incorrect. This is Albert Einstein."
+  },
+  {
+    "qType": "MCQ",
+    "question": "In which field did Albert Einstein win his Nobel Prize in 1921?",
+    "options": ["Theory of Relativity", "Photoelectric Effect", "Brownian Motion", "Nuclear Fission"],
+    "imageUrl": "",
+    "answer": "Photoelectric Effect",
+    "explanation": "Albert Einstein was awarded the 1921 Nobel Prize in Physics for his services to Theoretical Physics, and especially for his discovery of the law of the photoelectric effect.",
+    "successMsg": "Brilliant! You know your history of science.",
+    "errorMsg": "Wrong choice. He actually won it for the Photoelectric Effect."
+  },
+  {
+    "qType": "TRUE_FALSE",
+    "question": "Albert Einstein was born in Germany.",
+    "options": ["True", "False"],
+    "imageUrl": "",
+    "answer": "True",
+    "explanation": "Einstein was born in Ulm, in the Kingdom of Württemberg in the German Empire, on March 14, 1879.",
+    "successMsg": "Correct! He was indeed born in Germany.",
+    "errorMsg": "Incorrect. Albert Einstein was born in Germany."
+  },
+  {
+    "qType": "FILL_BLANK",
+    "question": "Complete the famous mass-energy equivalence equation formulated by Einstein: E = ___",
+    "options": [],
+    "imageUrl": "",
+    "answer": "mc^2",
+    "explanation": "The formula E = mc² expresses the fact that mass and energy are the same physical entity and can be changed into each other.",
+    "successMsg": "Perfect! E = mc² is the most famous equation in the world.",
+    "errorMsg": "No, the correct answer is mc^2."
+  }
+]
