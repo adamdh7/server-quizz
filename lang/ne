@@ -1,0 +1,192 @@
+[
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "translations": {
+      "en": {
+        "question": "What is 2 + 2?",
+        "options": ["3", "4", "5", "6"],
+        "answer": "4",
+        "explanation": "This basic arithmetic question reinforces fundamental calculation skills, helping players verify simple mathematical operations quickly and build confidence.",
+        "successMsg": "Correct! Simple and fast.",
+        "errorMsg": "Incorrect. 2 plus 2 equals 4."
+      },
+      "fr": {
+        "question": "Combien font 2 + 2 ?",
+        "options": ["3", "4", "5", "6"],
+        "answer": "4",
+        "explanation": "Cette question d'arithmétique élémentaire renforce les bases du calcul simple, aidant le joueur à valider rapidement des opérations fondamentales.",
+        "successMsg": "Bravo ! Simple et rapide.",
+        "errorMsg": "Incorrect. 2 plus 2 font 4."
+      },
+      "es": {
+        "question": "¿Cuánto es 2 + 2?",
+        "options": ["3", "4", "5", "6"],
+        "answer": "4",
+        "explanation": "Esta pregunta de aritmética elemental refuerza las bases del cálculo simple, ayudando al jugador a validar rápidamente operaciones fundamentales.",
+        "successMsg": "¡Correcto! Simple y rápido.",
+        "errorMsg": "Incorrecto. 2 más 2 son 4."
+      },
+      "ht": {
+        "question": "Konbyen fè 2 + 2 ?",
+        "options": ["3", "4", "5", "6"],
+        "answer": "4",
+        "explanation": "Kesyon aritmetik senp sa a ranfòse baz kalkil yo, li ede jwè a verifye operasyon matematik de baz yo byen vit ak fasil.",
+        "successMsg": "Bon repons ! Senp ak rapid.",
+        "errorMsg": "Li pa kòrèk. 2 plis 2 fè 4."
+      }
+    }
+  },
+  {
+    "level": 10,
+    "qType": "TRUE_FALSE",
+    "translations": {
+      "en": {
+        "question": "Water freezes at 0 °C under normal atmospheric pressure.",
+        "options": ["True", "False"],
+        "answer": "True",
+        "explanation": "Under standard atmospheric conditions, pure water transitions from liquid to solid state at exactly 0 degrees Celsius or 32 degrees Fahrenheit.",
+        "successMsg": "Perfect! You know your basic physics.",
+        "errorMsg": "Wrong. Water freezes at 0 °C."
+      },
+      "fr": {
+        "question": "L'eau gèle à 0 °C dans des conditions de pression atmosphérique normale.",
+        "options": ["Vrai", "Faux"],
+        "answer": "Vrai",
+        "explanation": "Dans des conditions atmosphériques normales, l'eau pure passe de l'état liquide à l'état solide à une température précise de 0 degré Celsius.",
+        "successMsg": "Excellent ! Vous connaissez vos bases en physique.",
+        "errorMsg": "Faux. L'eau gèle bien à 0 °C."
+      },
+      "es": {
+        "question": "El agua se congela a 0 °C en condiciones normales de presión atmosférica.",
+        "options": ["Verdadero", "Falso"],
+        "answer": "Verdadero",
+        "explanation": "En condiciones atmosféricas normales, el agua pura pasa del estado líquido al sólido a una temperatura precisa de 0 grados Celsius.",
+        "successMsg": "¡Excelente! Conoces bien las bases de la física.",
+        "errorMsg": "Incorrecto. El agua sí se congela a 0 °C."
+      },
+      "ht": {
+        "question": "Dlo tounen glas nan 0 °C anba yon presyon atmosferik nòmal.",
+        "options": ["Verite", "Manti"],
+        "answer": "Verite",
+        "explanation": "Nan kondisyon atmosferik nòmal, dlo pwòp chanje soti nan eta likid pou l tounen eta solid nan yon tanperati egzak ki se 0 degre Sèlsiyis.",
+        "successMsg": "Gwo travay! Ou konnen baz fizik ou byen.",
+        "errorMsg": "Li pa kòrèk. Dlo jele nan 0 °C."
+      }
+    }
+  },
+  {
+    "level": 25,
+    "qType": "MCQ",
+    "translations": {
+      "en": {
+        "question": "Which planet is known as the Red Planet?",
+        "options": ["Venus", "Mars", "Jupiter", "Saturn"],
+        "answer": "Mars",
+        "explanation": "Mars is widely referred to as the Red Planet due to the abundant iron oxide on its surface, which gives it a distinctive reddish color.",
+        "successMsg": "Spot on! Mars is the correct answer.",
+        "errorMsg": "No, that planet does not have a reddish appearance."
+      },
+      "fr": {
+        "question": "Quelle planète est connue sous le nom de planète rouge ?",
+        "options": ["Vénus", "Mars", "Jupiter", "Saturne"],
+        "answer": "Mars",
+        "explanation": "Mars est appelée planète rouge en raison de l'abondance d'oxyde de fer sur sa surface, ce qui lui donne cette couleur caractéristique visible depuis la Terre.",
+        "successMsg": "Dans le mille ! C'est bien la planète Mars.",
+        "errorMsg": "Faux. Cette planète n'a pas cet aspect rougeâtre."
+      },
+      "es": {
+        "question": "¿Qué planeta es conocido como el planeta rojo?",
+        "options": ["Venus", "Mars", "Jupiter", "Saturn"],
+        "answer": "Mars",
+        "explanation": "Mars es llamado el planeta rojo debido a la gran cantidad de óxido de hierro en su superficie, lo que le otorga ese color rojizo tan característico.",
+        "successMsg": "¡Exacto! Mars es la respuesta correcta.",
+        "errorMsg": "Incorrecto. Ese planeta no tiene ese tono rojizo."
+      },
+      "ht": {
+        "question": "Ki planèt yo rele Planèt Wouj la?",
+        "options": ["Venis", "Mas", "Jipitè", "Satirn"],
+        "answer": "Mas",
+        "explanation": "Yo rele planèt Mas la planèt wouj paske gen anpil oksid fè sou sifas li, sa ki ba li bèl koulè wouj sa a nou ka wè depi sou tè a.",
+        "successMsg": "Egzak! Se planèt Mas vre.",
+        "errorMsg": "Li pa kòrèk. Planèt sa a pa gen koulè wouj."
+      }
+    }
+  },
+  {
+    "level": 45,
+    "qType": "FILL_BLANK",
+    "translations": {
+      "en": {
+        "question": "The chemical symbol for Gold is ___.",
+        "options": [],
+        "answer": "Au",
+        "explanation": "The symbol Au is derived from the Latin word 'aurum', which literally translates to 'shining dawn'. This element is renowned for its high conductivity and resistance to corrosion.",
+        "successMsg": "Fantastic! You correctly identified the Latin origin symbol.",
+        "errorMsg": "Incorrect. Remember that the symbol comes from the Latin 'aurum'."
+      },
+      "fr": {
+        "question": "Le symbole chimique de l'or est ___.",
+        "options": [],
+        "answer": "Au",
+        "explanation": "Le symbole chimique de l'or est Au, abréviation du latin 'aurum' qui signifie 'aurore brillante'. C'est un métal noble très recherché pour sa malléabilité et sa conductivité.",
+        "successMsg": "Magnifique ! Vous avez trouvé le symbole d'origine latine.",
+        "errorMsg": "Faux. Rappelez-vous que le symbole vient du mot latin 'aurum'."
+      },
+      "es": {
+        "question": "El símbolo químico del oro es ___.",
+        "options": [],
+        "answer": "Au",
+        "explanation": "El símbolo químico del oro es Au, que proviene del término latín 'aurum' que significa 'aurora brillante'. Es un metal noble muy valorado por su belleza y conductividad.",
+        "successMsg": "¡Estupendo! Has identificado el símbolo correctamente.",
+        "errorMsg": "Incorrecto. Recuerda que el símbolo proviene del latín 'aurum'."
+      },
+      "ht": {
+        "question": "Senbòl chimik pou lò se ___.",
+        "options": [],
+        "answer": "Au",
+        "explanation": "Senbòl chimik lò a se Au, ki soti nan mo laten 'aurum' ki vle di 'bèl douvanjou'. Se yon metal presye yo apresye anpil pou bèl koulè li ak valè li.",
+        "successMsg": "Gwo kout gidon! Ou jwenn senbòl ki soti nan lang laten an.",
+        "errorMsg": "Li pa kòrèk. Chonje senbòl la soti nan mo laten 'aurum' nan."
+      }
+    }
+  },
+  {
+    "level": 70,
+    "qType": "FILL_BLANK",
+    "translations": {
+      "en": {
+        "question": "In software engineering, a function that calls itself directly or indirectly is known as a ___ function.",
+        "options": [],
+        "answer": "recursive",
+        "explanation": "Recursion occurs when a function solves a problem by dividing it into smaller sub-problems and calling itself with updated parameters until a base exit condition is met.",
+        "successMsg": "Brilliant! You mastered advanced computer science concepts.",
+        "errorMsg": "Incorrect. Think of self-referencing algorithmic patterns."
+      },
+      "fr": {
+        "question": "En génie logiciel, une fonction qui s'appelle elle-même directement ou indirectement est qualifiée de ___.",
+        "options": [],
+        "answer": "récursive",
+        "explanation": "La récursion est une technique de programmation où une fonction résout un problème complexe en se subdivisant et en s'appelant elle-même jusqu'à atteindre un cas d'arrêt de base.",
+        "successMsg": "Impressionnant ! Vous maîtrisez les concepts algorithmiques complexes.",
+        "errorMsg": "Faux. Pensez au concept d'auto-référence dans le code."
+      },
+      "es": {
+        "question": "En ingeniería de software, una función que se llama a sí misma directamente o de forma indirecta se denomina ___.",
+        "options": [],
+        "answer": "recursiva",
+        "explanation": "La recursividad es una técnica de programación donde una función resuelve un problema dividiéndolo y llamándose a sí misma hasta que se cumpla una condición de parada base.",
+        "successMsg": "¡Brillante! Dominas los conceptos avanzados de la informática.",
+        "errorMsg": "Incorrecto. Piensa en el patrón de auto-referencia algorítmica."
+      },
+      "ht": {
+        "question": "Nan jeni lojisyèl, yon fonksyon ki rele tèt li dirèkteman oubyen endirèkteman rele yon fonksyon ___.",
+        "options": [],
+        "answer": "rekirsiv",
+        "explanation": "Rekirsyon se yon teknik kote yon fonksyon rezoud yon pwoblèm lè li separe li an ti pati epi li kontinye rele tèt li jouk li rive nan yon kondisyon pou li kanpe.",
+        "successMsg": "Chapo ba! Ou metrize konsèp avanse nan pwogramasyon òdinatè.",
+        "errorMsg": "Li pa kòrèk. Chonje konsèp kote kòd la ap rele tèt li a."
+      }
+    }
+  }
+]
