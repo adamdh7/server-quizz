@@ -252,16 +252,13 @@ async function executeBackgroundMassGeneration(isTrigger) {
           }
         } catch(e) {}
 
-        let systemInstruction = "You are a strict JSON data generator. Output ONLY raw valid JSON. No markdown tags, no formatting, no extra text.";
-        let prompt = "";
-
-        if (qType === "MCQ") {
-          prompt = `Create a brand new unique MCQ quiz question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
-        } else if (qType === "TRUE_FALSE") {
-          prompt = `Create a brand new unique True or False statement in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
-        } else {
-          prompt = `Create a brand new unique Fill-in-the-blank question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Use ______ for the blank. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
-        }
+        const systemInstruction = "You are a strict JSON data generator. Output ONLY raw valid JSON. No markdown tags, no formatting, no extra text.";
+        
+        const prompt = qType === "MCQ" 
+          ? `Create a brand new unique MCQ quiz question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`
+          : qType === "TRUE_FALSE"
+          ? `Create a brand new unique True or False statement in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`
+          : `Create a brand new unique Fill-in-the-blank question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Use ______ for the blank. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
 
         console.log(`[MODE_BACKGROUND_MASS_GENERATION] Requete prompt : ${prompt}`);
 
@@ -391,7 +388,7 @@ app.use((req, res, next) => {
 
 async function runAI(messages, max_tokens) {
   if (Date.now() < aiLockoutUntil) {
-    return { response: "{}" };
+    throw new Error("Lockout AI actif suite a un code 429");
   }
   const aiModel = "@cf/meta/llama-3.1-8b-instruct";
   const controller = new AbortController();
@@ -409,17 +406,17 @@ async function runAI(messages, max_tokens) {
     });
     clearTimeout(timeout);
     if (response.status === 429) {
-      aiLockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
-      return { response: "{}" };
+      aiLockoutUntil = Date.now() + 60 * 1000;
+      throw new Error("Erreur 429 - Limite API atteinte");
     }
     const json = await response.json();
     if (json.success && json.result) {
       return json.result;
     }
-    return { response: "{}" };
+    throw new Error("Aucun resultat valide recu de l'IA");
   } catch (e) {
     clearTimeout(timeout);
-    return { response: "{}" };
+    throw e;
   }
 }
 
