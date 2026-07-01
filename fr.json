@@ -1,42 +1,57 @@
 [
   {
-    "qType": "IDENTITY_IMAGE",
-    "question": "Qui est cette personne ?",
-    "options": [],
-    "imageUrl": "imaj/Albert Einstein.JPG",
-    "answer": "Albert Einstein",
-    "explanation": "Il s'agit d'Albert Einstein, le célèbre physicien théoricien qui a développé la théorie de la relativité.",
-    "successMsg": "Excellent ! Vous avez reconnu Albert Einstein.",
-    "errorMsg": "Incorrect. C'est Albert Einstein."
-  },
-  {
+    "level": 1,
     "qType": "MCQ",
-    "question": "Dans quel domaine Albert Einstein a-t-il remporté son prix Nobel en 1921 ?",
-    "options": ["Théorie de la relativité", "Effet photoélectrique", "Mouvement brownien", "Fission nucléaire"],
+    "question": "Quelle est la plus grande planète de notre système solaire ?",
+    "options": ["Terre", "Mars", "Jupiter", "Saturne"],
     "imageUrl": "",
-    "answer": "Effet photoélectrique",
-    "explanation": "Albert Einstein a reçu le prix Nobel de physique de 1921 pour ses contributions à la physique théorique, et particulièrement pour sa découverte de la loi de l'effet photoélectrique.",
-    "successMsg": "Brillant ! Vous connaissez bien l'histoire des sciences.",
-    "errorMsg": "Mauvais choix. Il l'a en fait remporté pour l'effet photoélectrique."
+    "answer": "Jupiter",
+    "explanation": "Jupiter est une géante gazeuse et la plus grande planète de notre système solaire, avec une masse plus de deux fois et demie supérieure à celle de toutes les autres planètes réunies.",
+    "successMsg": "Génial ! Tu connais bien tes planètes.",
+    "errorMsg": "Pas tout à fait. La bonne réponse est Jupiter."
   },
   {
+    "level": 1,
     "qType": "TRUE_FALSE",
-    "question": "Albert Einstein est né en Allemagne.",
+    "question": "L'eau bout à 100 degrés Celsius au niveau de la mer.",
     "options": ["Vrai", "Faux"],
     "imageUrl": "",
     "answer": "Vrai",
-    "explanation": "Einstein est né à Ulm, dans le royaume de Wurtemberg au sein de l'Empire allemand, le 14 mars 1879.",
-    "successMsg": "Correct ! Il est bel et bien né en Allemagne.",
-    "errorMsg": "Incorrect. Albert Einstein est né en Allemagne."
+    "explanation": "Sous une pression atmosphérique standard au niveau de la mer, le point d'ébullition de l'eau pure est de 100°C.",
+    "successMsg": "Correct ! C'est la base de la physique.",
+    "errorMsg": "Faux. C'est Vrai."
   },
   {
+    "level": 2,
+    "qType": "IDENTITY_IMAGE",
+    "question": "Qui est ce personnage historique ?",
+    "options": [],
+    "imageUrl": "imaj/Marie Curie.JPG",
+    "answer": "Marie Curie",
+    "explanation": "Marie Curie était une physicienne et chimiste pionnière qui a mené des recherches fondamentales sur la radioactivité. Elle a été la première femme à remporter un prix Nobel.",
+    "successMsg": "En plein dans le mille ! C'est bien Marie Curie.",
+    "errorMsg": "Faux. Il s'agit de Marie Curie."
+  },
+  {
+    "level": 2,
     "qType": "FILL_BLANK",
-    "question": "Complétez la célèbre équation d'équivalence masse-énergie formulée par Einstein : E = ___",
+    "question": "Le symbole chimique de l'or est ___.",
     "options": [],
     "imageUrl": "",
-    "answer": "mc^2",
-    "explanation": "La formule E = mc² exprime le fait que la masse et l'énergie sont la même entité physique et peuvent se transformer l'une en l'autre.",
-    "successMsg": "Parfait ! E = mc² est l'équation la plus célèbre au monde.",
-    "errorMsg": "Non, la bonne réponse est mc^2."
+    "answer": "Au",
+    "explanation": "Le symbole 'Au' vient du mot latin 'aurum', qui signifie or.",
+    "successMsg": "Parfait ! 'Au' est la bonne réponse.",
+    "errorMsg": "Non, le bon symbole est Au."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "En quelle année le Titanic a-t-il coulé dans l'océan Atlantique ?",
+    "options": ["1905", "1912", "1920", "1898"],
+    "imageUrl": "",
+    "answer": "1912",
+    "explanation": "Le RMS Titanic a coulé aux premières heures du 15 avril 1912, après avoir heurté un iceberg lors de son voyage inaugural.",
+    "successMsg": "Excellente connaissance historique !",
+    "errorMsg": "Incorrect. Il a coulé en 1912."
   }
 ]
