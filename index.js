@@ -79,7 +79,53 @@ async function deleteFromR2(key) {
   } catch (e) {}
 }
 
+function calculateSimilarity(str1, str2) {
+  if (!str1 || !str2) return 0;
+  const s1 = String(str1).toLowerCase().split(/\W+/).filter(w => w.length > 0);
+  const s2 = String(str2).toLowerCase().split(/\W+/).filter(w => w.length > 0);
+  if (s1.length === 0 && s2.length === 0) return 1;
+  let matches = 0;
+  const s2Copy = [...s2];
+  for (const w of s1) {
+    const idx = s2Copy.indexOf(w);
+    if (idx !== -1) {
+      matches++;
+      s2Copy.splice(idx, 1);
+    }
+  }
+  return matches / Math.max(s1.length, s2.length);
+}
+
+function getRandomLocalJsonQuestion(lang) {
+  console.log("Lecture aleatoire dans les fichiers JSON lourds pour eviter le fallback");
+  try {
+    const langs = ["en", "fr", "es", "ht"];
+    const targetLang = langs.includes(lang) ? lang : langs[Math.floor(Math.random() * langs.length)];
+    const p = path.join(process.cwd(), "lang", `${targetLang}.json`);
+    if (fs.existsSync(p)) {
+      const content = fs.readFileSync(p, "utf-8");
+      const data = JSON.parse(content);
+      if (data && data.length > 0) {
+        console.log("Une question a ete choisie aleatoirement depuis le fichier JSON lourd");
+        const item = data[Math.floor(Math.random() * data.length)];
+        return {
+          question: item.question,
+          options: item.options || [],
+          answer: item.answer,
+          explanation: item.explanation || "",
+          qType: item.qType || "MCQ",
+          imageUrl: item.imageUrl || null,
+          successMsg: item.successMsg || "Correct!",
+          errorMsg: item.errorMsg || "Incorrect."
+        };
+      }
+    }
+  } catch(e) {}
+  return null;
+}
+
 async function syncJsonToMongo() {
+  console.log("Demarrage de la synchronisation JSON avec verification de la difference (50%)");
   const langs = ["en", "fr", "es", "ht"];
   for (const l of langs) {
     const p = path.join(process.cwd(), "lang", `${l}.json`);
@@ -87,10 +133,20 @@ async function syncJsonToMongo() {
       try {
         const content = fs.readFileSync(p, "utf-8");
         const data = JSON.parse(content);
-        for (const item of data) {
+        const dbItems = await BaseQuiz.find({ lang: l }).limit(50).catch(e => []);
+        for (let i = 0; i < 15; i++) {
+          const randomIndex = Math.floor(Math.random() * data.length);
+          const item = data[randomIndex];
           const itemLevel = item.level || item.niveau || 1;
-          const exists = await BaseQuiz.findOne({ lang: l, explanation: item.explanation }).catch(e => true);
-          if (!exists) {
+          let isTooSimilar = false;
+          for (const dbItem of dbItems) {
+            if (calculateSimilarity(item.question, dbItem.question) >= 0.5) {
+              isTooSimilar = true;
+              break;
+            }
+          }
+          if (!isTooSimilar) {
+            console.log("Sauvegarde autorisee : element JSON suffisamment different des donnees existantes");
             await BaseQuiz.create({ lang: l, level: itemLevel, ...item }).catch(e => e);
           }
         }
@@ -350,6 +406,9 @@ app.post("/quizz", async (req, res) => {
     const session_id = body.session_id?.trim();
     if (!session_id) return res.status(400).json({ error: "session_id required" });
 
+    console.log("=== NOUVELLE REQUETE QUIZ ===");
+    console.log("Utilisateur demandeur: " + session_id);
+
     contactCounter++;
     if (contactCounter >= 7) {
       contactCounter = 0;
@@ -385,6 +444,8 @@ app.post("/quizz", async (req, res) => {
     const language = progress.language;
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[language] || "English";
     
+    console.log("Debut de l'aleatoire pour secouer les donnees fusion a commence (Recherche de materiel de base)");
+
     const servedRows = db.prepare("SELECT quiz_id FROM served_questions WHERE session_id = ?").all(session_id);
     const servedIds = servedRows.map(r => r.quiz_id).filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
 
@@ -412,6 +473,12 @@ app.post("/quizz", async (req, res) => {
     }
 
     let randomItem = dbItems.length > 0 ? dbItems[0] : null;
+    
+    if (!randomItem) {
+      console.log("Base de donnees vide, extraction d'une ressource aleatoire via les fichiers JSON complets");
+      randomItem = getRandomLocalJsonQuestion(language);
+    }
+
     if (randomItem && randomItem._id) {
       db.prepare("INSERT OR IGNORE INTO served_questions (session_id, quiz_id) VALUES (?, ?)").run(session_id, randomItem._id.toString());
     }
@@ -423,12 +490,15 @@ app.post("/quizz", async (req, res) => {
     let finalError = null;
     let success = false;
 
+    console.log("Debut de l'aleatoire pour detecte le mode a prendre a commencer");
     const availableStrategies = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
 
     while (availableStrategies.length > 0 && !success) {
       const strategy = availableStrategies.shift();
+      console.log("Tentative d'utilisation du mode/strategie numero: " + strategy);
       try {
         if (strategy === 0 && randomItem) {
+          console.log("Mode selectionne: Donnees pures (AI + JSON donne existante / MongoDB)");
           parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer, explanation: randomItem.explanation };
           randomType = randomItem.qType || "MCQ";
           imgUrl = randomItem.imageUrl || null;
@@ -436,6 +506,7 @@ app.post("/quizz", async (req, res) => {
           finalError = randomItem.errorMsg || null;
           success = true;
         } else if (strategy === 1 && randomItem && Date.now() >= aiLockoutUntil) {
+          console.log("Mode selectionne: AI + Donnees (Amelioration d'une question JSON existante)");
           const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = aiResponse.response || "";
@@ -450,6 +521,7 @@ app.post("/quizz", async (req, res) => {
             success = true;
           } else throw new Error();
         } else if (strategy === 2 && randomItem && Date.now() >= aiLockoutUntil) {
+          console.log("Mode selectionne: AI + Donnees (Creation d'une toute nouvelle question basee sur JSON existant)");
           const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = aiResponse.response || "";
@@ -462,6 +534,7 @@ app.post("/quizz", async (req, res) => {
             success = true;
           } else throw new Error();
         } else if (strategy === 3 && Date.now() >= aiLockoutUntil) {
+          console.log("Mode selectionne: AI pur (Generation 100% libre sans donnee initiale)");
           const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
           randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
           if (randomType === "IDENTITY_IMAGE") {
@@ -511,11 +584,13 @@ app.post("/quizz", async (req, res) => {
           }
         }
       } catch (e) {
+        console.log("Erreur durant l'execution de la strategie " + strategy + ", passage a la suivante.");
         success = false;
       }
     }
 
     if (!success) {
+      console.log("Toutes les strategies ont echoue, activation du fallback d'urgence extremite");
       if (randomItem) {
         parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer, explanation: randomItem.explanation };
         randomType = randomItem.qType || "MCQ";
@@ -586,9 +661,14 @@ app.post("/quizz", async (req, res) => {
     if (imgUrl) quizData.image_url = imgUrl;
     if (safeOptions.length > 0) quizData.options = safeOptions;
 
+    console.log("Quiz envoye a l'utilisateur contenant la question: " + parsed.question);
+    console.log("Reponse exacte interne (sauvegardee en BD): " + parsed.answer);
+    console.log("Donnees structurees envoyees vers l'utilisateur: " + JSON.stringify(quizData));
+
     return res.json(quizData);
 
   } catch (e) {
+    console.log("Erreur globale dans /quizz, generation du message d'erreur d'urgence");
     await saveCurrentQuiz(req.body.session_id || "default", "TRUE_FALSE", "Error loading question. True to continue.", JSON.stringify(["True","False"]), null, "True", "System recovery.", "", "");
     return res.json({ type: "TRUE_FALSE", question: "Error loading question. True to continue.", options: ["True", "False"], error_msg: e.message });
   }
@@ -600,6 +680,9 @@ app.post("/validate", async (req, res) => {
     const session_id = body.session_id?.trim();
     const user_answer = body.user_answer?.trim() || "";
     if (!session_id || !user_answer) return res.status(400).json({ error: "session_id and user_answer required" });
+
+    console.log("=== NOUVELLE REQUETE VALIDATION ===");
+    console.log("L'utilisateur " + session_id + " a soumis la reponse: " + user_answer);
 
     const current = await getCurrentQuiz(session_id);
     if (!current) return res.status(400).json({ error: "No active quiz" });
@@ -619,6 +702,8 @@ app.post("/validate", async (req, res) => {
     const cleanUser = user_answer.toLowerCase().trim();
     const cleanAnswer = current.answer ? current.answer.toLowerCase().trim() : "";
 
+    console.log("Comparaison de la reponse user: [" + cleanUser + "] avec la reponse exacte: [" + cleanAnswer + "]");
+
     let judgeResult = { correct: false };
 
     if (cleanAnswer !== "") {
@@ -636,6 +721,7 @@ app.post("/validate", async (req, res) => {
     }
 
     if (!judgeResult.correct && Date.now() >= aiLockoutUntil) {
+      console.log("Verification semantique via AI demarree car la comparaison basique a echoue");
       const judgePrompt = `Question: "${current.question}"\nExpected Answer: "${current.answer}"\nUser Answer: "${user_answer}"\nTask: Determine if the User Answer is correct or means the same thing as the Expected Answer.\nReturn ONLY valid JSON: {"correct": true or false}`;
       try {
         const judgeResp = await runAI([{ role: "system", content: "You evaluate answers. Output ONLY strict JSON." }, { role: "user", content: judgePrompt }], 800);
@@ -653,6 +739,8 @@ app.post("/validate", async (req, res) => {
     const correctValue = judgeResult.correct ?? judgeResult.Correct ?? false;
     const isCorrect = correctValue === true || String(correctValue).toLowerCase() === "true";
     
+    console.log("Resultat final de la validation : " + (isCorrect ? "CORRECT" : "INCORRECT"));
+
     const baseMessage = isCorrect ? (current.success_msg || "Correct!") : (current.error_msg || `Incorrect. Answer: ${current.answer}`);
     const explanation = current.explanation ? `${baseMessage}\n\n${current.explanation}` : baseMessage;
 
@@ -689,6 +777,9 @@ app.get("/step", async (req, res) => {
   try {
     const session_id = req.query.session_id;
     if (!session_id) return res.status(400).json({ error: "session_id required" });
+
+    console.log("=== NOUVELLE REQUETE STEP ===");
+    console.log("Demande de progres pour l'utilisateur: " + session_id);
 
     let progress = await getProgress(session_id);
     if (!progress) {
