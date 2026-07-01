@@ -121,7 +121,7 @@ async function getRandomFromJsonFile(lang, level) {
 }
 
 async function syncJsonToMongo() {
-  console.log("Demarrage de la synchronisation JSON avec verification de la difference a 20%");
+  console.log("LOGS-SYS: Starting JSON synchronisation, threshold 20%");
   const langs = ["en", "fr", "es", "ht"];
   for (const l of langs) {
     const p = path.join(process.cwd(), "lang", `${l}.json`);
@@ -145,8 +145,38 @@ async function syncJsonToMongo() {
   }
 }
 
-async function generateAndSaveAiQuizzes() {
+function analyzeJsonParseError(rawStr, err) {
+  console.log("LOGS-ERR: JSON parsing failed.");
+  console.log("LOGS-ERR: Raw response received: " + rawStr);
+  console.log("LOGS-ERR: Parse error details: " + err.message);
+  if (!rawStr || rawStr.trim() === "") {
+    console.log("LOGS-ERR: Diagnosis -> The response is completely empty.");
+    return;
+  }
+  const trimmed = rawStr.trim();
+  if (trimmed[0] !== "{" && trimmed[0] !== "[") {
+    console.log("LOGS-ERR: Diagnosis -> Response does not start with JSON brackets. It contains conversational text or markdown wrappers.");
+    return;
+  }
+  if (trimmed.includes("\\'")) {
+    console.log("LOGS-ERR: Diagnosis -> Found invalid single quote escapes (\\') inside JSON which causes syntax errors in standard parsers.");
+    return;
+  }
+  if (trimmed.includes("\n") && !trimmed.includes("\\n")) {
+    console.log("LOGS-ERR: Diagnosis -> Found unescaped literal newlines inside string values.");
+    return;
+  }
+  const matchCommas = trimmed.match(/,\s*}/g);
+  if (matchCommas) {
+    console.log("LOGS-ERR: Diagnosis -> Trailing comma detected before closing bracket.");
+    return;
+  }
+  console.log("LOGS-ERR: Diagnosis -> Miscellaneous syntax error (mismatched quotes, unescaped special characters, or truncation).");
+}
+
+async function massBackgroundQuizGeneration() {
   if (Date.now() < aiLockoutUntil) return;
+  console.log("LOGS-SYS: Executing background task: massBackgroundQuizGeneration");
   let targetLevels = [1, 2, 3];
   try {
     const rows = db.prepare("SELECT current_step FROM user_progress ORDER BY RANDOM() LIMIT 7").all();
@@ -160,7 +190,6 @@ async function generateAndSaveAiQuizzes() {
 
   for (const lang of langs) {
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[lang] || "English";
-    
     for (let i = 0; i < 7; i++) {
       try {
         if (Date.now() < aiLockoutUntil) return;
@@ -185,8 +214,7 @@ async function generateAndSaveAiQuizzes() {
         }
 
         const prompt = `Create a brand new unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object strictly matching this schema format: ${formatExample}`;
-
-        console.log("Requete IA Generation Masse avec prompt : " + prompt);
+        console.log("LOGS-SYS: Requesting mass generation prompt: " + prompt);
 
         const aiResponse = await runAI([
           { role: "system", content: "You are a JSON API. Return ONLY valid JSON." },
@@ -194,42 +222,46 @@ async function generateAndSaveAiQuizzes() {
         ], 1000);
 
         const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-        console.log("Reponse brute IA Masse : " + rawResponse);
         const firstBrace = rawResponse.indexOf('{');
         const lastBrace = rawResponse.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
-          const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-          if (parsed.question && parsed.answer && parsed.explanation) {
-            
-            const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
-            const simCheck = isSimilarToExisting(parsed.question, existingItems);
-            if (!simCheck.similar || simCheck.pct <= 70) {
-              const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
-              if (!exists) {
-                await BaseQuiz.create({
-                  lang: lang,
-                  level: parsed.level || level,
-                  qType: parsed.qType || qType,
-                  question: parsed.question,
-                  options: Array.isArray(parsed.options) ? parsed.options : [],
-                  answer: parsed.answer,
-                  explanation: parsed.explanation,
-                  successMsg: parsed.successMsg || "Correct!",
-                  errorMsg: parsed.errorMsg || "Incorrect."
-                }).catch(() => {});
-                console.log("Nouvelle question sauvegardee en BDD avec succes.");
-                if (simCheck.similar) {
-                  console.log("Note : Similarite partielle de " + simCheck.pct + "% identifiee avec la question existante: \"" + simCheck.matchedText + "\". Enregistrement autorise car inferieur a 70%.");
+          try {
+            const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
+            if (parsed.question && parsed.answer && parsed.explanation) {
+              const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
+              const simCheck = isSimilarToExisting(parsed.question, existingItems);
+              if (!simCheck.similar || simCheck.pct <= 70) {
+                const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
+                if (!exists) {
+                  await BaseQuiz.create({
+                    lang: lang,
+                    level: parsed.level || level,
+                    qType: parsed.qType || qType,
+                    question: parsed.question,
+                    options: Array.isArray(parsed.options) ? parsed.options : [],
+                    answer: parsed.answer,
+                    explanation: parsed.explanation,
+                    successMsg: parsed.successMsg || "Correct!",
+                    errorMsg: parsed.errorMsg || "Incorrect."
+                  }).catch(() => {});
+                  console.log("LOGS-SYS: New question successfully saved in database.");
+                  if (simCheck.similar) {
+                    console.log("LOGS-SYS: Saved with partial similarity of " + simCheck.pct + "% with question: \"" + simCheck.matchedText + "\"");
+                  }
                 }
+              } else {
+                console.log("LOGS-SYS: Rejected! Similarity is " + simCheck.pct + "% (above 70%) with question: \"" + simCheck.matchedText + "\"");
               }
-            } else {
-              console.log("Sauvegarde IA Masse annulee: Similarite de " + simCheck.pct + "% superieure au seuil maximal de 70% avec la question existante: \"" + simCheck.matchedText + "\"");
             }
+          } catch(err) {
+            analyzeJsonParseError(rawResponse, err);
           }
+        } else {
+          console.log("LOGS-ERR: JSON delimiters not found in response: " + rawResponse);
         }
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (e) {
-        console.log("Erreur durant generation IA de masse : " + e.message);
+        console.log("LOGS-ERR: Error in background generation: " + e.message);
       }
     }
   }
@@ -237,6 +269,7 @@ async function generateAndSaveAiQuizzes() {
 
 async function triggerMassAiGeneration() {
   if (Date.now() < aiLockoutUntil) return;
+  console.log("LOGS-SYS: Executing triggered task: triggerMassAiGeneration");
   const langs = ["en", "fr", "es", "ht"];
   const qTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK"];
   for (const lang of langs) {
@@ -265,8 +298,7 @@ async function triggerMassAiGeneration() {
         }
 
         const prompt = `Create a brand new unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object strictly matching this schema format: ${formatExample}`;
-
-        console.log("Requete Trigger IA Masse avec prompt : " + prompt);
+        console.log("LOGS-SYS: Requesting trigger generation prompt: " + prompt);
         
         const aiResponse = await runAI([
           { role: "system", content: "You are a JSON API. Return ONLY valid JSON." },
@@ -274,42 +306,46 @@ async function triggerMassAiGeneration() {
         ], 1000);
 
         const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-        console.log("Reponse brute Trigger IA Masse : " + rawResponse);
         const firstBrace = rawResponse.indexOf('{');
         const lastBrace = rawResponse.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
-          const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-          if (parsed.question && parsed.answer && parsed.explanation) {
-            
-            const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
-            const simCheck = isSimilarToExisting(parsed.question, existingItems);
-            if (!simCheck.similar || simCheck.pct <= 70) {
-              const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
-              if (!exists) {
-                await BaseQuiz.create({
-                  lang: lang,
-                  level: parsed.level || level,
-                  qType: parsed.qType || qType,
-                  question: parsed.question,
-                  options: Array.isArray(parsed.options) ? parsed.options : [],
-                  answer: parsed.answer,
-                  explanation: parsed.explanation,
-                  successMsg: parsed.successMsg || "Correct!",
-                  errorMsg: parsed.errorMsg || "Incorrect."
-                }).catch(() => {});
-                console.log("Nouvelle question via trigger sauvegardee en BDD avec succes.");
-                if (simCheck.similar) {
-                  console.log("Note : Similarite partielle de " + simCheck.pct + "% identifiee avec la question existante: \"" + simCheck.matchedText + "\". Enregistrement autorise car inferieur a 70%.");
+          try {
+            const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
+            if (parsed.question && parsed.answer && parsed.explanation) {
+              const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
+              const simCheck = isSimilarToExisting(parsed.question, existingItems);
+              if (!simCheck.similar || simCheck.pct <= 70) {
+                const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
+                if (!exists) {
+                  await BaseQuiz.create({
+                    lang: lang,
+                    level: parsed.level || level,
+                    qType: parsed.qType || qType,
+                    question: parsed.question,
+                    options: Array.isArray(parsed.options) ? parsed.options : [],
+                    answer: parsed.answer,
+                    explanation: parsed.explanation,
+                    successMsg: parsed.successMsg || "Correct!",
+                    errorMsg: parsed.errorMsg || "Incorrect."
+                  }).catch(() => {});
+                  console.log("LOGS-SYS: Trigger-based question successfully saved.");
+                  if (simCheck.similar) {
+                    console.log("LOGS-SYS: Saved with partial similarity of " + simCheck.pct + "% with question: \"" + simCheck.matchedText + "\"");
+                  }
                 }
+              } else {
+                console.log("LOGS-SYS: Rejected! Similarity is " + simCheck.pct + "% (above 70%) with question: \"" + simCheck.matchedText + "\"");
               }
-            } else {
-              console.log("Sauvegarde Trigger IA annulee: Similarite de " + simCheck.pct + "% superieure au seuil maximal de 70% avec la question existante: \"" + simCheck.matchedText + "\"");
             }
+          } catch(err) {
+            analyzeJsonParseError(rawResponse, err);
           }
+        } else {
+          console.log("LOGS-ERR: JSON delimiters not found in response: " + rawResponse);
         }
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (e) {
-        console.log("Erreur durant trigger IA de masse : " + e.message);
+        console.log("LOGS-ERR: Error in trigger generation: " + e.message);
       }
     }
   }
@@ -318,7 +354,7 @@ async function triggerMassAiGeneration() {
 mongoose.connection.once("open", () => {
   syncJsonToMongo();
   generateAndSaveAiQuizzes();
-  setInterval(generateAndSaveAiQuizzes, 70 * 60 * 1000);
+  setInterval(massBackgroundQuizGeneration, 70 * 60 * 1000);
 });
 
 async function getProgress(sessionId) {
@@ -370,8 +406,9 @@ app.get("/local-image/:filename", (req, res) => {
 });
 
 app.use((req, res, next) => {
-  console.log("Requete interceptée sur: " + req.path);
-  console.log("Corps de la requête (Body) : " + JSON.stringify(req.body));
+  console.log("LOGS-SYS: Request intercepted on: " + req.path);
+  console.log("LOGS-SYS: Request payload body: " + JSON.stringify(req.body));
+  
   generateAndSaveAiQuizzes().catch(e => e);
 
   const origin = req.headers.origin;
@@ -463,8 +500,8 @@ app.post("/quizz", async (req, res) => {
     const session_id = body.session_id?.trim();
     if (!session_id) return res.status(400).json({ error: "session_id required" });
 
-    console.log("=== NOUVELRE REQUETE QUIZ ===");
-    console.log("Utilisateur demandeur: " + session_id);
+    console.log("LOGS-SYS: Starting quiz initialization...");
+    console.log("LOGS-SYS: Requesting User Session ID: " + session_id);
 
     contactCounter++;
     if (contactCounter >= 7) {
@@ -501,7 +538,7 @@ app.post("/quizz", async (req, res) => {
     const language = progress.language;
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[language] || "English";
     
-    console.log("Recherche de donnee source MongoDB commencee...");
+    console.log("LOGS-SYS: Querying MongoDB candidate list...");
 
     const servedRows = db.prepare("SELECT quiz_id FROM served_questions WHERE session_id = ?").all(session_id);
     const servedIds = servedRows.map(r => r.quiz_id).filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
@@ -530,7 +567,7 @@ app.post("/quizz", async (req, res) => {
     }
 
     if (dbItems.length === 0) {
-      console.log("Base de donnees vide, extraction d'une ressource aleatoire via fichiers JSON.");
+      console.log("LOGS-SYS: MongoDB is empty. Pulling fallback JSON data.");
       const randomJsonRecord = await getRandomFromJsonFile(language, current_step_num);
       if (randomJsonRecord) {
         dbItems = [randomJsonRecord];
@@ -540,17 +577,26 @@ app.post("/quizz", async (req, res) => {
     let randomItem = dbItems.length > 0 ? dbItems[0] : null;
     if (randomItem && randomItem._id) {
       db.prepare("INSERT OR IGNORE INTO served_questions (session_id, quiz_id) VALUES (?, ?)").run(session_id, randomItem._id.toString());
-      console.log("Item source selectionne : " + JSON.stringify(randomItem));
+      console.log("LOGS-SYS: Selected database seed item: " + JSON.stringify(randomItem));
     }
 
-    console.log("Mise en place du tableau aleatoire parfait pour les strategies...");
+    console.log("LOGS-SYS: Generating perfect Fisher-Yates strategy mapping...");
 
     let availableStrategies = [0, 1, 2, 3];
     for (let i = availableStrategies.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [availableStrategies[i], availableStrategies[j]] = [availableStrategies[j], availableStrategies[i]];
     }
-    console.log("Ordre aleatoire des strategies choisi pour cette requete : " + JSON.stringify(availableStrategies));
+
+    const modeNames = {
+      0: "MongoDB Pure Mode",
+      1: "AI Improved MongoDB Mode",
+      2: "AI Replicated MongoDB Mode",
+      3: "Pure AI Generation Mode"
+    };
+
+    const orderedStrategyNames = availableStrategies.map(s => modeNames[s]);
+    console.log("LOGS-SYS: Shuffled strategy evaluation sequence: " + JSON.stringify(orderedStrategyNames));
 
     let parsed = null;
     let randomType = "MCQ";
@@ -562,16 +608,16 @@ app.post("/quizz", async (req, res) => {
 
     while (availableStrategies.length > 0 && !success) {
       const strategy = availableStrategies.shift();
-      console.log("Tentative d'utilisation de la strategie numero: " + strategy);
+      const currentStrategyName = modeNames[strategy];
+      console.log("LOGS-SYS: Testing strategy execution -> " + currentStrategyName);
 
       if (!randomItem && strategy !== 3) {
-        console.log("Strategie " + strategy + " impossible : Aucune donnee source MongoDB. Retrait de la strategie.");
+        console.log("LOGS-SYS: Retracting " + currentStrategyName + " because MongoDB seed item is null.");
         continue;
       }
 
       try {
         if (strategy === 0) {
-          if (!randomItem) throw new Error("Item introuvable");
           parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer };
           randomType = randomItem.qType || "MCQ";
           imgUrl = randomItem.imageUrl || null;
@@ -579,45 +625,57 @@ app.post("/quizz", async (req, res) => {
           finalError = randomItem.errorMsg || null;
           finalExplanation = randomItem.explanation || null;
           success = true;
-          console.log("Succes avec Strategie 0 (Donnee MongoDB pure)");
+          console.log("LOGS-SYS: Successfully completed " + currentStrategyName);
         } else if (strategy === 1) {
-          if (!randomItem) throw new Error("Item introuvable");
           const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Do NOT generate explanations, success messages, or error messages. Original: ${randomItem.question}`;
-          console.log("Envoi du prompt IA Strategie 1: " + systemPrompt);
+          console.log("LOGS-SYS: Sending prompt for " + currentStrategyName + ": " + systemPrompt);
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-          console.log("Reponse brute IA Strategie 1: " + rawResponse);
+          console.log("LOGS-SYS: Raw response for " + currentStrategyName + ": " + rawResponse);
           const firstBrace = rawResponse.indexOf('{');
           const lastBrace = rawResponse.lastIndexOf('}');
           if (firstBrace !== -1 && lastBrace !== -1) {
-            parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-            if (!parsed.question || !parsed.answer) throw new Error("Champs JSON manquants");
-            randomType = randomItem.qType || "MCQ";
-            finalSuccess = "";
-            finalError = "";
-            finalExplanation = "";
-            success = true;
-            console.log("Succes avec Strategie 1 (Amelioration de l'existant)");
-          } else throw new Error("Format JSON introuvable");
+            try {
+              parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
+              if (!parsed.question || !parsed.answer) throw new Error("Champs JSON manquants");
+              randomType = randomItem.qType || "MCQ";
+              finalSuccess = "";
+              finalError = "";
+              finalExplanation = "";
+              success = true;
+              console.log("LOGS-SYS: Successfully completed " + currentStrategyName);
+            } catch(err) {
+              analyzeJsonParseError(rawResponse, err);
+              throw err;
+            }
+          } else {
+            throw new Error("JSON delimiters not found.");
+          }
         } else if (strategy === 2) {
-          if (!randomItem) throw new Error("Item introuvable");
           const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Do NOT generate explanations, success messages, or error messages. Original: ${randomItem.question}`;
-          console.log("Envoi du prompt IA Strategie 2: " + systemPrompt);
+          console.log("LOGS-SYS: Sending prompt for " + currentStrategyName + ": " + systemPrompt);
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-          console.log("Reponse brute IA Strategie 2: " + rawResponse);
+          console.log("LOGS-SYS: Raw response for " + currentStrategyName + ": " + rawResponse);
           const firstBrace = rawResponse.indexOf('{');
           const lastBrace = rawResponse.lastIndexOf('}');
           if (firstBrace !== -1 && lastBrace !== -1) {
-            parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-            if (!parsed.question || !parsed.answer) throw new Error("Champs JSON manquants");
-            randomType = randomItem.qType || "MCQ";
-            finalSuccess = "";
-            finalError = "";
-            finalExplanation = "";
-            success = true;
-            console.log("Succes avec Strategie 2 (Creation d'un nouveau dans le meme style)");
-          } else throw new Error("Format JSON introuvable");
+            try {
+              parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
+              if (!parsed.question || !parsed.answer) throw new Error("Champs JSON manquants");
+              randomType = randomItem.qType || "MCQ";
+              finalSuccess = "";
+              finalError = "";
+              finalExplanation = "";
+              success = true;
+              console.log("LOGS-SYS: Successfully completed " + currentStrategyName);
+            } catch(err) {
+              analyzeJsonParseError(rawResponse, err);
+              throw err;
+            }
+          } else {
+            throw new Error("JSON delimiters not found.");
+          }
         } else if (strategy === 3) {
           const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
           randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
@@ -626,31 +684,35 @@ app.post("/quizz", async (req, res) => {
             const usedList = usedRes.map(r => r.person_name);
             let subjectName = "Eiffel Tower";
             const personPrompt = `Return ONLY a valid JSON array containing 5 random visually distinct subjects: it can be famous historical figures, famous monuments, countries, flags, or iconic cities. Exclude: ${usedList.join(",")}. Format: ["Name1", "Name2", "Name3", "Name4", "Name5"]`;
-            console.log("Envoi du prompt IA Strategie 3 (Image Sujets): " + personPrompt);
+            console.log("LOGS-SYS: Requesting visual targets list: " + personPrompt);
             const nameResp = await runAI([{ role: "system", content: "Output ONLY raw JSON." }, { role: "user", content: personPrompt }], 300);
             const raw = typeof nameResp.response === "string" ? nameResp.response : JSON.stringify(nameResp.response || nameResp || {});
-            console.log("Reponse brute IA Strategie 3 (Sujets): " + raw);
+            console.log("LOGS-SYS: Visual targets raw response: " + raw);
             const firstBracket = raw.indexOf('[');
             const lastBracket = raw.lastIndexOf(']');
             if (firstBracket !== -1 && lastBracket !== -1) {
-              const candidates = JSON.parse(raw.substring(firstBracket, lastBracket + 1));
-              if (Array.isArray(candidates) && candidates.length > 0) {
-                 for (const name of candidates) {
-                    if (!usedList.includes(name)) {
-                       subjectName = name;
-                       break;
-                    }
-                 }
+              try {
+                const candidates = JSON.parse(raw.substring(firstBracket, lastBracket + 1));
+                if (Array.isArray(candidates) && candidates.length > 0) {
+                   for (const name of candidates) {
+                      if (!usedList.includes(name)) {
+                         subjectName = name;
+                         break;
+                      }
+                   }
+                }
+              } catch(err) {
+                analyzeJsonParseError(raw, err);
               }
             }
             db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, subjectName);
             const imagePrompt = `A 100% authentic photograph or high quality image of ${subjectName}, ultra-realistic documentary style, lifelike, highly detailed, no digital art.`;
-            console.log("Requete d'image avec le prompt: " + imagePrompt);
+            console.log("LOGS-SYS: Requesting Flux image rendering: " + imagePrompt);
             const extImgResponse = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`, { method: "POST", headers: { "Authorization": `Bearer ${cfToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ prompt: imagePrompt }) });
             if (extImgResponse.ok) {
               const aiJson = await extImgResponse.json();
               const base64Image = aiJson.result.image;
-              if (!base64Image) throw new Error("Image base64 manquante");
+              if (!base64Image) throw new Error("Image base64 is missing");
               const buffer = Buffer.from(base64Image, "base64");
               const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
               const r2Key = `uploads/${filename}`;
@@ -661,50 +723,62 @@ app.post("/quizz", async (req, res) => {
                 ContentType: "image/png"
               }));
               imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
-            } else throw new Error("Echec requete image API Flux");
+            } else {
+              throw new Error("Flux image generator returned network error.");
+            }
             const questionTexts = { en: "Who is this person or what is this?", fr: "Qui est cette personne, quelle est cette ville, ou quel est ce monument ?", es: "¿Quién es esta persona, qué es esta ciudad, o qué es este monumento?", ht: "Kiyès moun sa, ki vil sa, oswa ki moniman sa?" };
             parsed = { question: questionTexts[language] || questionTexts.en, options: [], answer: subjectName };
             finalSuccess = "";
             finalError = "";
             finalExplanation = "";
             success = true;
-            console.log("Succes avec Strategie 3 (Creation Image et Sujet Visuel)");
+            console.log("LOGS-SYS: Successfully completed " + currentStrategyName + " with subcategory IDENTITY_IMAGE");
           } else {
             let pureTextExample = "";
+            let subTypePrompt = "";
             if (randomType === "MCQ") {
               pureTextExample = `{"question": "Write the MCQ question", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Choice B"}`;
+              subTypePrompt = `Create a brand new unique Multiple Choice Quiz (MCQ) question in ${langName}. Difficulty Level: ${current_step_num}. Do NOT include explanations, successMsg, or errorMsg in your output. You must provide exactly 4 options. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
             } else if (randomType === "TRUE_FALSE") {
-              pureTextExample = `{"question": "Write the true or false statement", "options": ["True", "False"], "answer": "False"}`;
+              pureTextExample = `{"question": "Write the statement", "options": ["True", "False"], "answer": "False"}`;
+              subTypePrompt = `Create a brand new unique True/False quiz question in ${langName}. Difficulty Level: ${current_step_num}. Do NOT include explanations, successMsg, or errorMsg in your output. You must provide exactly ["True", "False"] or native equivalents as options. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
             } else {
-              pureTextExample = `{"question": "Write the fill in the blank question", "options": [], "answer": "Expected word"}`;
+              pureTextExample = `{"question": "Write the sentence with blank represented by underscores", "options": [], "answer": "Expected blank word"}`;
+              subTypePrompt = `Create a brand new unique Fill in the Blank quiz question in ${langName}. Difficulty Level: ${current_step_num}. Do NOT include explanations, successMsg, or errorMsg in your output. Options must be an empty array []. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
             }
 
-            const systemPrompt = `Create a brand new unique quiz question of type ${randomType} in ${langName}. Do NOT include explanations, successMsg, or errorMsg in your output. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
-            console.log("Envoi du prompt IA Strategie 3 (Texte Pur): " + systemPrompt);
-            const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
+            console.log("LOGS-SYS: Sending prompt for " + currentStrategyName + " (" + randomType + "): " + subTypePrompt);
+            const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: subTypePrompt }], 1000);
             const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
-            console.log("Reponse brute IA Strategie 3 (Texte Pur): " + rawResponse);
+            console.log("LOGS-SYS: Raw response for " + currentStrategyName + " (" + randomType + "): " + rawResponse);
             const firstBrace = rawResponse.indexOf('{');
             const lastBrace = rawResponse.lastIndexOf('}');
             if (firstBrace !== -1 && lastBrace !== -1) {
-              parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-              if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants");
-              finalSuccess = "";
-              finalError = "";
-              finalExplanation = "";
-              success = true;
-              console.log("Succes avec Strategie 3 (Creation Texte Pure)");
-            } else throw new Error("Format JSON introuvable");
+              try {
+                parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
+                if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants");
+                finalSuccess = "";
+                finalError = "";
+                finalExplanation = "";
+                success = true;
+                console.log("LOGS-SYS: Successfully completed " + currentStrategyName + " (" + randomType + ")");
+              } catch(err) {
+                analyzeJsonParseError(rawResponse, err);
+                throw err;
+              }
+            } else {
+              throw new Error("JSON delimiters not found.");
+            }
           }
         }
       } catch (e) {
-        console.log("Echec de la strategie " + strategy + " : " + e.message);
+        console.log("LOGS-ERR: Failed " + currentStrategyName + " execution trace: " + e.message);
         success = false;
       }
     }
 
     if (!success) {
-      console.log("Toutes les strategies ont echoue. Application du fallback de securite.");
+      console.log("LOGS-SYS: All strategies failed execution loops. Activating safety fallback.");
       if (randomItem) {
         parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer };
         randomType = randomItem.qType || "MCQ";
@@ -779,9 +853,8 @@ app.post("/quizz", async (req, res) => {
     if (imgUrl) quizData.image_url = imgUrl;
     if (safeOptions.length > 0) quizData.options = safeOptions;
 
-    console.log("Question finalisee et envoyee a l'utilisateur: " + parsed.question);
-    console.log("Reponse exacte sauvegardee en BD: " + parsed.answer);
-    console.log("Donnees json envoyees vers l'utilisateur: " + JSON.stringify(quizData));
+    console.log("LOGS-SYS: Sent quiz payload to user: " + parsed.question);
+    console.log("LOGS-SYS: Expected exact answer cached in SQL: " + parsed.answer);
 
     return res.json(quizData);
 
@@ -820,7 +893,7 @@ app.post("/validate", async (req, res) => {
     const cleanUser = user_answer.toLowerCase().trim();
     const cleanAnswer = current.answer ? current.answer.toLowerCase().trim() : "";
 
-    console.log("Comparaison de la reponse utilisateur : [" + cleanUser + "] avec la reponse exacte sauvegardee : [" + cleanAnswer + "]");
+    console.log("LOGS-SYS: Validating User Input [" + cleanUser + "] against True Value [" + cleanAnswer + "]");
 
     let isCorrect = false;
 
@@ -836,21 +909,21 @@ app.post("/validate", async (req, res) => {
       }
     }
 
-    console.log("Resultat algorithmique de validation : " + (isCorrect ? "CORRECT" : "INCORRECT"));
+    console.log("LOGS-SYS: Matching output result: " + (isCorrect ? "CORRECT" : "INCORRECT"));
 
     let finalFeedback = "";
     const isAiPur = (!current.success_msg && !current.error_msg && !current.explanation);
 
     if (isAiPur) {
-      console.log("Aucun message de succes/erreur en base, l'IA de Validation est appelee pour generer le feedback.");
+      console.log("LOGS-SYS: Pre-configured message tags are empty. Running validation correction engine.");
       if (isCorrect) {
         const sys = "You are a JSON API. Output ONLY valid JSON.";
         const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer: "${current.answer}". Write a short success message and brief explanation in ${langName} language. Return ONLY valid JSON matching this schema: {"successMsg": "encouraging correct word!", "explanation": "detailed response answer reason"}`;
-        console.log("Prompt IA Validation (Succes) : " + usr);
+        console.log("LOGS-SYS: Dispatching prompt: " + usr);
         try {
           const aiResp = await runAI([{ role: "system", content: sys }, { role: "user", content: usr }], 800);
           const txt = typeof aiResp.response === "string" ? aiResp.response : JSON.stringify(aiResp.response || {});
-          console.log("Reponse brute IA Validation (Succes) : " + txt);
+          console.log("LOGS-SYS: Correction response raw trace: " + txt);
           const fb = txt.indexOf('{');
           const lb = txt.lastIndexOf('}');
           if (fb !== -1 && lb !== -1) {
@@ -865,11 +938,11 @@ app.post("/validate", async (req, res) => {
       } else {
         const sys = "You are a JSON API. Output ONLY valid JSON.";
         const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". Write a brief error statement and educational explanation in ${langName} language. Return ONLY valid JSON matching this schema: {"errorMsg": "mistake feedback.", "explanation": "detailed correction and context why"}`;
-        console.log("Prompt IA Validation (Erreur) : " + usr);
+        console.log("LOGS-SYS: Dispatching prompt: " + usr);
         try {
           const aiResp = await runAI([{ role: "system", content: sys }, { role: "user", content: usr }], 800);
           const txt = typeof aiResp.response === "string" ? aiResp.response : JSON.stringify(aiResp.response || {});
-          console.log("Reponse brute IA Validation (Erreur) : " + txt);
+          console.log("LOGS-SYS: Correction response raw trace: " + txt);
           const fb = txt.indexOf('{');
           const lb = txt.lastIndexOf('}');
           if (fb !== -1 && lb !== -1) {
@@ -883,7 +956,7 @@ app.post("/validate", async (req, res) => {
         }
       }
     } else {
-      console.log("Messages predefinis trouves. Affichage direct sans IA de Validation.");
+      console.log("LOGS-SYS: Matched stored static feedback configurations.");
       const baseMessage = isCorrect ? current.success_msg : current.error_msg;
       finalFeedback = current.explanation ? `${baseMessage}\n\n${current.explanation}` : baseMessage;
     }
