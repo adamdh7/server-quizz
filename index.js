@@ -175,7 +175,16 @@ async function generateAndSaveAiQuizzes() {
           }
         } catch(e) {}
 
-        const prompt = `Create a brand new, unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as an inspiration for the theme but make it completely different: "${seedText}". You MUST generate the full JSON format with explanations exactly like this example: {"level": ${level}, "lang": "${lang}", "qType": "${qType}", "question": "Quel est 2 + 2 ?", "options": ["3", "4", "5", "6"], "answer": "4", "explanation": "On additionne deux et deux pour obtenir quatre.", "successMsg": "Bravo !", "errorMsg": "Ce n'est pas la bonne reponse."}. Return ONLY raw, valid JSON.`;
+        let formatExample = "";
+        if (qType === "MCQ") {
+          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+        } else if (qType === "TRUE_FALSE") {
+          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+        } else {
+          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+        }
+
+        const prompt = `Create a brand new unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object strictly matching this schema format: ${formatExample}`;
 
         console.log("Requete IA Generation Masse avec prompt : " + prompt);
 
@@ -209,9 +218,12 @@ async function generateAndSaveAiQuizzes() {
                   errorMsg: parsed.errorMsg || "Incorrect."
                 }).catch(() => {});
                 console.log("Nouvelle question sauvegardee en BDD avec succes.");
+                if (simCheck.similar) {
+                  console.log("Note : Similarite partielle de " + simCheck.pct + "% identifiee avec la question existante: \"" + simCheck.matchedText + "\". Enregistrement autorise car inferieur a 70%.");
+                }
               }
             } else {
-              console.log("Sauvegarde IA Masse annulee: Similarite superieure au seuil maximal (sim: " + simCheck.pct + "%) avec la question existante: \"" + simCheck.matchedText + "\"");
+              console.log("Sauvegarde IA Masse annulee: Similarite de " + simCheck.pct + "% superieure au seuil maximal de 70% avec la question existante: \"" + simCheck.matchedText + "\"");
             }
           }
         }
@@ -243,7 +255,16 @@ async function triggerMassAiGeneration() {
           }
         } catch(e) {}
 
-        const prompt = `Create a brand new, unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as an inspiration for the theme but make it completely different: "${seedText}". You MUST generate the full JSON format with explanations exactly like this example: {"level": ${level}, "lang": "${lang}", "qType": "${qType}", "question": "Quel est 2 + 2 ?", "options": ["3", "4", "5", "6"], "answer": "4", "explanation": "On additionne deux et deux pour obtenir quatre.", "successMsg": "Bravo !", "errorMsg": "Ce n'est pas la bonne reponse."}. Return ONLY raw, valid JSON.`;
+        let formatExample = "";
+        if (qType === "MCQ") {
+          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+        } else if (qType === "TRUE_FALSE") {
+          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+        } else {
+          formatExample = `{"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+        }
+
+        const prompt = `Create a brand new unique quiz question in ${langName}. Difficulty Level: ${level}. Format: ${qType}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object strictly matching this schema format: ${formatExample}`;
 
         console.log("Requete Trigger IA Masse avec prompt : " + prompt);
         
@@ -277,9 +298,12 @@ async function triggerMassAiGeneration() {
                   errorMsg: parsed.errorMsg || "Incorrect."
                 }).catch(() => {});
                 console.log("Nouvelle question via trigger sauvegardee en BDD avec succes.");
+                if (simCheck.similar) {
+                  console.log("Note : Similarite partielle de " + simCheck.pct + "% identifiee avec la question existante: \"" + simCheck.matchedText + "\". Enregistrement autorise car inferieur a 70%.");
+                }
               }
             } else {
-              console.log("Sauvegarde Trigger IA annulee: Similarite superieure au seuil maximal (sim: " + simCheck.pct + "%) avec la question existante: \"" + simCheck.matchedText + "\"");
+              console.log("Sauvegarde Trigger IA annulee: Similarite de " + simCheck.pct + "% superieure au seuil maximal de 70% avec la question existante: \"" + simCheck.matchedText + "\"");
             }
           }
         }
@@ -439,7 +463,7 @@ app.post("/quizz", async (req, res) => {
     const session_id = body.session_id?.trim();
     if (!session_id) return res.status(400).json({ error: "session_id required" });
 
-    console.log("=== NOUVELLE REQUETE QUIZ ===");
+    console.log("=== NOUVELRE REQUETE QUIZ ===");
     console.log("Utilisateur demandeur: " + session_id);
 
     contactCounter++;
@@ -646,7 +670,16 @@ app.post("/quizz", async (req, res) => {
             success = true;
             console.log("Succes avec Strategie 3 (Creation Image et Sujet Visuel)");
           } else {
-            const systemPrompt = `Create a brand new unique quiz question of type ${randomType} in ${langName}. Do NOT include explanations, successMsg, or errorMsg in your output. If type is MCQ, you must provide exactly 4 options. For other types, options must be an empty array []. Return ONLY a valid JSON object strictly matching this schema: {"question": "string", "options": ["string"], "answer": "string"}`;
+            let pureTextExample = "";
+            if (randomType === "MCQ") {
+              pureTextExample = `{"question": "Write the MCQ question", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Choice B"}`;
+            } else if (randomType === "TRUE_FALSE") {
+              pureTextExample = `{"question": "Write the true or false statement", "options": ["True", "False"], "answer": "False"}`;
+            } else {
+              pureTextExample = `{"question": "Write the fill in the blank question", "options": [], "answer": "Expected word"}`;
+            }
+
+            const systemPrompt = `Create a brand new unique quiz question of type ${randomType} in ${langName}. Do NOT include explanations, successMsg, or errorMsg in your output. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
             console.log("Envoi du prompt IA Strategie 3 (Texte Pur): " + systemPrompt);
             const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
             const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
@@ -812,7 +845,7 @@ app.post("/validate", async (req, res) => {
       console.log("Aucun message de succes/erreur en base, l'IA de Validation est appelee pour generer le feedback.");
       if (isCorrect) {
         const sys = "You are a JSON API. Output ONLY valid JSON.";
-        const usr = `User answered CORRECTLY to the question: "${current.question}". The correct answer is: "${current.answer}". Write a brief educational confirmation statement telling them why they are correct. Output in ${langName}. Schema: {"explanation": "string"}`;
+        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer: "${current.answer}". Write a short success message and brief explanation in ${langName} language. Return ONLY valid JSON matching this schema: {"successMsg": "encouraging correct word!", "explanation": "detailed response answer reason"}`;
         console.log("Prompt IA Validation (Succes) : " + usr);
         try {
           const aiResp = await runAI([{ role: "system", content: sys }, { role: "user", content: usr }], 800);
@@ -821,7 +854,8 @@ app.post("/validate", async (req, res) => {
           const fb = txt.indexOf('{');
           const lb = txt.lastIndexOf('}');
           if (fb !== -1 && lb !== -1) {
-            finalFeedback = JSON.parse(txt.substring(fb, lb + 1)).explanation;
+            const parsedFeedback = JSON.parse(txt.substring(fb, lb + 1));
+            finalFeedback = `${parsedFeedback.successMsg}\n\n${parsedFeedback.explanation}`;
           } else {
             finalFeedback = "Correct!\n\n" + current.answer;
           }
@@ -830,7 +864,7 @@ app.post("/validate", async (req, res) => {
         }
       } else {
         const sys = "You are a JSON API. Output ONLY valid JSON.";
-        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer is: "${current.answer}". User input was: "${user_answer}". Write a brief educational response correcting them. Output in ${langName}. Schema: {"explanation": "string"}`;
+        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". Write a brief error statement and educational explanation in ${langName} language. Return ONLY valid JSON matching this schema: {"errorMsg": "mistake feedback.", "explanation": "detailed correction and context why"}`;
         console.log("Prompt IA Validation (Erreur) : " + usr);
         try {
           const aiResp = await runAI([{ role: "system", content: sys }, { role: "user", content: usr }], 800);
@@ -839,7 +873,8 @@ app.post("/validate", async (req, res) => {
           const fb = txt.indexOf('{');
           const lb = txt.lastIndexOf('}');
           if (fb !== -1 && lb !== -1) {
-            finalFeedback = JSON.parse(txt.substring(fb, lb + 1)).explanation;
+            const parsedFeedback = JSON.parse(txt.substring(fb, lb + 1));
+            finalFeedback = `${parsedFeedback.errorMsg}\n\n${parsedFeedback.explanation}`;
           } else {
             finalFeedback = "Incorrect.\n\nLa bonne reponse etait : " + current.answer;
           }
