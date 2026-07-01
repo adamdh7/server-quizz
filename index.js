@@ -338,7 +338,7 @@ app.use((req, res, next) => {
 
 async function runAI(messages, max_tokens) {
   if (Date.now() < aiLockoutUntil) {
-    throw new Error("AI Locked");
+    throw new Error("AI Locked temporairement (Quota depasse)");
   }
   const aiModel = "@cf/meta/llama-3-8b-instruct";
   const controller = new AbortController();
@@ -357,20 +357,20 @@ async function runAI(messages, max_tokens) {
     clearTimeout(timeout);
     if (response.status === 429 || response.status === 401 || response.status === 403) {
       aiLockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
-      throw new Error("AI Quota Exceeded");
+      throw new Error("AI Quota Exceeded ou Token Invalide (" + response.status + ")");
     }
     const json = await response.json();
     if (json.errors && json.errors.length > 0) {
       aiLockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
-      throw new Error("AI Error");
+      throw new Error("Erreur retourne par Cloudflare AI : " + JSON.stringify(json.errors));
     }
     if (json.success && json.result) {
       return json.result;
     }
-    throw new Error();
+    throw new Error("Reponse AI incomplete ou structure inattendue : " + JSON.stringify(json));
   } catch (e) {
     clearTimeout(timeout);
-    throw new Error();
+    throw new Error("Echec de la requete fetch vers l'IA : " + e.message);
   }
 }
 
@@ -498,8 +498,20 @@ app.post("/quizz", async (req, res) => {
     while (availableStrategies.length > 0 && !success) {
       const strategy = availableStrategies.shift();
       console.log("Tentative d'utilisation du mode/strategie numero: " + strategy);
+
+      if (!randomItem && strategy !== 3) {
+        console.log("Erreur Strategie " + strategy + " : Aucune donnee source trouvee. Abandon des modes dependants des donnees, passage direct a l'IA pure.");
+        for (let i = availableStrategies.length - 1; i >= 0; i--) {
+          if (availableStrategies[i] !== 3) {
+            availableStrategies.splice(i, 1);
+          }
+        }
+        continue;
+      }
+
       try {
-        if (strategy === 0 && randomItem) {
+        if (strategy === 0) {
+          if (!randomItem) throw new Error("Item MongoDB introuvable");
           parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer, explanation: randomItem.explanation };
           randomType = randomItem.qType || "MCQ";
           imgUrl = randomItem.imageUrl || null;
@@ -507,7 +519,9 @@ app.post("/quizz", async (req, res) => {
           finalError = randomItem.errorMsg || null;
           success = true;
           console.log("L'aleatoire prend donne mongodb pur - Strategie " + strategy);
-        } else if (strategy === 1 && randomItem && Date.now() >= aiLockoutUntil) {
+        } else if (strategy === 1) {
+          if (!randomItem) throw new Error("Item MongoDB introuvable pour amelioration");
+          if (Date.now() < aiLockoutUntil) throw new Error("IA verrouillee temporairement");
           const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = aiResponse.response || "";
@@ -515,14 +529,16 @@ app.post("/quizz", async (req, res) => {
           const lastBrace = rawResponse.lastIndexOf('}');
           if (firstBrace !== -1 && lastBrace !== -1) {
             parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-            if (!parsed.question || !parsed.answer) throw new Error();
+            if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants");
             randomType = randomItem.qType || "MCQ";
             finalSuccess = randomItem.successMsg || null;
             finalError = randomItem.errorMsg || null;
             success = true;
             console.log("L'aleatoire prend Ai + donne mongodb (Amelioration) - Strategie " + strategy);
-          } else throw new Error();
-        } else if (strategy === 2 && randomItem && Date.now() >= aiLockoutUntil) {
+          } else throw new Error("Format JSON introuvable dans la reponse de l'IA : " + rawResponse);
+        } else if (strategy === 2) {
+          if (!randomItem) throw new Error("Item MongoDB introuvable pour duplication");
+          if (Date.now() < aiLockoutUntil) throw new Error("IA verrouillee temporairement");
           const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = aiResponse.response || "";
@@ -530,12 +546,13 @@ app.post("/quizz", async (req, res) => {
           const lastBrace = rawResponse.lastIndexOf('}');
           if (firstBrace !== -1 && lastBrace !== -1) {
             parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-            if (!parsed.question || !parsed.answer) throw new Error();
+            if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants");
             randomType = randomItem.qType || "MCQ";
             success = true;
             console.log("L'aleatoire prend Ai + donne mongodb (Nouveau meme style) - Strategie " + strategy);
-          } else throw new Error();
-        } else if (strategy === 3 && Date.now() >= aiLockoutUntil) {
+          } else throw new Error("Format JSON introuvable dans la reponse de l'IA : " + rawResponse);
+        } else if (strategy === 3) {
+          if (Date.now() < aiLockoutUntil) throw new Error("IA verrouillee temporairement");
           const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
           randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
           if (randomType === "IDENTITY_IMAGE") {
@@ -556,7 +573,7 @@ app.post("/quizz", async (req, res) => {
             if (extImgResponse.ok) {
               const aiJson = await extImgResponse.json();
               const base64Image = aiJson.result.image;
-              if (!base64Image) throw new Error();
+              if (!base64Image) throw new Error("Image base64 manquante dans la reponse API Image");
               const buffer = Buffer.from(base64Image, "base64");
               const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
               const r2Key = `uploads/${filename}`;
@@ -567,7 +584,7 @@ app.post("/quizz", async (req, res) => {
                 ContentType: "image/png"
               }));
               imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
-            } else throw new Error();
+            } else throw new Error("Echec reseau lors de la generation d'image API Flux");
             const questionTexts = { en: "Who is this person?", fr: "Qui est cette personne ?", es: "¿Quién es esta persona?", ht: "Kiyès moun sa?" };
             parsed = { question: questionTexts[language] || questionTexts.en, options: [], answer: personName, explanation: "" };
             success = true;
@@ -580,13 +597,14 @@ app.post("/quizz", async (req, res) => {
             const lastBrace = rawResponse.lastIndexOf('}');
             if (firstBrace !== -1 && lastBrace !== -1) {
               parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-              if (!parsed.question || !parsed.answer) throw new Error();
+              if (!parsed.question || !parsed.answer) throw new Error("Champs JSON obligatoires manquants dans la reponse textuelle de l'IA");
               success = true;
               console.log("L'aleatoire prend Ai pur (Generatif Texte) - Strategie " + strategy);
-            } else throw new Error();
+            } else throw new Error("Format JSON introuvable dans la reponse de l'IA pur : " + rawResponse);
           }
         }
       } catch (e) {
+        console.log("Echec critique lors de la strategie " + strategy + " : " + e.message);
         success = false;
       }
     }
