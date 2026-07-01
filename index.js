@@ -217,7 +217,7 @@ async function massBackgroundQuizGeneration() {
         console.log("LOGS-SYS: Requesting mass generation prompt: " + prompt);
 
         const aiResponse = await runAI([
-          { role: "system", content: "You are a JSON API. Return ONLY valid JSON." },
+          { role: "system", content: "You are a JSON API. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." },
           { role: "user", content: prompt }
         ], 1000);
 
@@ -301,7 +301,7 @@ async function triggerMassAiGeneration() {
         console.log("LOGS-SYS: Requesting trigger generation prompt: " + prompt);
         
         const aiResponse = await runAI([
-          { role: "system", content: "You are a JSON API. Return ONLY valid JSON." },
+          { role: "system", content: "You are a JSON API. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." },
           { role: "user", content: prompt }
         ], 1000);
 
@@ -627,9 +627,9 @@ app.post("/quizz", async (req, res) => {
           success = true;
           console.log("LOGS-SYS: Successfully completed " + currentStrategyName);
         } else if (strategy === 1) {
-          const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Do NOT generate explanations, success messages, or error messages. Original: ${randomItem.question}`;
+          const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Original: ${randomItem.question}`;
           console.log("LOGS-SYS: Sending prompt for " + currentStrategyName + ": " + systemPrompt);
-          const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
+          const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
           console.log("LOGS-SYS: Raw response for " + currentStrategyName + ": " + rawResponse);
           const firstBrace = rawResponse.indexOf('{');
@@ -652,9 +652,9 @@ app.post("/quizz", async (req, res) => {
             throw new Error("JSON delimiters not found.");
           }
         } else if (strategy === 2) {
-          const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Do NOT generate explanations, success messages, or error messages. Original: ${randomItem.question}`;
+          const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}. Original: ${randomItem.question}`;
           console.log("LOGS-SYS: Sending prompt for " + currentStrategyName + ": " + systemPrompt);
-          const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
+          const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
           console.log("LOGS-SYS: Raw response for " + currentStrategyName + ": " + rawResponse);
           const firstBrace = rawResponse.indexOf('{');
@@ -685,7 +685,7 @@ app.post("/quizz", async (req, res) => {
             let subjectName = "Eiffel Tower";
             const personPrompt = `Return ONLY a valid JSON array containing 5 random visually distinct subjects: it can be famous historical figures, famous monuments, countries, flags, or iconic cities. Exclude: ${usedList.join(",")}. Format: ["Name1", "Name2", "Name3", "Name4", "Name5"]`;
             console.log("LOGS-SYS: Requesting visual targets list: " + personPrompt);
-            const nameResp = await runAI([{ role: "system", content: "Output ONLY raw JSON." }, { role: "user", content: personPrompt }], 300);
+            const nameResp = await runAI([{ role: "system", content: "Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." }, { role: "user", content: personPrompt }], 300);
             const raw = typeof nameResp.response === "string" ? nameResp.response : JSON.stringify(nameResp.response || nameResp || {});
             console.log("LOGS-SYS: Visual targets raw response: " + raw);
             const firstBracket = raw.indexOf('[');
@@ -737,18 +737,18 @@ app.post("/quizz", async (req, res) => {
             let pureTextExample = "";
             let subTypePrompt = "";
             if (randomType === "MCQ") {
-              pureTextExample = `{"question": "Write the MCQ question", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Choice B"}`;
-              subTypePrompt = `Create a brand new unique Multiple Choice Quiz (MCQ) question in ${langName}. Difficulty Level: ${current_step_num}. Do NOT include explanations, successMsg, or errorMsg in your output. You must provide exactly 4 options. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
+              pureTextExample = `{"question": "Write the MCQ question", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Correct answer"}`;
+              subTypePrompt = `Create a brand new unique Multiple Choice Quiz (MCQ) question in ${langName}. Difficulty Level: ${current_step_num}. Do NOT include explanations, You must provide exactly 4 options. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
             } else if (randomType === "TRUE_FALSE") {
               pureTextExample = `{"question": "Write the statement", "options": ["True", "False"], "answer": "False"}`;
-              subTypePrompt = `Create a brand new unique True/False quiz question in ${langName}. Difficulty Level: ${current_step_num}. Do NOT include explanations, successMsg, or errorMsg in your output. You must provide exactly ["True", "False"] or native equivalents as options. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
+              subTypePrompt = `Create a brand new unique True/False quiz question in ${langName}. Difficulty Level: ${current_step_num}. You must provide exactly ["True", "False"] or native equivalents as options. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
             } else {
               pureTextExample = `{"question": "Write the sentence with blank represented by underscores", "options": [], "answer": "Expected blank word"}`;
-              subTypePrompt = `Create a brand new unique Fill in the Blank quiz question in ${langName}. Difficulty Level: ${current_step_num}. Do NOT include explanations, successMsg, or errorMsg in your output. Options must be an empty array []. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
+              subTypePrompt = `Create a brand new unique Fill in the Blank quiz question in ${langName}. Difficulty Level: ${current_step_num}. Options must be an empty array []. Return ONLY a valid JSON object strictly matching this schema format: ${pureTextExample}`;
             }
 
             console.log("LOGS-SYS: Sending prompt for " + currentStrategyName + " (" + randomType + "): " + subTypePrompt);
-            const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: subTypePrompt }], 1000);
+            const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting." }, { role: "user", content: subTypePrompt }], 1000);
             const rawResponse = typeof aiResponse.response === "string" ? aiResponse.response : JSON.stringify(aiResponse.response || aiResponse || {});
             console.log("LOGS-SYS: Raw response for " + currentStrategyName + " (" + randomType + "): " + rawResponse);
             const firstBrace = rawResponse.indexOf('{');
