@@ -1,42 +1,57 @@
 [
   {
-    "qType": "IDENTITY_IMAGE",
-    "question": "Who is this person?",
-    "options": [],
-    "imageUrl": "imaj/Albert Einstein.JPG",
-    "answer": "Albert Einstein",
-    "explanation": "This is Albert Einstein, the famous theoretical physicist who developed the theory of relativity.",
-    "successMsg": "Excellent! You recognized Albert Einstein.",
-    "errorMsg": "Incorrect. This is Albert Einstein."
-  },
-  {
+    "level": 1,
     "qType": "MCQ",
-    "question": "In which field did Albert Einstein win his Nobel Prize in 1921?",
-    "options": ["Theory of Relativity", "Photoelectric Effect", "Brownian Motion", "Nuclear Fission"],
+    "question": "What is the largest planet in our solar system?",
+    "options": ["Earth", "Mars", "Jupiter", "Saturn"],
     "imageUrl": "",
-    "answer": "Photoelectric Effect",
-    "explanation": "Albert Einstein was awarded the 1921 Nobel Prize in Physics for his services to Theoretical Physics, and especially for his discovery of the law of the photoelectric effect.",
-    "successMsg": "Brilliant! You know your history of science.",
-    "errorMsg": "Wrong choice. He actually won it for the Photoelectric Effect."
+    "answer": "Jupiter",
+    "explanation": "Jupiter is a gas giant and the largest planet in our solar system, with a mass more than two and a half times that of all the other planets in the solar system combined.",
+    "successMsg": "Awesome! You know your planets.",
+    "errorMsg": "Not quite. The correct answer is Jupiter."
   },
   {
+    "level": 1,
     "qType": "TRUE_FALSE",
-    "question": "Albert Einstein was born in Germany.",
+    "question": "Water boils at 100 degrees Celsius at sea level.",
     "options": ["True", "False"],
     "imageUrl": "",
     "answer": "True",
-    "explanation": "Einstein was born in Ulm, in the Kingdom of Württemberg in the German Empire, on March 14, 1879.",
-    "successMsg": "Correct! He was indeed born in Germany.",
-    "errorMsg": "Incorrect. Albert Einstein was born in Germany."
+    "explanation": "Under standard atmospheric pressure at sea level, the boiling point of pure water is 100°C.",
+    "successMsg": "Correct! That's basic physics.",
+    "errorMsg": "Incorrect. It is True."
   },
   {
+    "level": 2,
+    "qType": "IDENTITY_IMAGE",
+    "question": "Who is this historical figure?",
+    "options": [],
+    "imageUrl": "imaj/Marie Curie.JPG",
+    "answer": "Marie Curie",
+    "explanation": "Marie Curie was a pioneering physicist and chemist who conducted critical research on radioactivity and was the first woman to win a Nobel Prize.",
+    "successMsg": "Spot on! That is Marie Curie.",
+    "errorMsg": "Wrong. That is Marie Curie."
+  },
+  {
+    "level": 2,
     "qType": "FILL_BLANK",
-    "question": "Complete the famous mass-energy equivalence equation formulated by Einstein: E = ___",
+    "question": "The chemical symbol for Gold is ___.",
     "options": [],
     "imageUrl": "",
-    "answer": "mc^2",
-    "explanation": "The formula E = mc² expresses the fact that mass and energy are the same physical entity and can be changed into each other.",
-    "successMsg": "Perfect! E = mc² is the most famous equation in the world.",
-    "errorMsg": "No, the correct answer is mc^2."
+    "answer": "Au",
+    "explanation": "The symbol 'Au' comes from the Latin word 'aurum', which means gold.",
+    "successMsg": "Perfect! Au is correct.",
+    "errorMsg": "Nope, the correct symbol is Au."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "In what year did the Titanic sink in the Atlantic Ocean?",
+    "options": ["1905", "1912", "1920", "1898"],
+    "imageUrl": "",
+    "answer": "1912",
+    "explanation": "The RMS Titanic sank in the early hours of April 15, 1912, after striking an iceberg during her maiden voyage.",
+    "successMsg": "Excellent historical knowledge!",
+    "errorMsg": "Incorrect. It sank in 1912."
   }
 ]
