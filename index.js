@@ -26,6 +26,7 @@ const cfToken = process.env.CF_TOKEN;
 const SERVER_URL = process.env.SERVER_URL;
 const MONGO_URI = process.env.MONGO_URI;
 
+let aiLockoutUntil = 0;
 let contactCounter = 0;
 
 const s3 = new S3Client({
@@ -141,6 +142,7 @@ async function syncJsonToMongo() {
 }
 
 async function generateAndSaveAiQuizzes() {
+  if (Date.now() < aiLockoutUntil) return;
   let targetLevels = [1, 2, 3];
   try {
     const rows = db.prepare("SELECT current_step FROM user_progress ORDER BY RANDOM() LIMIT 7").all();
@@ -157,6 +159,7 @@ async function generateAndSaveAiQuizzes() {
     
     for (let i = 0; i < 7; i++) {
       try {
+        if (Date.now() < aiLockoutUntil) return;
         const level = targetLevels[Math.floor(Math.random() * targetLevels.length)] || 1;
         const qType = qTypes[Math.floor(Math.random() * qTypes.length)];
 
@@ -202,12 +205,14 @@ async function generateAndSaveAiQuizzes() {
 }
 
 async function triggerMassAiGeneration() {
+  if (Date.now() < aiLockoutUntil) return;
   const langs = ["en", "fr", "es", "ht"];
   const qTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK"];
   for (const lang of langs) {
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[lang] || "English";
     for (let i = 0; i < 7; i++) {
       try {
+        if (Date.now() < aiLockoutUntil) return;
         const level = Math.floor(Math.random() * 3) + 1;
         const qType = qTypes[Math.floor(Math.random() * qTypes.length)];
         const prompt = `Create a quiz question in ${langName} language. Guidelines: - Difficulty Level: ${level} - Format/Type: ${qType} - The explanation field MUST be strictly between 300 and 400 characters long. - successMsg: short encouraging message. - errorMsg: short feedback. - For MCQ, provide exactly 4 options. For others, provide empty array []. Return ONLY a raw, valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "${qType}", "question": "question text", "options": ["option1", "option2", "option3", "option4"], "answer": "exact correct answer", "explanation": "detailed explanation between 300 and 400 chars", "successMsg": "bravo", "errorMsg": "mistake"}`;
@@ -332,7 +337,10 @@ app.use((req, res, next) => {
 });
 
 async function runAI(messages, max_tokens) {
-  const aiModel = "@cf/meta/llama-3-8b-instruct";
+  if (Date.now() < aiLockoutUntil) {
+    throw new Error("IA verrouillee temporairement");
+  }
+  const aiModel = "@cf/meta/llama-3.1-8b-instruct";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
   const aiUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/${aiModel}`;
@@ -347,8 +355,12 @@ async function runAI(messages, max_tokens) {
       signal: controller.signal
     });
     clearTimeout(timeout);
-    if (response.status === 429 || response.status === 401 || response.status === 403) {
-      throw new Error("Erreur d'authentification ou quota Cloudflare AI (" + response.status + ")");
+    if (response.status === 429) {
+      aiLockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
+      throw new Error("Quota maximal Cloudflare AI atteint (429)");
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Erreur d'authentification ou Token incorrect (" + response.status + ")");
     }
     const json = await response.json();
     if (json.errors && json.errors.length > 0) {
