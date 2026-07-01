@@ -34,7 +34,7 @@ const s3 = new S3Client({
   },
 });
 
-mongoose.connect(MONGO_URI).catch(e => e);
+mongoose.connect(MONGO_URI, { dbName: "quiz" }).catch(e => e);
 
 const baseQuizSchema = new mongoose.Schema({
   lang: String,
