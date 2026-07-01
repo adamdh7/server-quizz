@@ -19,11 +19,15 @@ const db = new Database(path.join(dataDir, "quiz_data_fallback.sqlite"));
 db.exec("CREATE TABLE IF NOT EXISTS user_progress (session_id TEXT PRIMARY KEY, language TEXT, current_step INTEGER, consecutive_correct INTEGER)");
 db.exec("CREATE TABLE IF NOT EXISTS current_quiz (session_id TEXT PRIMARY KEY, q_type TEXT, question TEXT, options TEXT, image_url TEXT, answer TEXT, explanation TEXT, success_msg TEXT, error_msg TEXT)");
 db.exec("CREATE TABLE IF NOT EXISTS user_info (session_id TEXT PRIMARY KEY, data TEXT)");
+db.exec("CREATE TABLE IF NOT EXISTS served_questions (session_id TEXT, quiz_id TEXT, PRIMARY KEY(session_id, quiz_id))");
 
 const cfAccountId = process.env.CF_ACCOUNT_ID;
 const cfToken = process.env.CF_TOKEN;
 const SERVER_URL = process.env.SERVER_URL;
 const MONGO_URI = process.env.MONGO_URI;
+
+let aiLockoutUntil = 0;
+let contactCounter = 0;
 
 const s3 = new S3Client({
   region: "auto",
@@ -77,6 +81,7 @@ async function syncJsonToMongo() {
 }
 
 async function generateAndSaveAiQuizzes() {
+  if (Date.now() < aiLockoutUntil) return;
   let targetLevels = [1, 2, 3];
   try {
     const rows = db.prepare("SELECT current_step FROM user_progress ORDER BY RANDOM() LIMIT 7").all();
@@ -93,31 +98,11 @@ async function generateAndSaveAiQuizzes() {
     
     for (let i = 0; i < 7; i++) {
       try {
+        if (Date.now() < aiLockoutUntil) return;
         const level = targetLevels[Math.floor(Math.random() * targetLevels.length)] || 1;
         const qType = qTypes[Math.floor(Math.random() * qTypes.length)];
 
-        const prompt = `Create a quiz question in ${langName} language.
-        Guidelines:
-        - Difficulty Level: ${level} (Higher levels mean more difficult and advanced questions)
-        - Format/Type: ${qType} (Choose MCQ, TRUE_FALSE or FILL_BLANK)
-        - The explanation field MUST be strictly between 300 and 400 characters long.
-        - successMsg: short encouraging message for correct answer.
-        - errorMsg: short educational feedback message for wrong answer.
-        - For MCQ, provide exactly 4 options. For others, provide an empty array [].
-
-        Return ONLY a raw, valid JSON object matching this schema:
-        {
-          "level": ${level},
-          "lang": "${lang}",
-          "qType": "${qType}",
-          "question": "question text",
-          "options": ["option1", "option2", "option3", "option4"],
-          "answer": "exact correct answer",
-          "explanation": "detailed explanation between 300 and 400 chars",
-          "successMsg": "bravo text",
-          "errorMsg": "mistake explanation text"
-        }
-        No markdown code blocks, no comments, no external characters.`;
+        const prompt = `Create a quiz question in ${langName} language. Guidelines: - Difficulty Level: ${level} - Format/Type: ${qType} - The explanation field MUST be strictly between 300 and 400 characters long. - successMsg: short encouraging message. - errorMsg: short educational feedback. - For MCQ, provide exactly 4 options. For others, provide empty array []. Return ONLY a raw, valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "${qType}", "question": "question text", "options": ["option1", "option2", "option3", "option4"], "answer": "exact correct answer", "explanation": "detailed explanation between 300 and 400 chars", "successMsg": "bravo text", "errorMsg": "mistake text"}`;
 
         const aiResponse = await runAI([
           { role: "system", content: "You are a JSON API. Return ONLY valid JSON." },
@@ -129,7 +114,7 @@ async function generateAndSaveAiQuizzes() {
         const lastBrace = rawResponse.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
           const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
-          if (parsed.question && parsed.answer) {
+          if (parsed.question && parsed.answer && parsed.explanation && parsed.explanation.length >= 300 && parsed.explanation.length <= 400) {
             const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
             if (!exists) {
               await BaseQuiz.create({
@@ -143,6 +128,52 @@ async function generateAndSaveAiQuizzes() {
                 successMsg: parsed.successMsg || "Correct!",
                 errorMsg: parsed.errorMsg || "Incorrect."
               }).catch(e => e);
+            }
+          }
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (e) {}
+    }
+  }
+}
+
+async function triggerMassAiGeneration() {
+  if (Date.now() < aiLockoutUntil) return;
+  const langs = ["en", "fr", "es", "ht"];
+  const qTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK"];
+  for (const lang of langs) {
+    const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[lang] || "English";
+    for (let i = 0; i < 7; i++) {
+      try {
+        if (Date.now() < aiLockoutUntil) return;
+        const level = Math.floor(Math.random() * 3) + 1;
+        const qType = qTypes[Math.floor(Math.random() * qTypes.length)];
+        const prompt = `Create a quiz question in ${langName} language. Guidelines: - Difficulty Level: ${level} - Format/Type: ${qType} - The explanation field MUST be strictly between 300 and 400 characters long. - successMsg: short encouraging message. - errorMsg: short feedback. - For MCQ, provide exactly 4 options. For others, provide empty array []. Return ONLY a raw, valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "${qType}", "question": "question text", "options": ["option1", "option2", "option3", "option4"], "answer": "exact correct answer", "explanation": "detailed explanation between 300 and 400 chars", "successMsg": "bravo", "errorMsg": "mistake"}`;
+        
+        const aiResponse = await runAI([
+          { role: "system", content: "You are a JSON API. Return ONLY valid JSON." },
+          { role: "user", content: prompt }
+        ], 1000);
+
+        const rawResponse = aiResponse.response || "";
+        const firstBrace = rawResponse.indexOf('{');
+        const lastBrace = rawResponse.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          const parsed = JSON.parse(rawResponse.substring(firstBrace, lastBrace + 1));
+          if (parsed.question && parsed.answer && parsed.explanation && parsed.explanation.length >= 300 && parsed.explanation.length <= 400) {
+            const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
+            if (!exists) {
+              await BaseQuiz.create({
+                lang: lang,
+                level: parsed.level || level,
+                qType: parsed.qType || qType,
+                question: parsed.question,
+                options: Array.isArray(parsed.options) ? parsed.options : [],
+                answer: parsed.answer,
+                explanation: parsed.explanation,
+                successMsg: parsed.successMsg || "Correct!",
+                errorMsg: parsed.errorMsg || "Incorrect."
+              }).catch(() => {});
             }
           }
         }
@@ -233,6 +264,9 @@ app.use((req, res, next) => {
 });
 
 async function runAI(messages, max_tokens) {
+  if (Date.now() < aiLockoutUntil) {
+    throw new Error("AI Locked");
+  }
   const aiModel = "@cf/meta/llama-3-8b-instruct";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
@@ -248,7 +282,15 @@ async function runAI(messages, max_tokens) {
       signal: controller.signal
     });
     clearTimeout(timeout);
+    if (response.status === 429 || response.status === 401 || response.status === 403) {
+      aiLockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
+      throw new Error("AI Quota Exceeded");
+    }
     const json = await response.json();
+    if (json.errors && json.errors.length > 0) {
+      aiLockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
+      throw new Error("AI Error");
+    }
     if (json.success && json.result) {
       return json.result;
     }
@@ -289,6 +331,12 @@ app.post("/quizz", async (req, res) => {
     const session_id = body.session_id?.trim();
     if (!session_id) return res.status(400).json({ error: "session_id required" });
 
+    contactCounter++;
+    if (contactCounter >= 7) {
+      contactCounter = 0;
+      triggerMassAiGeneration().catch(() => {});
+    }
+
     const rawLang = body.lang?.trim();
     let lang = rawLang ? rawLang.toLowerCase() : null;
     const incomingLevel = body.level;
@@ -318,11 +366,36 @@ app.post("/quizz", async (req, res) => {
     const language = progress.language;
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[language] || "English";
     
-    let dbItems = await BaseQuiz.aggregate([{ $match: { lang: language, level: current_step_num } }, { $sample: { size: 1 } }]).catch(() => []);
-    if (dbItems.length === 0) {
-      dbItems = await BaseQuiz.aggregate([{ $match: { lang: language } }, { $sample: { size: 1 } }]).catch(() => []);
+    const servedRows = db.prepare("SELECT quiz_id FROM served_questions WHERE session_id = ?").all(session_id);
+    const servedIds = servedRows.map(r => r.quiz_id).filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
+
+    let matchCriteria = { lang: language, level: current_step_num };
+    if (servedIds.length > 0) {
+      matchCriteria._id = { $nin: servedIds };
     }
+
+    let dbItems = await BaseQuiz.aggregate([{ $match: matchCriteria }, { $sample: { size: 1 } }]).catch(() => []);
+    
+    if (dbItems.length === 0) {
+      let broadCriteria = { lang: language };
+      if (servedIds.length > 0) {
+        broadCriteria._id = { $nin: servedIds };
+      }
+      dbItems = await BaseQuiz.aggregate([{ $match: broadCriteria }, { $sample: { size: 1 } }]).catch(() => []);
+    }
+
+    if (dbItems.length === 0 && servedIds.length > 0) {
+      db.prepare("DELETE FROM served_questions WHERE session_id = ?").run(session_id);
+      dbItems = await BaseQuiz.aggregate([{ $match: { lang: language, level: current_step_num } }, { $sample: { size: 1 } }]).catch(() => []);
+      if (dbItems.length === 0) {
+        dbItems = await BaseQuiz.aggregate([{ $match: { lang: language } }, { $sample: { size: 1 } }]).catch(() => []);
+      }
+    }
+
     let randomItem = dbItems.length > 0 ? dbItems[0] : null;
+    if (randomItem && randomItem._id) {
+      db.prepare("INSERT OR IGNORE INTO served_questions (session_id, quiz_id) VALUES (?, ?)").run(session_id, randomItem._id.toString());
+    }
 
     let parsed = null;
     let randomType = "MCQ";
@@ -343,7 +416,7 @@ app.post("/quizz", async (req, res) => {
           finalSuccess = randomItem.successMsg || null;
           finalError = randomItem.errorMsg || null;
           success = true;
-        } else if (strategy === 1 && randomItem) {
+        } else if (strategy === 1 && randomItem && Date.now() >= aiLockoutUntil) {
           const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = aiResponse.response || "";
@@ -357,7 +430,7 @@ app.post("/quizz", async (req, res) => {
             finalError = randomItem.errorMsg || null;
             success = true;
           } else throw new Error();
-        } else if (strategy === 2 && randomItem) {
+        } else if (strategy === 2 && randomItem && Date.now() >= aiLockoutUntil) {
           const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
           const rawResponse = aiResponse.response || "";
@@ -369,7 +442,7 @@ app.post("/quizz", async (req, res) => {
             randomType = randomItem.qType || "MCQ";
             success = true;
           } else throw new Error();
-        } else if (strategy === 3) {
+        } else if (strategy === 3 && Date.now() >= aiLockoutUntil) {
           const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
           randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
           if (randomType === "IDENTITY_IMAGE") {
@@ -502,12 +575,24 @@ app.post("/validate", async (req, res) => {
     const current = await getCurrentQuiz(session_id);
     if (!current) return res.status(400).json({ error: "No active quiz" });
 
+    if (current.image_url && current.image_url.includes("/local-image/")) {
+      const splitParts = current.image_url.split("/local-image/");
+      if (splitParts.length > 1) {
+        const localFilename = splitParts[1];
+        const localFilePath = path.join(dataDir, localFilename);
+        if (fs.existsSync(localFilePath)) {
+          try {
+            fs.unlinkSync(localFilePath);
+          } catch (err) {}
+        }
+      }
+    }
+
     let progress = await getProgress(session_id);
     if (!progress) {
       progress = { language: "en", current_step: 1, consecutive_correct: 0 };
     }
 
-    const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[progress.language] || "English";
     const cleanUser = user_answer.toLowerCase().trim();
     const cleanAnswer = current.answer ? current.answer.toLowerCase().trim() : "";
 
@@ -527,7 +612,7 @@ app.post("/validate", async (req, res) => {
       }
     }
 
-    if (!judgeResult.correct) {
+    if (!judgeResult.correct && Date.now() >= aiLockoutUntil) {
       const judgePrompt = `Question: "${current.question}"\nExpected Answer: "${current.answer}"\nUser Answer: "${user_answer}"\nTask: Determine if the User Answer is correct or means the same thing as the Expected Answer.\nReturn ONLY valid JSON: {"correct": true or false}`;
       try {
         const judgeResp = await runAI([{ role: "system", content: "You evaluate answers. Output ONLY strict JSON." }, { role: "user", content: judgePrompt }], 800);
@@ -601,6 +686,9 @@ app.get("/step", async (req, res) => {
 
 app.post("/jerere", async (req, res) => {
   try {
+    if (Date.now() < aiLockoutUntil) {
+      return res.status(503).json({ error: "AI service currently unavailable due to limit quota restriction" });
+    }
     const prompt = req.body.prompt?.trim();
     if (!prompt) return res.status(400).json({ error: "No prompt provided" });
 
@@ -613,6 +701,11 @@ app.post("/jerere", async (req, res) => {
       body: JSON.stringify(inputs)
     });
     
+    if (aiReq.status === 429 || aiReq.status === 401 || aiReq.status === 403) {
+      aiLockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
+      return res.status(503).json({ error: "AI service limit reached" });
+    }
+
     const aiJson = await aiReq.json();
     const aiResponse = aiJson.result;
 
@@ -646,7 +739,7 @@ app.post("/jerere", async (req, res) => {
 
     const returnedUrl = uploadJson?.url || uploadJson?.link || uploadText || null;
     if (!returnedUrl) {
-      `throw new Error()`;
+      throw new Error();
     }
 
     return res.json({ url: returnedUrl });
