@@ -82,7 +82,7 @@ async function deleteFromR2(key) {
 async function syncJsonToMongo() {
   const langs = ["en", "fr", "es", "ht"];
   for (const l of langs) {
-    const p = path.join(process.cwd(), `${l}.json`);
+    const p = path.join(process.cwd(), "lang", `${l}.json`);
     if (fs.existsSync(p)) {
       try {
         const content = fs.readFileSync(p, "utf-8");
