@@ -22,17 +22,30 @@ db.exec("CREATE TABLE IF NOT EXISTS user_info (session_id TEXT PRIMARY KEY, data
 db.exec("CREATE TABLE IF NOT EXISTS served_questions (session_id TEXT, quiz_id TEXT, PRIMARY KEY(session_id, quiz_id))");
 db.exec("CREATE TABLE IF NOT EXISTS used_persons (session_id TEXT, person_name TEXT)");
 
-const SERVER_URL = process.env.SERVER_URL;
 const MONGO_URI = process.env.MONGO_URI;
 
-const cfAccounts = [];
-if (process.env.CF_ACCOUNT_ID && process.env.CF_TOKEN) {
-  cfAccounts.push({ id: process.env.CF_ACCOUNT_ID, token: process.env.CF_TOKEN });
+const cfCredentialsStr = process.env.CF_CREDENTIALS || "";
+let cfCredentials = [];
+if (cfCredentialsStr) {
+    cfCredentialsStr.split(",").forEach(pair => {
+        const parts = pair.split(":");
+        if (parts.length === 2) {
+            cfCredentials.push({ accountId: parts[0], token: parts[1], lockoutUntil: 0 });
+        }
+    });
 }
-for (let i = 2; i <= 20; i++) {
-  if (process.env[`CF_ACCOUNT_ID_${i}`] && process.env[`CF_TOKEN_${i}`]) {
-    cfAccounts.push({ id: process.env[`CF_ACCOUNT_ID_${i}`], token: process.env[`CF_TOKEN_${i}`] });
-  }
+if (cfCredentials.length === 0 && process.env.CF_ACCOUNT_ID && process.env.CF_TOKEN) {
+    cfCredentials.push({ accountId: process.env.CF_ACCOUNT_ID, token: process.env.CF_TOKEN, lockoutUntil: 0 });
+}
+
+function getAvailableCFCredential() {
+    const now = Date.now();
+    for (let i = 0; i < cfCredentials.length; i++) {
+        if (now > cfCredentials[i].lockoutUntil) {
+            return { cred: cfCredentials[i], index: i };
+        }
+    }
+    return null;
 }
 
 let globalRequestCounter = 0;
@@ -67,11 +80,6 @@ const Progress = mongoose.model("Progress", progressSchema);
 
 const userSchema = new mongoose.Schema({ sessionId: String, data: String });
 const UserInfo = mongoose.model("UserInfo", userSchema);
-
-const logger = (level, ctx, msg) => console.log(`[${level}] [${ctx}] ${msg}`);
-const logInfo = (ctx, msg) => logger("INFO", ctx, msg);
-const logWarn = (ctx, msg) => logger("WARN", ctx, msg);
-const logError = (ctx, msg) => logger("ERROR", ctx, msg);
 
 function getKeyFromUrl(url) {
   if (!url) return null;
@@ -133,7 +141,7 @@ async function getRandomFromJsonFile(lang, level) {
 }
 
 async function syncJsonToMongo() {
-  logInfo("SYSTEM", "Starting JSON synchronisation, threshold 20%");
+  console.log("[SYSTEM] Starting JSON synchronisation, threshold 20%");
   const langs = ["en", "fr", "es", "ht"];
   for (const l of langs) {
     const p = path.join(process.cwd(), "lang", `${l}.json`);
@@ -157,6 +165,19 @@ async function syncJsonToMongo() {
   }
 }
 
+function analyzeJsonParseError(rawStr, err) {
+  console.log("[AI_MANAGER] JSON parsing failed. Error: " + err.message);
+  if (!rawStr || rawStr.trim() === "") {
+    console.log("[AI_MANAGER] Diagnosis -> Response completely empty.");
+    return;
+  }
+  const trimmed = rawStr.trim();
+  if (trimmed[0] !== "{" && trimmed[0] !== "[") {
+    console.log("[AI_MANAGER] Diagnosis -> Response does not start with JSON brackets.");
+    return;
+  }
+}
+
 function parseAIJsonResponse(rawResponse, expectedKeys) {
   const rawText = typeof rawResponse === "string" ? rawResponse : JSON.stringify(rawResponse || {});
   const firstBracket = rawText.indexOf('{');
@@ -171,13 +192,13 @@ function parseAIJsonResponse(rawResponse, expectedKeys) {
     if (firstSquare !== -1 && lastSquare !== -1 && lastSquare > firstSquare) {
       extractedJson = rawText.substring(firstSquare, lastSquare + 1);
     } else {
-      throw new Error(`Array structure '[...]' not found. Raw: ${rawText}`);
+      throw new Error(`[Parse Error] Array structure not found.`);
     }
   } else {
     if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
       extractedJson = rawText.substring(firstBracket, lastBracket + 1);
     } else {
-      throw new Error(`JSON structure '{...}' not found. Raw: ${rawText}`);
+      throw new Error(`[Parse Error] JSON structure not found.`);
     }
   }
 
@@ -185,13 +206,14 @@ function parseAIJsonResponse(rawResponse, expectedKeys) {
   try {
     parsedData = JSON.parse(extractedJson);
   } catch (err) {
-    throw new Error(`SyntaxError during JSON parsing: ${err.message}`);
+    analyzeJsonParseError(rawText, err);
+    throw new Error(`[Parse Error] SyntaxError: ${err.message}.`);
   }
 
   if (!isArrayExpected) {
     for (const key of expectedKeys) {
       if (parsedData[key] === undefined || parsedData[key] === null) {
-        throw new Error(`Missing required JSON key '${key}'`);
+        throw new Error(`[Parse Error] Missing key '${key}'.`);
       }
     }
   }
@@ -199,52 +221,108 @@ function parseAIJsonResponse(rawResponse, expectedKeys) {
   return parsedData;
 }
 
-async function cfAIFetch(model, bodyPayload) {
-  let lastError = "No CF credentials configured";
-  for (const cred of cfAccounts) {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${cred.id}/ai/run/${model}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${cred.token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(bodyPayload),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      
-      const json = await response.json();
-      
-      const isRateLimited = response.status === 429;
-      const isQuotaError = json.errors && json.errors.length > 0 && json.errors[0].message.toLowerCase().includes("allocation");
-      
-      if (isRateLimited || isQuotaError) {
-        lastError = `Limit reached for account ${cred.id}`;
-        logWarn("AI_FALLBACK", `Switching account. Reason: ${lastError}`);
-        continue;
-      }
-      
-      if (json.success && json.result) {
-        return json.result;
-      }
-      lastError = "Invalid response format from CF";
-    } catch (e) {
-      clearTimeout(timeout);
-      lastError = e.message;
-    }
+async function runAI(messages, max_tokens, retries = 0) {
+  const available = getAvailableCFCredential();
+  if (!available) {
+      console.log("[AI_MANAGER] Error: All configured Cloudflare AI credentials are locked out or exhausted.");
+      return { response: "{}" };
   }
-  logError("AI_FALLBACK", "All CF accounts failed.");
-  throw new Error(`All CF accounts failed. Last error: ${lastError}`);
+  
+  const { cred, index } = available;
+  const aiModel = "@cf/meta/llama-3.1-8b-instruct";
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  const aiUrl = `https://api.cloudflare.com/client/v4/accounts/${cred.accountId}/ai/run/${aiModel}`;
+
+  try {
+    const response = await fetch(aiUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${cred.token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ messages, max_tokens }),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    const rawText = await response.text();
+    let json = {};
+    try {
+        json = JSON.parse(rawText);
+    } catch(e) {
+        console.log("[AI_MANAGER] Error parsing Cloudflare API response JSON.");
+    }
+
+    const isRateLimited = response.status === 429 || response.status === 401 || response.status === 403 || (json.errors && json.errors.length > 0 && json.errors.some(err => err.message && (err.message.includes("allocation") || err.message.includes("limit"))));
+
+    if (isRateLimited) {
+        console.log(`[AI_MANAGER] Fallback Triggered: Credential index ${index} exhausted or limited. Locking out for 24 hours.`);
+        cfCredentials[index].lockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
+        if (retries < cfCredentials.length) {
+            return await runAI(messages, max_tokens, retries + 1);
+        }
+        return { response: "{}" };
+    }
+
+    if (json.success && json.result) {
+      return json.result;
+    }
+    return { response: "{}" };
+  } catch (e) {
+    clearTimeout(timeout);
+    console.log(`[AI_MANAGER] Network or Abort error on credential index ${index}. Message: ${e.message}`);
+    return { response: "{}" };
+  }
 }
 
-async function runAI(messages, max_tokens) {
-  return await cfAIFetch("@cf/meta/llama-3.1-8b-instruct", { messages, max_tokens });
+async function runAIImage(prompt, retries = 0) {
+    const available = getAvailableCFCredential();
+    if (!available) {
+        console.log("[AI_MANAGER] Error: All AI credentials exhausted for Image Generation.");
+        return null;
+    }
+    const { cred, index } = available;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    const url = `https://api.cloudflare.com/client/v4/accounts/${cred.accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${cred.token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt, num_steps: 4 }),
+            signal: controller.signal
+        });
+        clearTimeout(timeout);
+
+        const rawText = await response.text();
+        let json = {};
+        try { json = JSON.parse(rawText); } catch(e) {}
+
+        const isRateLimited = response.status === 429 || response.status === 401 || response.status === 403 || (json.errors && json.errors.length > 0 && json.errors.some(err => err.message && (err.message.includes("allocation") || err.message.includes("limit"))));
+
+        if (isRateLimited) {
+            console.log(`[AI_MANAGER] Fallback Triggered: Credential index ${index} exhausted on Image generation. Lockout 24h.`);
+            cfCredentials[index].lockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
+            if (retries < cfCredentials.length) {
+                return await runAIImage(prompt, retries + 1);
+            }
+            return null;
+        }
+        return json.result;
+    } catch(e) {
+        clearTimeout(timeout);
+        return null;
+    }
 }
 
 async function executeBackgroundMassGeneration(isTrigger) {
+  const available = getAvailableCFCredential();
+  if (!available) return;
+
   const processName = isTrigger ? "Trigger" : "Auto";
-  logInfo("BG_GEN", `Initiation processus: ${processName}`);
+  console.log(`[SYSTEM] Initiation mass generation process: ${processName}`);
 
   let targetLevels = [1, 2, 3];
   if (!isTrigger) {
@@ -264,6 +342,9 @@ async function executeBackgroundMassGeneration(isTrigger) {
     
     for (let i = 0; i < 7; i++) {
       try {
+        const currentCheck = getAvailableCFCredential();
+        if (!currentCheck) return;
+
         const level = targetLevels[Math.floor(Math.random() * targetLevels.length)] || 1;
         const qType = qTypes[Math.floor(Math.random() * qTypes.length)];
 
@@ -275,13 +356,16 @@ async function executeBackgroundMassGeneration(isTrigger) {
           }
         } catch(e) {}
 
-        const systemInstruction = "You are a strict JSON data generator. Output ONLY raw valid JSON. No markdown tags, no formatting, no extra text.";
-        
-        const prompt = qType === "MCQ" 
-          ? `Create a brand new unique MCQ quiz question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`
-          : qType === "TRUE_FALSE"
-          ? `Create a brand new unique True or False statement in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`
-          : `Create a brand new unique Fill-in-the-blank question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Use ______ for the blank. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+        let systemInstruction = "You are a strict JSON data generator. Output ONLY raw valid JSON. No markdown tags, no formatting, no extra text.";
+        let prompt = "";
+
+        if (qType === "MCQ") {
+          prompt = `Create a brand new unique MCQ quiz question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+        } else if (qType === "TRUE_FALSE") {
+          prompt = `Create a brand new unique True or False statement in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the statement statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+        } else {
+          prompt = `Create a brand new unique Fill-in-the-blank question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Use ______ for the blank. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with fill blank", "options": [], "answer": "Expected exact answer", "explanation": "Detailed explanation", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+        }
 
         const aiResponse = await runAI([
           { role: "system", content: systemInstruction },
@@ -307,19 +391,12 @@ async function executeBackgroundMassGeneration(isTrigger) {
                 successMsg: parsed.successMsg || "Correct!",
                 errorMsg: parsed.errorMsg || "Incorrect."
               }).catch(() => {});
-              logInfo("BG_GEN", `Nouvelle question sauvegardee. Similarite: ${simCheck.pct}%`);
+              console.log(`[SYSTEM] New mass question saved. Similarity: ${simCheck.pct}%`);
             }
-          } else {
-            logInfo("BG_GEN", `Annulee: Similarite de ${simCheck.pct}% superieure a 70%`);
           }
-        } catch (parseError) {
-          logError("BG_GEN", `Echec AI Parse: ${parseError.message}`);
-        }
+        } catch (parseError) {}
         await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (e) {
-        logError("BG_GEN", `Erreur inattendue : ${e.message}`);
-        break;
-      }
+      } catch (e) {}
     }
   }
 }
@@ -366,128 +443,24 @@ async function saveUserInfo(sessionId, dataString) {
   db.prepare("REPLACE INTO user_info (session_id, data) VALUES (?, ?)").run(sessionId, dataString);
 }
 
-async function executeMode0PureDB(randomItem) {
-  if (!randomItem) throw new Error("Item introuvable");
-  return {
-    parsed: { question: randomItem.question, options: randomItem.options, answer: randomItem.answer },
-    randomType: randomItem.qType || "MCQ",
-    imgUrl: randomItem.imageUrl || null,
-    finalSuccess: randomItem.successMsg || null,
-    finalError: randomItem.errorMsg || null,
-    finalExplanation: randomItem.explanation || null
-  };
-}
-
-async function executeMode1ImproveExisting(randomItem, langName) {
-  if (!randomItem) throw new Error("Item introuvable");
-  const prompt = `Improve this quiz question slightly making it more clear without changing the actual answer. Language: ${langName}. Do NOT generate explanations, success messages, or error messages. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
-  const sysStrict = "You are a strict JSON API generator. Output ONLY raw valid JSON. No conversational text, no formatting, no markdown code blocks.";
-  const aiResponse = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: prompt }], 1000);
-  const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
-  return {
-    parsed: parsed,
-    randomType: randomItem.qType || "MCQ",
-    imgUrl: null,
-    finalSuccess: "",
-    finalError: "",
-    finalExplanation: ""
-  };
-}
-
-async function executeMode2CreateSimilar(randomItem, langName) {
-  if (!randomItem) throw new Error("Item introuvable");
-  const prompt = `Create a completely new quiz question in the EXACT same style and general topic as this one. Language: ${langName}. Do NOT generate explanations. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
-  const sysStrict = "You are a strict JSON API generator. Output ONLY raw valid JSON. No conversational text, no formatting, no markdown code blocks.";
-  const aiResponse = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: prompt }], 1000);
-  const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
-  return {
-    parsed: parsed,
-    randomType: randomItem.qType || "MCQ",
-    imgUrl: null,
-    finalSuccess: "",
-    finalError: "",
-    finalExplanation: ""
-  };
-}
-
-async function executeMode3PureAIGeneration(session_id, language, langName) {
-  const sysStrict = "You are a strict JSON API generator. Output ONLY raw valid JSON. No conversational text, no formatting, no markdown code blocks.";
-  const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
-  const randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
-  
-  if (randomType === "IDENTITY_IMAGE") {
-    const usedRes = db.prepare("SELECT person_name FROM used_persons WHERE session_id = ?").all(session_id);
-    const usedList = usedRes.map(r => r.person_name);
-    let subjectName = "Eiffel Tower";
-    
-    const personPrompt = `Return ONLY a valid JSON array of 5 visually distinct subjects (famous historical figures, famous monuments, or iconic cities). Exclude these: ${usedList.join(",")}. Example exact output format: ["Subject1", "Subject2", "Subject3", "Subject4", "Subject5"]`;
-    const nameResp = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: personPrompt }], 300);
-    const candidates = parseAIJsonResponse(nameResp.response, ["ARRAY_FORMAT_ONLY"]);
-    
-    if (Array.isArray(candidates) && candidates.length > 0) {
-       for (const name of candidates) {
-          if (!usedList.includes(name)) {
-             subjectName = name;
-             break;
-          }
-       }
-    }
-    
-    db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, subjectName);
-    const imagePrompt = `A 100% authentic photograph or high quality image of ${subjectName}, ultra-realistic documentary style, lifelike, highly detailed, no digital art.`;
-    
-    const aiImgResponse = await cfAIFetch("@cf/black-forest-labs/flux-1-schnell", { prompt: imagePrompt });
-    const base64Image = aiImgResponse.image;
-    
-    if (!base64Image) throw new Error("Image base64 manquante de Flux AI");
-    
-    const buffer = Buffer.from(base64Image, "base64");
-    const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
-    const r2Key = `uploads/${filename}`;
-    
-    await s3.send(new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET,
-      Key: r2Key,
-      Body: buffer,
-      ContentType: "image/png"
-    }));
-    
-    const imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
-    const questionTexts = { en: "Who is this person or what is this?", fr: "Qui est cette personne, quelle est cette ville, ou quel est ce monument ?", es: "¿Quién es esta persona, qué es esta ciudad, o qué es este monument?", ht: "Kiyès moun sa, ki vil sa, oswa ki moniman sa?" };
-    
-    return {
-      parsed: { question: questionTexts[language] || questionTexts.en, options: [], answer: subjectName },
-      randomType: "IDENTITY_IMAGE",
-      imgUrl: imgUrl,
-      finalSuccess: "",
-      finalError: "",
-      finalExplanation: ""
-    };
+app.get("/local-image/:filename", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  const filePath = path.join(dataDir, req.params.filename);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send("Image Not Found");
   }
-  
-  if (randomType === "MCQ") {
-    const mcqPrompt = `Create a brand new unique Multiple Choice Question (MCQ). Topic: General Knowledge. Language: ${langName}. Return ONLY a raw JSON object matching this schema: {"question":"Your question?","options":["Choice A","Choice B","Choice C","Choice D"],"answer":"Choice B"}`;
-    const aiResponse = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: mcqPrompt }], 1000);
-    const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
-    return { parsed, randomType, imgUrl: null, finalSuccess: "", finalError: "", finalExplanation: "" };
-  }
-  
-  if (randomType === "TRUE_FALSE") {
-    const tfPrompt = `Create a brand new unique True or False statement. Topic: General Knowledge. Language: ${langName}. Return ONLY a raw JSON object matching this schema: {"question":"Your statement.","options":["True","False"],"answer":"False"}`;
-    const aiResponse = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: tfPrompt }], 1000);
-    const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
-    return { parsed, randomType, imgUrl: null, finalSuccess: "", finalError: "", finalExplanation: "" };
-  }
-  
-  const fbPrompt = `Create a brand new unique Fill-in-the-blank question. Topic: General Knowledge. Language: ${langName}. Use ______ for the blank space. Return ONLY a raw JSON object matching this schema: {"question":"The capital of France is ______.","options":[],"answer":"Paris"}`;
-  const aiResponse = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: fbPrompt }], 1000);
-  const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
-  return { parsed, randomType: "FILL_BLANK", imgUrl: null, finalSuccess: "", finalError: "", finalExplanation: "" };
-}
+});
 
 app.use((req, res, next) => {
+  console.log(`[ROUTER] Intercepted request on: ${req.path}`);
+  
   globalRequestCounter++;
   if (globalRequestCounter >= 70) {
+    console.log("[SYSTEM] 70 requests reached. Triggering mass generation.");
     globalRequestCounter = 0;
     executeBackgroundMassGeneration(true).catch(e => e);
   }
@@ -517,15 +490,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/local-image/:filename", (req, res) => {
-  const filePath = path.join(dataDir, req.params.filename);
-  if (fs.existsSync(filePath)) {
-    res.sendFile(filePath);
-  } else {
-    res.status(404).send("Image Not Found");
-  }
-});
-
 app.post("/user-info", async (req, res) => {
   try {
     const body = req.body;
@@ -550,13 +514,117 @@ app.post("/user-info", async (req, res) => {
   }
 });
 
+async function executeMode0PureDB(randomItem) {
+    console.log("[MODE_0_PURE_DB] Execution started");
+    if (!randomItem) throw new Error("Source item missing");
+    const parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer };
+    const randomType = randomItem.qType || "MCQ";
+    const imgUrl = randomItem.imageUrl || null;
+    const finalSuccess = randomItem.successMsg || null;
+    const finalError = randomItem.errorMsg || null;
+    const finalExplanation = randomItem.explanation || null;
+    console.log("[MODE_0_PURE_DB] Success");
+    return { parsed, randomType, imgUrl, finalSuccess, finalError, finalExplanation };
+}
+
+async function executeMode1ImproveExisting(randomItem, langName) {
+    console.log("[MODE_1_IMPROVE_EXISTING] Execution started");
+    if (!randomItem) throw new Error("Source item missing");
+    const prompt = `Improve this quiz question slightly making it more clear without changing the actual answer. Language: ${langName}. Do NOT generate explanations, success messages, or error messages. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
+    const aiResponse = await runAI([{ role: "system", content: "You are a strict JSON API generator. Output ONLY raw valid JSON." }, { role: "user", content: prompt }], 1000);
+    const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+    console.log("[MODE_1_IMPROVE_EXISTING] Success");
+    return { parsed, randomType: randomItem.qType || "MCQ", imgUrl: null, finalSuccess: "", finalError: "", finalExplanation: "" };
+}
+
+async function executeMode2CreateSimilar(randomItem, langName) {
+    console.log("[MODE_2_CREATE_SIMILAR] Execution started");
+    if (!randomItem) throw new Error("Source item missing");
+    const prompt = `Create a completely new quiz question in the EXACT same style and general topic as this one. Language: ${langName}. Do NOT generate explanations. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
+    const aiResponse = await runAI([{ role: "system", content: "You are a strict JSON API generator. Output ONLY raw valid JSON." }, { role: "user", content: prompt }], 1000);
+    const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+    console.log("[MODE_2_CREATE_SIMILAR] Success");
+    return { parsed, randomType: randomItem.qType || "MCQ", imgUrl: null, finalSuccess: "", finalError: "", finalExplanation: "" };
+}
+
+async function executeMode3PureAIGeneration(session_id, language, langName) {
+    console.log("[MODE_3_PURE_AI_GENERATION] Execution started");
+    const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
+    const randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+    const systemInstructionStrict = "You are a strict JSON API generator. Output ONLY raw valid JSON.";
+    let parsed = null;
+    let imgUrl = null;
+
+    if (randomType === "IDENTITY_IMAGE") {
+        console.log("[MODE_3_PURE_AI_GENERATION] Sub-mode: IDENTITY_IMAGE");
+        const usedRes = db.prepare("SELECT person_name FROM used_persons WHERE session_id = ?").all(session_id);
+        const usedList = usedRes.map(r => r.person_name);
+        let subjectName = "Eiffel Tower";
+        
+        const personPrompt = `Return ONLY a valid JSON array of 5 visually distinct subjects (famous historical figures, famous monuments, or iconic cities). Exclude these: ${usedList.join(",")}. Example exact output format: ["Subject1", "Subject2", "Subject3", "Subject4", "Subject5"]`;
+        const nameResp = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: personPrompt }], 300);
+        
+        const candidates = parseAIJsonResponse(nameResp.response, ["ARRAY_FORMAT_ONLY"]);
+        if (Array.isArray(candidates) && candidates.length > 0) {
+           for (const name of candidates) {
+              if (!usedList.includes(name)) {
+                 subjectName = name;
+                 break;
+              }
+           }
+        }
+        
+        db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, subjectName);
+        const imagePrompt = `A 100% authentic photograph or high quality image of ${subjectName}, ultra-realistic documentary style, lifelike, highly detailed, no digital art.`;
+        
+        const aiJsonResult = await runAIImage(imagePrompt);
+        if (aiJsonResult && aiJsonResult.image) {
+          const base64Image = aiJsonResult.image;
+          const buffer = Buffer.from(base64Image, "base64");
+          const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
+          const r2Key = `uploads/${filename}`;
+          await s3.send(new PutObjectCommand({
+            Bucket: process.env.R2_BUCKET,
+            Key: r2Key,
+            Body: buffer,
+            ContentType: "image/png"
+          }));
+          imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
+        } else {
+            throw new Error("Flux AI Image API failed");
+        }
+        
+        const questionTexts = { en: "Who is this person or what is this?", fr: "Qui est cette personne, quelle est cette ville, ou quel est ce monument ?", es: "¿Quién es esta persona, qué es esta ciudad, o qué es este monument?", ht: "Kiyès moun sa, ki vil sa, oswa ki moniman sa?" };
+        parsed = { question: questionTexts[language] || questionTexts.en, options: [], answer: subjectName };
+        
+    } else if (randomType === "MCQ") {
+        console.log("[MODE_3_PURE_AI_GENERATION] Sub-mode: MCQ");
+        const mcqPrompt = `Create a brand new unique Multiple Choice Question (MCQ). Topic: General Knowledge. Language: ${langName}. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw JSON object matching this schema: {"question":"Your question?","options":["Choice A","Choice B","Choice C","Choice D"],"answer":"Choice B"}`;
+        const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: mcqPrompt }], 1000);
+        parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+    } else if (randomType === "TRUE_FALSE") {
+        console.log("[MODE_3_PURE_AI_GENERATION] Sub-mode: TRUE_FALSE");
+        const tfPrompt = `Create a brand new unique True or False statement. Topic: General Knowledge. Language: ${langName}. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw JSON object matching this schema: {"question":"Your statement.","options":["True","False"],"answer":"False"}`;
+        const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: tfPrompt }], 1000);
+        parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+    } else if (randomType === "FILL_BLANK") {
+        console.log("[MODE_3_PURE_AI_GENERATION] Sub-mode: FILL_BLANK");
+        const fbPrompt = `Create a brand new unique Fill-in-the-blank question. Topic: General Knowledge. Language: ${langName}. Use ______ for the blank space. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw JSON object matching this schema: {"question":"The capital of France is ______.","options":[],"answer":"Paris"}`;
+        const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: fbPrompt }], 1000);
+        parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+    }
+
+    console.log("[MODE_3_PURE_AI_GENERATION] Success");
+    return { parsed, randomType, imgUrl, finalSuccess: "", finalError: "", finalExplanation: "" };
+}
+
 app.post("/quizz", async (req, res) => {
   try {
     const body = req.body;
     const session_id = body.session_id?.trim();
     if (!session_id) return res.status(400).json({ error: "session_id required" });
 
-    logInfo("QUIZ", `Nouvelle requete utilisateur: ${session_id}`);
+    console.log(`[ROUTER] Quiz request from user: ${session_id}`);
 
     const rawLang = body.lang?.trim();
     let lang = rawLang ? rawLang.toLowerCase() : null;
@@ -631,13 +699,6 @@ app.post("/quizz", async (req, res) => {
       [availableStrategies[i], availableStrategies[j]] = [availableStrategies[j], availableStrategies[i]];
     }
 
-    const modeNames = {
-      0: "MongoDB Pure Mode",
-      1: "AI Improved MongoDB Mode",
-      2: "AI Replicated MongoDB Mode",
-      3: "Pure AI Generation Mode"
-    };
-
     let parsed = null;
     let randomType = "MCQ";
     let imgUrl = null;
@@ -648,42 +709,33 @@ app.post("/quizz", async (req, res) => {
 
     while (availableStrategies.length > 0 && !success) {
       const strategy = availableStrategies.shift();
-      const currentStrategyName = modeNames[strategy];
-      logInfo("QUIZ", `Tentative strategie: ${currentStrategyName}`);
-
+      
       if (!randomItem && strategy !== 3) {
         continue;
       }
 
       try {
-        let resultObj;
-        if (strategy === 0) {
-          resultObj = await executeMode0PureDB(randomItem);
-        } else if (strategy === 1) {
-          resultObj = await executeMode1ImproveExisting(randomItem, langName);
-        } else if (strategy === 2) {
-          resultObj = await executeMode2CreateSimilar(randomItem, langName);
-        } else if (strategy === 3) {
-          resultObj = await executeMode3PureAIGeneration(session_id, language, langName);
-        }
+        let strategyResult;
+        if (strategy === 0) strategyResult = await executeMode0PureDB(randomItem);
+        else if (strategy === 1) strategyResult = await executeMode1ImproveExisting(randomItem, langName);
+        else if (strategy === 2) strategyResult = await executeMode2CreateSimilar(randomItem, langName);
+        else if (strategy === 3) strategyResult = await executeMode3PureAIGeneration(session_id, language, langName);
 
-        parsed = resultObj.parsed;
-        randomType = resultObj.randomType;
-        imgUrl = resultObj.imgUrl;
-        finalSuccess = resultObj.finalSuccess;
-        finalError = resultObj.finalError;
-        finalExplanation = resultObj.finalExplanation;
+        parsed = strategyResult.parsed;
+        randomType = strategyResult.randomType;
+        imgUrl = strategyResult.imgUrl;
+        finalSuccess = strategyResult.finalSuccess;
+        finalError = strategyResult.finalError;
+        finalExplanation = strategyResult.finalExplanation;
         success = true;
-        
-        logInfo("QUIZ", `Succes avec la strategie ${currentStrategyName}`);
       } catch (e) {
-        logWarn("QUIZ", `Echec strategie ${currentStrategyName} : ${e.message}`);
+        console.log(`[MODE_ERROR] Strategy ${strategy} failed: ${e.message}`);
         success = false;
       }
     }
 
     if (!success) {
-      logError("QUIZ", "Toutes les strategies ont echoue. Application du fallback de securite.");
+      console.log("[AI_MANAGER] Fallback applied.");
       if (randomItem) {
         parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer };
         randomType = randomItem.qType || "MCQ";
@@ -773,8 +825,6 @@ app.post("/validate", async (req, res) => {
     const user_answer = body.user_answer?.trim() || "";
     if (!session_id || !user_answer) return res.status(400).json({ error: "session_id and user_answer required" });
 
-    logInfo("VALIDATE", `Soumission par ${session_id} : ${user_answer}`);
-
     const current = await getCurrentQuiz(session_id);
     if (!current) return res.status(400).json({ error: "No active quiz" });
 
@@ -814,7 +864,7 @@ app.post("/validate", async (req, res) => {
     if (isAiPur) {
       const sysStrict = "You are a strict JSON data generator. Output ONLY raw valid JSON without markdown formatting.";
       if (isCorrect) {
-        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer was: "${current.answer}". Write a short success message and brief explanation in ${langName}. Return ONLY a valid JSON object matching this schema: {"successMsg": "encouraging text", "explanation": "detailed reason"}`;
+        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer was: "${current.answer}". Write a short success message and brief explanation in ${langName}. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a valid JSON object matching this schema: {"successMsg": "encouraging text", "explanation": "detailed reason"}`;
         try {
           const aiResp = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: usr }], 800);
           const parsedFeedback = parseAIJsonResponse(aiResp.response, ["successMsg", "explanation"]);
@@ -823,13 +873,13 @@ app.post("/validate", async (req, res) => {
           finalFeedback = "Correct!\n\n" + current.answer;
         }
       } else {
-        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". Write a brief error statement and educational explanation in ${langName}. Return ONLY a valid JSON object matching this schema: {"errorMsg": "mistake feedback", "explanation": "detailed context"}`;
+        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". Write a brief error statement and educational explanation in ${langName}. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a valid JSON object matching this schema: {"errorMsg": "mistake feedback", "explanation": "detailed context"}`;
         try {
           const aiResp = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: usr }], 800);
           const parsedFeedback = parseAIJsonResponse(aiResp.response, ["errorMsg", "explanation"]);
           finalFeedback = `${parsedFeedback.errorMsg}\n\n${parsedFeedback.explanation}`;
         } catch(e) {
-          finalFeedback = "Incorrect.\n\nLa bonne reponse etait : " + current.answer;
+          finalFeedback = "Incorrect.\n\nThe correct answer was: " + current.answer;
         }
       }
     } else {
@@ -893,24 +943,20 @@ app.post("/jerere", async (req, res) => {
     const prompt = req.body.prompt?.trim();
     if (!prompt) return res.status(400).json({ error: "No prompt provided" });
 
-    const inputs = { prompt: prompt, num_steps: 4 };
-
-    const aiResponse = await cfAIFetch("@cf/black-forest-labs/flux-1-schnell", inputs);
+    const aiJsonResult = await runAIImage(prompt);
     
-    await new Promise(resolve => setTimeout(resolve, 7));
-
-    if (!aiResponse || !aiResponse.image) {
+    if (!aiJsonResult || !aiJsonResult.image) {
       throw new Error();
     }
 
-    const binaryString = atob(aiResponse.image);
+    const binaryString = atob(aiJsonResult.image);
     const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
     const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
     const blob = new Blob([bytes.buffer], { type: "image/png" });
     const formData = new FormData();
     formData.append("file", blob, filename);
 
-    const uploadRes = await fetch("https://v1bref.onrender.com/upload", { method: "POST", body: formData });
+    const uploadRes = await fetch("https://bref.adamdh7.org/upload", { method: "POST", body: formData });
     await new Promise(resolve => setTimeout(resolve, 7));
 
     let uploadJson = null;
@@ -938,5 +984,5 @@ app.post("/jerere", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  logInfo("SYSTEM", `Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
