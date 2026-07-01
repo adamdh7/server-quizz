@@ -1,0 +1,42 @@
+[
+  {
+    "qType": "IDENTITY_IMAGE",
+    "question": "Qui est cette personne ?",
+    "options": [],
+    "imageUrl": "imaj/Albert Einstein.JPG",
+    "answer": "Albert Einstein",
+    "explanation": "Il s'agit d'Albert Einstein, le célèbre physicien théoricien qui a développé la théorie de la relativité.",
+    "successMsg": "Excellent ! Vous avez reconnu Albert Einstein.",
+    "errorMsg": "Incorrect. C'est Albert Einstein."
+  },
+  {
+    "qType": "MCQ",
+    "question": "Dans quel domaine Albert Einstein a-t-il remporté son prix Nobel en 1921 ?",
+    "options": ["Théorie de la relativité", "Effet photoélectrique", "Mouvement brownien", "Fission nucléaire"],
+    "imageUrl": "",
+    "answer": "Effet photoélectrique",
+    "explanation": "Albert Einstein a reçu le prix Nobel de physique de 1921 pour ses contributions à la physique théorique, et particulièrement pour sa découverte de la loi de l'effet photoélectrique.",
+    "successMsg": "Brillant ! Vous connaissez bien l'histoire des sciences.",
+    "errorMsg": "Mauvais choix. Il l'a en fait remporté pour l'effet photoélectrique."
+  },
+  {
+    "qType": "TRUE_FALSE",
+    "question": "Albert Einstein est né en Allemagne.",
+    "options": ["Vrai", "Faux"],
+    "imageUrl": "",
+    "answer": "Vrai",
+    "explanation": "Einstein est né à Ulm, dans le royaume de Wurtemberg au sein de l'Empire allemand, le 14 mars 1879.",
+    "successMsg": "Correct ! Il est bel et bien né en Allemagne.",
+    "errorMsg": "Incorrect. Albert Einstein est né en Allemagne."
+  },
+  {
+    "qType": "FILL_BLANK",
+    "question": "Complétez la célèbre équation d'équivalence masse-énergie formulée par Einstein : E = ___",
+    "options": [],
+    "imageUrl": "",
+    "answer": "mc^2",
+    "explanation": "La formule E = mc² exprime le fait que la masse et l'énergie sont la même entité physique et peuvent se transformer l'une en l'autre.",
+    "successMsg": "Parfait ! E = mc² est l'équation la plus célèbre au monde.",
+    "errorMsg": "Non, la bonne réponse est mc^2."
+  }
+]
