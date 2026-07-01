@@ -117,6 +117,17 @@ async function getRandomFromJsonFile(lang, level) {
   return null;
 }
 
+function extractAiString(aiOutput) {
+  if (!aiOutput) return "";
+  if (typeof aiOutput === "string") return aiOutput;
+  if (typeof aiOutput.response === "string") return aiOutput.response;
+  try {
+    return JSON.stringify(aiOutput);
+  } catch (e) {
+    return "";
+  }
+}
+
 async function syncJsonToMongo() {
   console.log("Demarrage de la synchronisation JSON avec verification de la difference (50%)");
   const langs = ["en", "fr", "es", "ht"];
@@ -170,7 +181,7 @@ async function generateAndSaveAiQuizzes() {
           { role: "user", content: prompt }
         ], 1000);
 
-        const rawResponse = aiResponse.response || "";
+        const rawResponse = extractAiString(aiResponse);
         const firstBrace = rawResponse.indexOf('{');
         const lastBrace = rawResponse.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
@@ -222,7 +233,7 @@ async function triggerMassAiGeneration() {
           { role: "user", content: prompt }
         ], 1000);
 
-        const rawResponse = aiResponse.response || "";
+        const rawResponse = extractAiString(aiResponse);
         const firstBrace = rawResponse.indexOf('{');
         const lastBrace = rawResponse.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
@@ -525,7 +536,7 @@ app.post("/quizz", async (req, res) => {
           if (!randomItem) throw new Error("Item MongoDB introuvable pour amelioration");
           const systemPrompt = `Improve this quiz question slightly without changing the answer. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
-          const rawResponse = aiResponse.response || "";
+          const rawResponse = extractAiString(aiResponse);
           const firstBrace = rawResponse.indexOf('{');
           const lastBrace = rawResponse.lastIndexOf('}');
           if (firstBrace !== -1 && lastBrace !== -1) {
@@ -541,7 +552,7 @@ app.post("/quizz", async (req, res) => {
           if (!randomItem) throw new Error("Item MongoDB introuvable pour duplication");
           const systemPrompt = `Create a new quiz question in the EXACT same style and topic as this one. Language: ${langName}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Original: ${randomItem.question}`;
           const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
-          const rawResponse = aiResponse.response || "";
+          const rawResponse = extractAiString(aiResponse);
           const firstBrace = rawResponse.indexOf('{');
           const lastBrace = rawResponse.lastIndexOf('}');
           if (firstBrace !== -1 && lastBrace !== -1) {
@@ -558,7 +569,7 @@ app.post("/quizz", async (req, res) => {
             const personPrompt = `Return ONLY a valid JSON array containing 5 random famous historical figures. Format: ["Name1", "Name2", "Name3", "Name4", "Name5"]`;
             const nameResp = await runAI([{ role: "system", content: "Output ONLY raw JSON." }, { role: "user", content: personPrompt }], 300);
             let personName = "Albert Einstein";
-            const raw = nameResp.response || "";
+            const raw = extractAiString(nameResp);
             const firstBracket = raw.indexOf('[');
             const lastBracket = raw.lastIndexOf(']');
             if (firstBracket !== -1 && lastBracket !== -1) {
@@ -571,7 +582,7 @@ app.post("/quizz", async (req, res) => {
             const extImgResponse = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`, { method: "POST", headers: { "Authorization": `Bearer ${cfToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ prompt: imagePrompt }) });
             if (extImgResponse.ok) {
               const aiJson = await extImgResponse.json();
-              const base64Image = aiJson.result.image;
+              const base64Image = aiJson.result?.image;
               if (!base64Image) throw new Error("Image base64 manquante dans la reponse de l'API Image");
               const buffer = Buffer.from(base64Image, "base64");
               const filename = `img_${Date.now()}_${crypto.randomUUID().split('-')[0]}.png`;
@@ -591,7 +602,7 @@ app.post("/quizz", async (req, res) => {
           } else {
             const systemPrompt = `Create a ${randomType} quiz question. Topic: General Knowledge. Language: ${langName}. Difficulty: Level ${current_step_num}. Return ONLY a valid JSON object. Schema: {"question":"string","options":["string","string"],"answer":"string","explanation":"string"}. Do not write anything else.`;
             const aiResponse = await runAI([{ role: "system", content: "You are a JSON API. Return ONLY valid JSON." }, { role: "user", content: systemPrompt }], 1000);
-            const rawResponse = aiResponse.response || "";
+            const rawResponse = extractAiString(aiResponse);
             const firstBrace = rawResponse.indexOf('{');
             const lastBrace = rawResponse.lastIndexOf('}');
             if (firstBrace !== -1 && lastBrace !== -1) {
@@ -742,7 +753,7 @@ app.post("/validate", async (req, res) => {
       const judgePrompt = `Question: "${current.question}"\nExpected Answer: "${current.answer}"\nUser Answer: "${user_answer}"\nTask: Determine if the User Answer is correct or means the same thing as the Expected Answer.\nReturn ONLY valid JSON: {"correct": true or false}`;
       try {
         const judgeResp = await runAI([{ role: "system", content: "You evaluate answers. Output ONLY strict JSON." }, { role: "user", content: judgePrompt }], 800);
-        const text = judgeResp.response || "";
+        const text = extractAiString(judgeResp);
         const firstBrace = text.indexOf('{');
         const lastBrace = text.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
