@@ -30,9 +30,6 @@ const MONGO_URI = process.env.MONGO_URI;
 let aiLockoutUntil = 0;
 let contactCounter = 0;
 
-// The perfect fusion: Applying the ultra-strict constraint requested globally.
-const STRICT_JSON_SYSTEM_PROMPT = "You are a strict JSON data generator. Generate a clean and concise JSON response to the input, including only the requested data, without any surrounding characters or messages, and without any additional text or formatting. Output ONLY raw valid JSON.";
-
 const s3 = new S3Client({
   region: "auto",
   endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -255,6 +252,7 @@ async function executeBackgroundMassGeneration(isTrigger) {
           }
         } catch(e) {}
 
+        let systemInstruction = "You are a strict JSON data generator. Output ONLY raw valid JSON. No markdown tags, no formatting, no extra text.";
         let prompt = "";
 
         if (qType === "MCQ") {
@@ -268,7 +266,7 @@ async function executeBackgroundMassGeneration(isTrigger) {
         console.log(`[MODE_BACKGROUND_MASS_GENERATION] Requete prompt : ${prompt}`);
 
         const aiResponse = await runAI([
-          { role: "system", content: STRICT_JSON_SYSTEM_PROMPT },
+          { role: "system", content: systemInstruction },
           { role: "user", content: prompt }
         ], 1000);
 
@@ -571,6 +569,8 @@ app.post("/quizz", async (req, res) => {
         continue;
       }
 
+      const systemInstructionStrict = "You are a strict JSON API generator. Output ONLY raw valid JSON. No conversational text, no formatting, no markdown code blocks.";
+
       try {
         if (strategy === 0) {
           console.log("[MODE_0_PURE_DB] Execution commencee...");
@@ -588,7 +588,7 @@ app.post("/quizz", async (req, res) => {
           if (!randomItem) throw new Error("Item introuvable");
           const prompt = `Improve this quiz question slightly making it more clear without changing the actual answer. Language: ${langName}. Do NOT generate explanations, success messages, or error messages. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
           console.log("[MODE_1_IMPROVE_EXISTING] Envoi du prompt: " + prompt);
-          const aiResponse = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: prompt }], 1000);
+          const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: prompt }], 1000);
           
           parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
           randomType = randomItem.qType || "MCQ";
@@ -602,7 +602,7 @@ app.post("/quizz", async (req, res) => {
           if (!randomItem) throw new Error("Item introuvable");
           const prompt = `Create a completely new quiz question in the EXACT same style and general topic as this one. Language: ${langName}. Do NOT generate explanations. Original Question: "${randomItem.question}". Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
           console.log("[MODE_2_CREATE_SIMILAR] Envoi du prompt: " + prompt);
-          const aiResponse = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: prompt }], 1000);
+          const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: prompt }], 1000);
           
           parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
           randomType = randomItem.qType || "MCQ";
@@ -624,7 +624,7 @@ app.post("/quizz", async (req, res) => {
             
             const personPrompt = `Return ONLY a valid JSON array of 5 visually distinct subjects (famous historical figures, famous monuments, or iconic cities). Exclude these: ${usedList.join(",")}. Example exact output format: ["Subject1", "Subject2", "Subject3", "Subject4", "Subject5"]`;
             console.log("[MODE_3_PURE_AI_GENERATION] Prompt Subjects: " + personPrompt);
-            const nameResp = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: personPrompt }], 300);
+            const nameResp = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: personPrompt }], 300);
             
             const candidates = parseAIJsonResponse(nameResp.response, ["ARRAY_FORMAT_ONLY"]);
             if (Array.isArray(candidates) && candidates.length > 0) {
@@ -667,7 +667,7 @@ app.post("/quizz", async (req, res) => {
           } else if (randomType === "MCQ") {
             console.log("[MODE_3_PURE_AI_GENERATION] Sous-mode: MCQ");
             const mcqPrompt = `Create a brand new unique Multiple Choice Question (MCQ). Topic: General Knowledge. Language: ${langName}. Return ONLY a raw JSON object matching this schema: {"question":"Your question?","options":["Choice A","Choice B","Choice C","Choice D"],"answer":"Choice B"}`;
-            const aiResponse = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: mcqPrompt }], 1000);
+            const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: mcqPrompt }], 1000);
             parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
             finalSuccess = ""; finalError = ""; finalExplanation = ""; success = true;
             console.log("[MODE_3_PURE_AI_GENERATION] Succes (MCQ)");
@@ -675,7 +675,7 @@ app.post("/quizz", async (req, res) => {
           } else if (randomType === "TRUE_FALSE") {
             console.log("[MODE_3_PURE_AI_GENERATION] Sous-mode: TRUE_FALSE");
             const tfPrompt = `Create a brand new unique True or False statement. Topic: General Knowledge. Language: ${langName}. Return ONLY a raw JSON object matching this schema: {"question":"Your statement.","options":["True","False"],"answer":"False"}`;
-            const aiResponse = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: tfPrompt }], 1000);
+            const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: tfPrompt }], 1000);
             parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
             finalSuccess = ""; finalError = ""; finalExplanation = ""; success = true;
             console.log("[MODE_3_PURE_AI_GENERATION] Succes (TRUE_FALSE)");
@@ -683,7 +683,7 @@ app.post("/quizz", async (req, res) => {
           } else if (randomType === "FILL_BLANK") {
             console.log("[MODE_3_PURE_AI_GENERATION] Sous-mode: FILL_BLANK");
             const fbPrompt = `Create a brand new unique Fill-in-the-blank question. Topic: General Knowledge. Language: ${langName}. Use ______ for the blank space. Return ONLY a raw JSON object matching this schema: {"question":"The capital of France is ______.","options":[],"answer":"Paris"}`;
-            const aiResponse = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: fbPrompt }], 1000);
+            const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: fbPrompt }], 1000);
             parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
             finalSuccess = ""; finalError = ""; finalExplanation = ""; success = true;
             console.log("[MODE_3_PURE_AI_GENERATION] Succes (FILL_BLANK)");
@@ -835,11 +835,12 @@ app.post("/validate", async (req, res) => {
 
     if (isAiPur) {
       console.log("[MODE_VALIDATION_AI] Messages predefinis inexistants, appel a l'IA de Validation.");
+      const sysStrict = "You are a strict JSON data generator. Output ONLY raw valid JSON without markdown formatting.";
       if (isCorrect) {
         const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer was: "${current.answer}". Write a short success message and brief explanation in ${langName}. Return ONLY a valid JSON object matching this schema: {"successMsg": "encouraging text", "explanation": "detailed reason"}`;
         console.log("[MODE_VALIDATION_AI] Prompt (Succes) : " + usr);
         try {
-          const aiResp = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: usr }], 800);
+          const aiResp = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: usr }], 800);
           const parsedFeedback = parseAIJsonResponse(aiResp.response, ["successMsg", "explanation"]);
           finalFeedback = `${parsedFeedback.successMsg}\n\n${parsedFeedback.explanation}`;
           console.log("[MODE_VALIDATION_AI] Reponse Succes Generee.");
@@ -851,7 +852,7 @@ app.post("/validate", async (req, res) => {
         const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". Write a brief error statement and educational explanation in ${langName}. Return ONLY a valid JSON object matching this schema: {"errorMsg": "mistake feedback", "explanation": "detailed context"}`;
         console.log("[MODE_VALIDATION_AI] Prompt (Erreur) : " + usr);
         try {
-          const aiResp = await runAI([{ role: "system", content: STRICT_JSON_SYSTEM_PROMPT }, { role: "user", content: usr }], 800);
+          const aiResp = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: usr }], 800);
           const parsedFeedback = parseAIJsonResponse(aiResp.response, ["errorMsg", "explanation"]);
           finalFeedback = `${parsedFeedback.errorMsg}\n\n${parsedFeedback.explanation}`;
           console.log("[MODE_VALIDATION_AI] Reponse Erreur Generee.");
@@ -954,7 +955,7 @@ app.post("/jerere", async (req, res) => {
     const formData = new FormData();
     formData.append("file", blob, filename);
 
-    const uploadRes = await fetch("https://bref.adamdh7.org/upload", { method: "POST", body: formData });
+    const uploadRes = await fetch("https://v1bref.onrender.com/upload", { method: "POST", body: formData });
     await new Promise(resolve => setTimeout(resolve, 7));
 
     let uploadJson = null;
