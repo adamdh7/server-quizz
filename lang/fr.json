@@ -1,0 +1,3118 @@
+[
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel est 2 + 2 ?",
+    "options": [
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "imageUrl": "",
+    "answer": "4",
+    "explanation": "On additionne 2 et 2 pour obtenir 4. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 2 + 2 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "L'eau gèle à 0 °C dans des conditions normales.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Vrai",
+    "explanation": "Vrai est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « L'eau gèle à 0 °C dans des conditions normales. ».",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "Le résultat d'une addition s'appelle une ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "somme",
+    "explanation": "Le résultat d’une addition s’appelle une somme, et ici la bonne réponse est somme. Cela montre le vocabulaire mathématique de base. Cette question est : « Le résultat d'une addition s'appelle une ___. ».",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quelle est la capitale de Portugal ?",
+    "options": [
+      "Rome",
+      "Lisbonne",
+      "Madrid",
+      "Paris"
+    ],
+    "imageUrl": "",
+    "answer": "Lisbonne",
+    "explanation": "Lisbonne est la capitale demandée. Une capitale est la ville principale d’un pays, souvent le centre politique et administratif. Cette question est : « Quelle est la capitale de Portugal ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "La France est en Europe.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Vrai",
+    "explanation": "Cette affirmation est vraie : la France se situe en Europe. Cela aide à situer le pays sur la carte du monde. Cette question est : « La France est en Europe. ».",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "Le gaz dont l'humain a besoin pour respirer est ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "oxygène",
+    "explanation": "L’oxygène est le gaz que le corps humain utilise pour respirer. Sans lui, les cellules ne peuvent pas produire l’énergie dont elles ont besoin. Cette question est : « Le gaz dont l'humain a besoin pour respirer est ___. ».",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel gaz les humains doivent-ils respirer ?",
+    "options": [
+      "Hydrogène",
+      "Dioxyde de carbone",
+      "Azote",
+      "Oxygène"
+    ],
+    "imageUrl": "",
+    "answer": "Oxygène",
+    "explanation": "L’oxygène est le gaz que le corps humain utilise pour respirer. Sans lui, les cellules ne peuvent pas produire l’énergie dont elles ont besoin. Cette question est : « Quel gaz les humains doivent-ils respirer ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Un verbe est un nom.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Faux",
+    "explanation": "Un verbe exprime une action ou un état, alors qu’un nom désigne une personne, un lieu ou une chose. Les deux catégories n’ont donc pas la même fonction. Cette question est : « Un verbe est un nom. ».",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "En programmation, une valeur qui peut changer s'appelle une ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "variable",
+    "explanation": "variable est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « En programmation, une valeur qui peut changer s'appelle une ___. ».",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel mot est synonyme de « rapide » ?",
+    "options": [
+      "vite",
+      "lent",
+      "doux",
+      "grand"
+    ],
+    "imageUrl": "",
+    "answer": "vite",
+    "explanation": "« vite » est le mot attendu parce qu’il a le même sens que « rapide ». Les synonymes enrichissent le vocabulaire et évitent les répétitions. Cette question est : « Quel mot est synonyme de « rapide » ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Le Soleil est une planète.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Faux",
+    "explanation": "Le Soleil n’est pas une planète : c’est une étoile. Il produit sa propre lumière et sa propre chaleur. Cette question est : « Le Soleil est une planète. ».",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "Le ciel paraît souvent ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "bleu",
+    "explanation": "Le ciel paraît souvent bleu parce que la lumière du Soleil est diffusée par l’atmosphère. C’est un phénomène qu’on observe presque chaque jour. Cette question est : « Le ciel paraît souvent ___. ».",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel sport se joue avec un ballon et deux équipes ?",
+    "options": [
+      "football",
+      "course",
+      "natation",
+      "tennis"
+    ],
+    "imageUrl": "",
+    "answer": "football",
+    "explanation": "Le football se joue avec un ballon et deux équipes parce que l’objectif est de marquer dans le camp adverse. C’est l’un des sports d’équipe les plus connus. Cette question est : « Quel sport se joue avec un ballon et deux équipes ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Le cœur pompe le sang dans le corps.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Vrai",
+    "explanation": "Le cœur pompe le sang dans tout le corps pour apporter l’oxygène et les nutriments aux organes. C’est le moteur principal de la circulation. Cette question est : « Le cœur pompe le sang dans le corps. ».",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "La Terre tourne autour du ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "Soleil",
+    "explanation": "La Terre tourne autour du Soleil, et non l’inverse, parce qu’elle suit une orbite autour de notre étoile. C’est le principe qui explique les saisons et l’année. Cette question est : « La Terre tourne autour du ___. ».",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel jour vient après lundi ?",
+    "options": [
+      "vendredi",
+      "mercredi",
+      "mardi",
+      "lundi"
+    ],
+    "imageUrl": "",
+    "answer": "mardi",
+    "explanation": "Le mardi vient après le lundi dans l’ordre habituel de la semaine. Connaître la suite des jours aide à mieux se repérer dans le temps. Cette question est : « Quel jour vient après lundi ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Le piano est un instrument de musique.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Vrai",
+    "explanation": "Le piano est un instrument de musique parce qu’on joue ses notes avec des touches. Il fait partie des instruments les plus utilisés pour apprendre la mélodie. Cette question est : « Le piano est un instrument de musique. ».",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "Quelle est la catégorie du mot « courir » ? C'est un ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "verbe",
+    "explanation": "Le mot « courir » est un verbe parce qu’il décrit une action. Les verbes servent à dire ce que fait quelqu’un ou quelque chose. Cette question est : « Quelle est la catégorie du mot « courir » ? C'est un ___. ».",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel animal est : girafe ?",
+    "options": [
+      "lion",
+      "éléphant",
+      "girafe",
+      "chat"
+    ],
+    "imageUrl": "",
+    "answer": "girafe",
+    "explanation": "La girafe est l’animal attendu parce que l’image ou le mot désigne directement cet animal au long cou. C’est un mammifère bien connu d’Afrique. Cette question est : « Quel animal est : girafe ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Paris est la capitale de la France.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Vrai",
+    "explanation": "Vrai est la capitale demandée. Une capitale est la ville principale d’un pays, souvent le centre politique et administratif. Cette question est : « Paris est la capitale de la France. ».",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "Le contraire de « chaud » est ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "froid",
+    "explanation": "Le contraire de « chaud » est « froid » parce que ces deux mots décrivent des températures opposées. Les antonymes aident à mieux comprendre les contrastes. Cette question est : « Le contraire de « chaud » est ___. ».",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel aliment est : riz ?",
+    "options": [
+      "riz",
+      "banane",
+      "œuf",
+      "eau"
+    ],
+    "imageUrl": "",
+    "answer": "riz",
+    "explanation": "Le riz est un aliment de base dans de nombreux pays. C’est une céréale très répandue et facile à reconnaître au quotidien. Cette question est : « Quel aliment est : riz ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Un triangle a 4 côtés.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Faux",
+    "explanation": "Un triangle n’a pas 4 côtés : il en a 3. Cette forme géométrique est l’une des plus simples à reconnaître. Cette question est : « Un triangle a 4 côtés. ».",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "La capitale de la France est ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "Paris",
+    "explanation": "Paris est la capitale demandée. Une capitale est la ville principale d’un pays, souvent le centre politique et administratif. Cette question est : « La capitale de la France est ___. ».",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel appareil sert à envoyer des messages sur Internet ?",
+    "options": [
+      "livre",
+      "téléphone",
+      "table",
+      "chapeau"
+    ],
+    "imageUrl": "",
+    "answer": "téléphone",
+    "explanation": "téléphone est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel appareil sert à envoyer des messages sur Internet ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Une semaine compte 8 jours.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Faux",
+    "explanation": "Une semaine compte 7 jours. C’est la durée standard du cycle hebdomadaire utilisé dans la vie quotidienne. Cette question est : « Une semaine compte 8 jours. ».",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "Une semaine compte ___ jours.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "7",
+    "explanation": "Une semaine compte 7 jours. C’est la durée standard du cycle hebdomadaire utilisé dans la vie quotidienne. Cette question est : « Une semaine compte ___ jours. ».",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel objet sert à produire des sons et des mélodies ?",
+    "options": [
+      "instrument",
+      "chaise",
+      "pierre",
+      "stylo"
+    ],
+    "imageUrl": "",
+    "answer": "instrument",
+    "explanation": "Un instrument produit des sons et des mélodies parce qu’il est conçu pour faire vibrer de l’air ou des cordes. C’est ce qui permet de créer de la musique. Cette question est : « Quel objet sert à produire des sons et des mélodies ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Une boucle en programmation répète des actions.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Vrai",
+    "explanation": "Une boucle en programmation répète des instructions tant qu’une condition est vraie. Elle permet d’automatiser des actions sans écrire le même code plusieurs fois. Cette question est : « Une boucle en programmation répète des actions. ».",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "Un instrument avec des touches utilisé en musique est le ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "piano",
+    "explanation": "Le piano est un instrument de musique parce qu’on joue ses notes avec des touches. Il fait partie des instruments les plus utilisés pour apprendre la mélodie. Cette question est : « Un instrument avec des touches utilisé en musique est le ___. ».",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quelle est la catégorie du mot « courir » ?",
+    "options": [
+      "nom",
+      "verbe",
+      "adverbe",
+      "adjectif"
+    ],
+    "imageUrl": "",
+    "answer": "verbe",
+    "explanation": "Le mot « courir » est un verbe parce qu’il décrit une action. Les verbes servent à dire ce que fait quelqu’un ou quelque chose. Cette question est : « Quelle est la catégorie du mot « courir » ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "En programmation, quel terme désigne une valeur qui peut changer ?",
+    "options": [
+      "tableau",
+      "variable",
+      "fonction",
+      "boucle"
+    ],
+    "imageUrl": "",
+    "answer": "variable",
+    "explanation": "variable est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « En programmation, quel terme désigne une valeur qui peut changer ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel mot est le plus proche de « roi » en histoire ?",
+    "options": [
+      "juge",
+      "soldat",
+      "monarque",
+      "marchand"
+    ],
+    "imageUrl": "",
+    "answer": "monarque",
+    "explanation": "« Monarque » est le mot le plus proche de « roi » parce qu’il désigne un souverain. C’est un terme important pour comprendre l’histoire des royaumes. Cette question est : « Quel mot est le plus proche de « roi » en histoire ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel mot est lié à la couleur en art ?",
+    "options": [
+      "couleur",
+      "verbe",
+      "nom",
+      "mode"
+    ],
+    "imageUrl": "",
+    "answer": "couleur",
+    "explanation": "couleur est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel mot est lié à la couleur en art ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Sur quel continent se trouve Afrique ?",
+    "options": [
+      "Europe",
+      "Afrique",
+      "Asie",
+      "Afrique"
+    ],
+    "imageUrl": "",
+    "answer": "Afrique",
+    "explanation": "Afrique est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Sur quel continent se trouve Afrique ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Combien de mois une année compte-t-elle ?",
+    "options": [
+      "12",
+      "13",
+      "10",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "12",
+    "explanation": "12 est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Combien de mois une année compte-t-elle ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel est 71 × 12 ?",
+    "options": [
+      "854",
+      "853",
+      "852",
+      "851"
+    ],
+    "imageUrl": "",
+    "answer": "852",
+    "explanation": "Multiplier 71 par 12 donne 852. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 71 × 12 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel animal est : lion ?",
+    "options": [
+      "éléphant",
+      "lion",
+      "chat",
+      "lion"
+    ],
+    "imageUrl": "",
+    "answer": "lion",
+    "explanation": "lion est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel animal est : lion ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel aliment est : banane ?",
+    "options": [
+      "eau",
+      "banane",
+      "œuf",
+      "banane"
+    ],
+    "imageUrl": "",
+    "answer": "banane",
+    "explanation": "banane est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel aliment est : banane ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "Quel est 51 - 22 ?",
+    "options": [
+      "29",
+      "31",
+      "30",
+      "28"
+    ],
+    "imageUrl": "",
+    "answer": "29",
+    "explanation": "On retire 22 de 51 pour obtenir 29. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 51 - 22 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "Quel animal est : éléphant ?",
+    "options": [
+      "éléphant",
+      "éléphant",
+      "lion",
+      "chat"
+    ],
+    "imageUrl": "",
+    "answer": "éléphant",
+    "explanation": "éléphant est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel animal est : éléphant ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "Quel aliment est : poisson ?",
+    "options": [
+      "œuf",
+      "banane",
+      "poisson",
+      "eau"
+    ],
+    "imageUrl": "",
+    "answer": "poisson",
+    "explanation": "Un instrument produit des sons et des mélodies parce qu’il est conçu pour faire vibrer de l’air ou des cordes. C’est ce qui permet de créer de la musique. Cette question est : « Quel aliment est : poisson ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "Quel est 33 - 31 ?",
+    "options": [
+      "1",
+      "3",
+      "2",
+      "4"
+    ],
+    "imageUrl": "",
+    "answer": "2",
+    "explanation": "On retire 31 de 33 pour obtenir 2. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 33 - 31 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "Quel animal est : chat ?",
+    "options": [
+      "chat",
+      "éléphant",
+      "lion",
+      "chat"
+    ],
+    "imageUrl": "",
+    "answer": "chat",
+    "explanation": "chat est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel animal est : chat ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "Quel aliment est : œuf ?",
+    "options": [
+      "banane",
+      "eau",
+      "œuf",
+      "œuf"
+    ],
+    "imageUrl": "",
+    "answer": "œuf",
+    "explanation": "œuf est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel aliment est : œuf ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "Quel est 11 + 5 ?",
+    "options": [
+      "18",
+      "16",
+      "17",
+      "15"
+    ],
+    "imageUrl": "",
+    "answer": "16",
+    "explanation": "On additionne 11 et 5 pour obtenir 16. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 11 + 5 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "Quel animal est : chien ?",
+    "options": [
+      "lion",
+      "chat",
+      "chien",
+      "éléphant"
+    ],
+    "imageUrl": "",
+    "answer": "chien",
+    "explanation": "chien est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel animal est : chien ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "Quel aliment est : eau ?",
+    "options": [
+      "banane",
+      "eau",
+      "œuf",
+      "eau"
+    ],
+    "imageUrl": "",
+    "answer": "eau",
+    "explanation": "eau est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel aliment est : eau ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "Quel est 80 × 15 ?",
+    "options": [
+      "1199",
+      "1201",
+      "1202",
+      "1200"
+    ],
+    "imageUrl": "",
+    "answer": "1200",
+    "explanation": "Multiplier 80 par 15 donne 1200. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 80 × 15 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "Quel animal est : souris ?",
+    "options": [
+      "lion",
+      "chat",
+      "éléphant",
+      "souris"
+    ],
+    "imageUrl": "",
+    "answer": "souris",
+    "explanation": "souris est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel animal est : souris ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "Quel aliment est : pomme ?",
+    "options": [
+      "eau",
+      "banane",
+      "pomme",
+      "œuf"
+    ],
+    "imageUrl": "",
+    "answer": "pomme",
+    "explanation": "pomme est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel aliment est : pomme ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "Quel est 60 × 25 ?",
+    "options": [
+      "1500",
+      "1502",
+      "1501",
+      "1499"
+    ],
+    "imageUrl": "",
+    "answer": "1500",
+    "explanation": "Multiplier 60 par 25 donne 1500. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 60 × 25 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 4,
+    "qType": "MCQ",
+    "question": "Quel animal est : baleine ?",
+    "options": [
+      "chat",
+      "baleine",
+      "lion",
+      "éléphant"
+    ],
+    "imageUrl": "",
+    "answer": "baleine",
+    "explanation": "baleine est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel animal est : baleine ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 4,
+    "qType": "MCQ",
+    "question": "Quel aliment est : pain ?",
+    "options": [
+      "banane",
+      "œuf",
+      "eau",
+      "pain"
+    ],
+    "imageUrl": "",
+    "answer": "pain",
+    "explanation": "pain est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel aliment est : pain ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 4,
+    "qType": "MCQ",
+    "question": "Quel est 40 - 35 ?",
+    "options": [
+      "6",
+      "7",
+      "4",
+      "5"
+    ],
+    "imageUrl": "",
+    "answer": "5",
+    "explanation": "On retire 35 de 40 pour obtenir 5. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 40 - 35 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 4,
+    "qType": "MCQ",
+    "question": "Quel est 20 + 8 ?",
+    "options": [
+      "29",
+      "27",
+      "28",
+      "30"
+    ],
+    "imageUrl": "",
+    "answer": "28",
+    "explanation": "On additionne 20 et 8 pour obtenir 28. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 20 + 8 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 5,
+    "qType": "MCQ",
+    "question": "Quel est 89 + 18 ?",
+    "options": [
+      "106",
+      "108",
+      "107",
+      "109"
+    ],
+    "imageUrl": "",
+    "answer": "107",
+    "explanation": "On additionne 89 et 18 pour obtenir 107. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 89 + 18 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 5,
+    "qType": "MCQ",
+    "question": "Quel est 69 × 28 ?",
+    "options": [
+      "1932",
+      "1933",
+      "1931",
+      "1934"
+    ],
+    "imageUrl": "",
+    "answer": "1932",
+    "explanation": "Multiplier 69 par 28 donne 1932. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 69 × 28 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 6,
+    "qType": "MCQ",
+    "question": "Quel est 49 - 38 ?",
+    "options": [
+      "13",
+      "12",
+      "10",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "11",
+    "explanation": "On retire 38 de 49 pour obtenir 11. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 49 - 38 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 6,
+    "qType": "MCQ",
+    "question": "Quel est 29 - 11 ?",
+    "options": [
+      "19",
+      "17",
+      "18",
+      "20"
+    ],
+    "imageUrl": "",
+    "answer": "18",
+    "explanation": "On retire 11 de 29 pour obtenir 18. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 29 - 11 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 7,
+    "qType": "MCQ",
+    "question": "Quel est 9 + 21 ?",
+    "options": [
+      "32",
+      "29",
+      "30",
+      "31"
+    ],
+    "imageUrl": "",
+    "answer": "30",
+    "explanation": "On additionne 9 et 21 pour obtenir 30. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 9 + 21 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 7,
+    "qType": "MCQ",
+    "question": "Quel est 78 × 31 ?",
+    "options": [
+      "2419",
+      "2417",
+      "2420",
+      "2418"
+    ],
+    "imageUrl": "",
+    "answer": "2418",
+    "explanation": "Multiplier 78 par 31 donne 2418. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 78 × 31 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 8,
+    "qType": "MCQ",
+    "question": "Quel est 58 × 4 ?",
+    "options": [
+      "234",
+      "231",
+      "232",
+      "233"
+    ],
+    "imageUrl": "",
+    "answer": "232",
+    "explanation": "Multiplier 58 par 4 donne 232. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 58 × 4 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 8,
+    "qType": "MCQ",
+    "question": "Quel est 38 - 14 ?",
+    "options": [
+      "26",
+      "23",
+      "25",
+      "24"
+    ],
+    "imageUrl": "",
+    "answer": "24",
+    "explanation": "On retire 14 de 38 pour obtenir 24. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 38 - 14 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 9,
+    "qType": "MCQ",
+    "question": "Quel est 18 + 24 ?",
+    "options": [
+      "44",
+      "42",
+      "41",
+      "43"
+    ],
+    "imageUrl": "",
+    "answer": "42",
+    "explanation": "On additionne 18 et 24 pour obtenir 42. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 18 + 24 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 9,
+    "qType": "MCQ",
+    "question": "Quel est 87 + 34 ?",
+    "options": [
+      "123",
+      "121",
+      "122",
+      "120"
+    ],
+    "imageUrl": "",
+    "answer": "121",
+    "explanation": "On additionne 87 et 34 pour obtenir 121. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 87 + 34 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 10,
+    "qType": "MCQ",
+    "question": "Quel est 67 × 7 ?",
+    "options": [
+      "471",
+      "470",
+      "469",
+      "468"
+    ],
+    "imageUrl": "",
+    "answer": "469",
+    "explanation": "Multiplier 67 par 7 donne 469. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 67 × 7 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 10,
+    "qType": "MCQ",
+    "question": "Quel est 47 - 17 ?",
+    "options": [
+      "31",
+      "30",
+      "29",
+      "32"
+    ],
+    "imageUrl": "",
+    "answer": "30",
+    "explanation": "On retire 17 de 47 pour obtenir 30. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 47 - 17 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 11,
+    "qType": "MCQ",
+    "question": "Quel est 28 - 27 ?",
+    "options": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "imageUrl": "",
+    "answer": "1",
+    "explanation": "On retire 27 de 28 pour obtenir 1. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 28 - 27 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 11,
+    "qType": "MCQ",
+    "question": "Quel est 7 + 37 ?",
+    "options": [
+      "43",
+      "45",
+      "46",
+      "44"
+    ],
+    "imageUrl": "",
+    "answer": "44",
+    "explanation": "On additionne 7 et 37 pour obtenir 44. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 7 + 37 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 12,
+    "qType": "MCQ",
+    "question": "Quel est 76 × 10 ?",
+    "options": [
+      "760",
+      "762",
+      "761",
+      "759"
+    ],
+    "imageUrl": "",
+    "answer": "760",
+    "explanation": "Multiplier 76 par 10 donne 760. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 76 × 10 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 12,
+    "qType": "MCQ",
+    "question": "Quel est 56 × 20 ?",
+    "options": [
+      "1122",
+      "1119",
+      "1121",
+      "1120"
+    ],
+    "imageUrl": "",
+    "answer": "1120",
+    "explanation": "Multiplier 56 par 20 donne 1120. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 56 × 20 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 13,
+    "qType": "MCQ",
+    "question": "Quel est 36 - 30 ?",
+    "options": [
+      "6",
+      "7",
+      "8",
+      "5"
+    ],
+    "imageUrl": "",
+    "answer": "6",
+    "explanation": "On retire 30 de 36 pour obtenir 6. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 36 - 30 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 13,
+    "qType": "MCQ",
+    "question": "Quel est 16 + 3 ?",
+    "options": [
+      "19",
+      "18",
+      "21",
+      "20"
+    ],
+    "imageUrl": "",
+    "answer": "19",
+    "explanation": "On additionne 16 et 3 pour obtenir 19. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 16 + 3 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 13,
+    "qType": "MCQ",
+    "question": "Quel est 85 + 13 ?",
+    "options": [
+      "97",
+      "98",
+      "99",
+      "100"
+    ],
+    "imageUrl": "",
+    "answer": "98",
+    "explanation": "On additionne 85 et 13 pour obtenir 98. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 85 + 13 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 14,
+    "qType": "MCQ",
+    "question": "Quel est 65 × 23 ?",
+    "options": [
+      "1495",
+      "1494",
+      "1496",
+      "1497"
+    ],
+    "imageUrl": "",
+    "answer": "1495",
+    "explanation": "Multiplier 65 par 23 donne 1495. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 65 × 23 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 14,
+    "qType": "MCQ",
+    "question": "Quel est 45 - 33 ?",
+    "options": [
+      "14",
+      "12",
+      "13",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "12",
+    "explanation": "On retire 33 de 45 pour obtenir 12. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 45 - 33 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 15,
+    "qType": "MCQ",
+    "question": "Quel est 25 - 6 ?",
+    "options": [
+      "21",
+      "19",
+      "18",
+      "20"
+    ],
+    "imageUrl": "",
+    "answer": "19",
+    "explanation": "On retire 6 de 25 pour obtenir 19. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 25 - 6 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 15,
+    "qType": "MCQ",
+    "question": "Quel est 5 + 16 ?",
+    "options": [
+      "22",
+      "21",
+      "23",
+      "20"
+    ],
+    "imageUrl": "",
+    "answer": "21",
+    "explanation": "On additionne 5 et 16 pour obtenir 21. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 5 + 16 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 16,
+    "qType": "MCQ",
+    "question": "Quel est 74 × 26 ?",
+    "options": [
+      "1926",
+      "1923",
+      "1925",
+      "1924"
+    ],
+    "imageUrl": "",
+    "answer": "1924",
+    "explanation": "Multiplier 74 par 26 donne 1924. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 74 × 26 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 16,
+    "qType": "MCQ",
+    "question": "Quel est 54 × 36 ?",
+    "options": [
+      "1946",
+      "1944",
+      "1945",
+      "1943"
+    ],
+    "imageUrl": "",
+    "answer": "1944",
+    "explanation": "Multiplier 54 par 36 donne 1944. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 54 × 36 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 17,
+    "qType": "MCQ",
+    "question": "Quel est 34 - 9 ?",
+    "options": [
+      "27",
+      "25",
+      "24",
+      "26"
+    ],
+    "imageUrl": "",
+    "answer": "25",
+    "explanation": "On retire 9 de 34 pour obtenir 25. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 34 - 9 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 17,
+    "qType": "MCQ",
+    "question": "Quel est 14 + 19 ?",
+    "options": [
+      "35",
+      "34",
+      "33",
+      "32"
+    ],
+    "imageUrl": "",
+    "answer": "33",
+    "explanation": "On additionne 14 et 19 pour obtenir 33. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 14 + 19 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 18,
+    "qType": "MCQ",
+    "question": "Quel est 83 + 29 ?",
+    "options": [
+      "111",
+      "113",
+      "112",
+      "114"
+    ],
+    "imageUrl": "",
+    "answer": "112",
+    "explanation": "On additionne 83 et 29 pour obtenir 112. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 83 + 29 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 18,
+    "qType": "MCQ",
+    "question": "Quel est 63 × 2 ?",
+    "options": [
+      "125",
+      "128",
+      "127",
+      "126"
+    ],
+    "imageUrl": "",
+    "answer": "126",
+    "explanation": "Multiplier 63 par 2 donne 126. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 63 × 2 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 19,
+    "qType": "MCQ",
+    "question": "Quel est 43 - 12 ?",
+    "options": [
+      "30",
+      "33",
+      "31",
+      "32"
+    ],
+    "imageUrl": "",
+    "answer": "31",
+    "explanation": "On retire 12 de 43 pour obtenir 31. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 43 - 12 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 19,
+    "qType": "MCQ",
+    "question": "Quel est 23 - 22 ?",
+    "options": [
+      "1",
+      "3",
+      "2",
+      "0"
+    ],
+    "imageUrl": "",
+    "answer": "1",
+    "explanation": "On retire 22 de 23 pour obtenir 1. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 23 - 22 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 20,
+    "qType": "MCQ",
+    "question": "Quel est 3 + 32 ?",
+    "options": [
+      "34",
+      "36",
+      "35",
+      "37"
+    ],
+    "imageUrl": "",
+    "answer": "35",
+    "explanation": "On additionne 3 et 32 pour obtenir 35. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 3 + 32 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 20,
+    "qType": "MCQ",
+    "question": "Quel est 72 × 5 ?",
+    "options": [
+      "359",
+      "362",
+      "360",
+      "361"
+    ],
+    "imageUrl": "",
+    "answer": "360",
+    "explanation": "Multiplier 72 par 5 donne 360. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 72 × 5 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 21,
+    "qType": "MCQ",
+    "question": "Quel est 52 × 15 ?",
+    "options": [
+      "780",
+      "781",
+      "779",
+      "782"
+    ],
+    "imageUrl": "",
+    "answer": "780",
+    "explanation": "Multiplier 52 par 15 donne 780. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 52 × 15 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 21,
+    "qType": "MCQ",
+    "question": "Quel est 32 - 25 ?",
+    "options": [
+      "8",
+      "7",
+      "9",
+      "6"
+    ],
+    "imageUrl": "",
+    "answer": "7",
+    "explanation": "On retire 25 de 32 pour obtenir 7. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 32 - 25 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 22,
+    "qType": "MCQ",
+    "question": "Quel est 12 + 35 ?",
+    "options": [
+      "49",
+      "46",
+      "48",
+      "47"
+    ],
+    "imageUrl": "",
+    "answer": "47",
+    "explanation": "On additionne 12 et 35 pour obtenir 47. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 12 + 35 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 22,
+    "qType": "MCQ",
+    "question": "Quel est 81 + 8 ?",
+    "options": [
+      "89",
+      "90",
+      "91",
+      "88"
+    ],
+    "imageUrl": "",
+    "answer": "89",
+    "explanation": "On additionne 81 et 8 pour obtenir 89. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 81 + 8 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 23,
+    "qType": "MCQ",
+    "question": "Quel est 61 × 18 ?",
+    "options": [
+      "1099",
+      "1097",
+      "1100",
+      "1098"
+    ],
+    "imageUrl": "",
+    "answer": "1098",
+    "explanation": "Multiplier 61 par 18 donne 1098. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 61 × 18 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 23,
+    "qType": "MCQ",
+    "question": "Quel est 41 - 28 ?",
+    "options": [
+      "15",
+      "14",
+      "12",
+      "13"
+    ],
+    "imageUrl": "",
+    "answer": "13",
+    "explanation": "On retire 28 de 41 pour obtenir 13. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 41 - 28 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 24,
+    "qType": "MCQ",
+    "question": "Quel est 39 - 21 ?",
+    "options": [
+      "18",
+      "20",
+      "19",
+      "17"
+    ],
+    "imageUrl": "",
+    "answer": "18",
+    "explanation": "On retire 21 de 39 pour obtenir 18. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 39 - 21 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 24,
+    "qType": "MCQ",
+    "question": "Quel est 90 + 11 ?",
+    "options": [
+      "101",
+      "102",
+      "100",
+      "103"
+    ],
+    "imageUrl": "",
+    "answer": "101",
+    "explanation": "On additionne 90 et 11 pour obtenir 101. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 90 + 11 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 25,
+    "qType": "MCQ",
+    "question": "Quel est 70 × 21 ?",
+    "options": [
+      "1469",
+      "1471",
+      "1472",
+      "1470"
+    ],
+    "imageUrl": "",
+    "answer": "1470",
+    "explanation": "Multiplier 70 par 21 donne 1470. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 70 × 21 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 25,
+    "qType": "MCQ",
+    "question": "Quel est 50 × 31 ?",
+    "options": [
+      "1551",
+      "1549",
+      "1550",
+      "1552"
+    ],
+    "imageUrl": "",
+    "answer": "1550",
+    "explanation": "Multiplier 50 par 31 donne 1550. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 50 × 31 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 25,
+    "qType": "MCQ",
+    "question": "Quel est 30 - 4 ?",
+    "options": [
+      "28",
+      "25",
+      "27",
+      "26"
+    ],
+    "imageUrl": "",
+    "answer": "26",
+    "explanation": "On retire 4 de 30 pour obtenir 26. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 30 - 4 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 26,
+    "qType": "MCQ",
+    "question": "Quel est 10 + 14 ?",
+    "options": [
+      "24",
+      "23",
+      "25",
+      "26"
+    ],
+    "imageUrl": "",
+    "answer": "24",
+    "explanation": "On additionne 10 et 14 pour obtenir 24. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 10 + 14 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 26,
+    "qType": "MCQ",
+    "question": "Quel est 79 + 24 ?",
+    "options": [
+      "104",
+      "105",
+      "103",
+      "102"
+    ],
+    "imageUrl": "",
+    "answer": "103",
+    "explanation": "On additionne 79 et 24 pour obtenir 103. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 79 + 24 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 27,
+    "qType": "MCQ",
+    "question": "Quel est 59 × 34 ?",
+    "options": [
+      "2005",
+      "2007",
+      "2006",
+      "2008"
+    ],
+    "imageUrl": "",
+    "answer": "2006",
+    "explanation": "Multiplier 59 par 34 donne 2006. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 59 × 34 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 27,
+    "qType": "MCQ",
+    "question": "Quel est 39 - 7 ?",
+    "options": [
+      "34",
+      "31",
+      "32",
+      "33"
+    ],
+    "imageUrl": "",
+    "answer": "32",
+    "explanation": "On retire 7 de 39 pour obtenir 32. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 39 - 7 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 28,
+    "qType": "MCQ",
+    "question": "Quel est 19 - 17 ?",
+    "options": [
+      "4",
+      "1",
+      "3",
+      "2"
+    ],
+    "imageUrl": "",
+    "answer": "2",
+    "explanation": "On retire 17 de 19 pour obtenir 2. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 19 - 17 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 28,
+    "qType": "MCQ",
+    "question": "Quel est 88 + 27 ?",
+    "options": [
+      "116",
+      "114",
+      "117",
+      "115"
+    ],
+    "imageUrl": "",
+    "answer": "115",
+    "explanation": "On additionne 88 et 27 pour obtenir 115. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 88 + 27 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 29,
+    "qType": "MCQ",
+    "question": "Quel est 68 × 37 ?",
+    "options": [
+      "2518",
+      "2515",
+      "2517",
+      "2516"
+    ],
+    "imageUrl": "",
+    "answer": "2516",
+    "explanation": "Multiplier 68 par 37 donne 2516. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 68 × 37 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 29,
+    "qType": "MCQ",
+    "question": "Quel est 48 × 10 ?",
+    "options": [
+      "479",
+      "481",
+      "480",
+      "482"
+    ],
+    "imageUrl": "",
+    "answer": "480",
+    "explanation": "Multiplier 48 par 10 donne 480. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 48 × 10 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 30,
+    "qType": "MCQ",
+    "question": "Quel est 28 - 20 ?",
+    "options": [
+      "9",
+      "8",
+      "10",
+      "7"
+    ],
+    "imageUrl": "",
+    "answer": "8",
+    "explanation": "On retire 20 de 28 pour obtenir 8. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 28 - 20 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 30,
+    "qType": "MCQ",
+    "question": "Quel est 8 + 30 ?",
+    "options": [
+      "38",
+      "40",
+      "39",
+      "37"
+    ],
+    "imageUrl": "",
+    "answer": "38",
+    "explanation": "On additionne 8 et 30 pour obtenir 38. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 8 + 30 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 31,
+    "qType": "MCQ",
+    "question": "Quel est 77 + 3 ?",
+    "options": [
+      "82",
+      "80",
+      "79",
+      "81"
+    ],
+    "imageUrl": "",
+    "answer": "80",
+    "explanation": "On additionne 77 et 3 pour obtenir 80. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 77 + 3 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 31,
+    "qType": "MCQ",
+    "question": "Quel est 57 × 13 ?",
+    "options": [
+      "743",
+      "741",
+      "740",
+      "742"
+    ],
+    "imageUrl": "",
+    "answer": "741",
+    "explanation": "Multiplier 57 par 13 donne 741. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 57 × 13 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 32,
+    "qType": "MCQ",
+    "question": "Quel est 37 - 23 ?",
+    "options": [
+      "14",
+      "16",
+      "15",
+      "13"
+    ],
+    "imageUrl": "",
+    "answer": "14",
+    "explanation": "On retire 23 de 37 pour obtenir 14. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 37 - 23 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 32,
+    "qType": "MCQ",
+    "question": "Quel est 34 - 17 ?",
+    "options": [
+      "17",
+      "18",
+      "16",
+      "19"
+    ],
+    "imageUrl": "",
+    "answer": "17",
+    "explanation": "On retire 17 de 34 pour obtenir 17. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 34 - 17 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 33,
+    "qType": "MCQ",
+    "question": "Quel est 86 + 6 ?",
+    "options": [
+      "94",
+      "91",
+      "92",
+      "93"
+    ],
+    "imageUrl": "",
+    "answer": "92",
+    "explanation": "On additionne 86 et 6 pour obtenir 92. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 86 + 6 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 33,
+    "qType": "MCQ",
+    "question": "Quel est 66 × 16 ?",
+    "options": [
+      "1058",
+      "1055",
+      "1056",
+      "1057"
+    ],
+    "imageUrl": "",
+    "answer": "1056",
+    "explanation": "Multiplier 66 par 16 donne 1056. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 66 × 16 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 34,
+    "qType": "MCQ",
+    "question": "Quel est 46 × 26 ?",
+    "options": [
+      "1198",
+      "1196",
+      "1197",
+      "1195"
+    ],
+    "imageUrl": "",
+    "answer": "1196",
+    "explanation": "Multiplier 46 par 26 donne 1196. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 46 × 26 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 34,
+    "qType": "MCQ",
+    "question": "Quel est 37 - 26 ?",
+    "options": [
+      "11",
+      "10",
+      "12",
+      "13"
+    ],
+    "imageUrl": "",
+    "answer": "11",
+    "explanation": "On retire 26 de 37 pour obtenir 11. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 37 - 26 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 35,
+    "qType": "MCQ",
+    "question": "Quel est 6 + 9 ?",
+    "options": [
+      "15",
+      "14",
+      "17",
+      "16"
+    ],
+    "imageUrl": "",
+    "answer": "15",
+    "explanation": "On additionne 6 et 9 pour obtenir 15. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 6 + 9 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 35,
+    "qType": "MCQ",
+    "question": "Quel est 75 + 19 ?",
+    "options": [
+      "94",
+      "95",
+      "93",
+      "96"
+    ],
+    "imageUrl": "",
+    "answer": "94",
+    "explanation": "On additionne 75 et 19 pour obtenir 94. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 75 + 19 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 36,
+    "qType": "MCQ",
+    "question": "Quel est 55 × 29 ?",
+    "options": [
+      "1596",
+      "1594",
+      "1597",
+      "1595"
+    ],
+    "imageUrl": "",
+    "answer": "1595",
+    "explanation": "Multiplier 55 par 29 donne 1595. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 55 × 29 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 36,
+    "qType": "MCQ",
+    "question": "Quel est 35 - 2 ?",
+    "options": [
+      "33",
+      "32",
+      "34",
+      "35"
+    ],
+    "imageUrl": "",
+    "answer": "33",
+    "explanation": "On retire 2 de 35 pour obtenir 33. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 35 - 2 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 37,
+    "qType": "MCQ",
+    "question": "Quel est 15 - 12 ?",
+    "options": [
+      "5",
+      "3",
+      "2",
+      "4"
+    ],
+    "imageUrl": "",
+    "answer": "3",
+    "explanation": "On retire 12 de 15 pour obtenir 3. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 15 - 12 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 37,
+    "qType": "MCQ",
+    "question": "Quel est 84 + 22 ?",
+    "options": [
+      "108",
+      "106",
+      "107",
+      "105"
+    ],
+    "imageUrl": "",
+    "answer": "106",
+    "explanation": "On additionne 84 et 22 pour obtenir 106. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 84 + 22 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 37,
+    "qType": "MCQ",
+    "question": "Quel est 64 × 32 ?",
+    "options": [
+      "2048",
+      "2050",
+      "2049",
+      "2047"
+    ],
+    "imageUrl": "",
+    "answer": "2048",
+    "explanation": "Multiplier 64 par 32 donne 2048. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 64 × 32 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 38,
+    "qType": "MCQ",
+    "question": "Quel est 44 × 5 ?",
+    "options": [
+      "222",
+      "221",
+      "220",
+      "219"
+    ],
+    "imageUrl": "",
+    "answer": "220",
+    "explanation": "Multiplier 44 par 5 donne 220. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 44 × 5 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 38,
+    "qType": "MCQ",
+    "question": "Quel est 24 - 15 ?",
+    "options": [
+      "9",
+      "10",
+      "8",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "9",
+    "explanation": "On retire 15 de 24 pour obtenir 9. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 24 - 15 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 39,
+    "qType": "MCQ",
+    "question": "Quel est 4 + 25 ?",
+    "options": [
+      "31",
+      "29",
+      "28",
+      "30"
+    ],
+    "imageUrl": "",
+    "answer": "29",
+    "explanation": "On additionne 4 et 25 pour obtenir 29. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 4 + 25 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 39,
+    "qType": "MCQ",
+    "question": "Quel est 73 + 35 ?",
+    "options": [
+      "110",
+      "107",
+      "108",
+      "109"
+    ],
+    "imageUrl": "",
+    "answer": "108",
+    "explanation": "On additionne 73 et 35 pour obtenir 108. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 73 + 35 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 40,
+    "qType": "MCQ",
+    "question": "Quel est 53 × 8 ?",
+    "options": [
+      "425",
+      "424",
+      "426",
+      "423"
+    ],
+    "imageUrl": "",
+    "answer": "424",
+    "explanation": "Multiplier 53 par 8 donne 424. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 53 × 8 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 40,
+    "qType": "MCQ",
+    "question": "Quel est 33 - 18 ?",
+    "options": [
+      "14",
+      "17",
+      "15",
+      "16"
+    ],
+    "imageUrl": "",
+    "answer": "15",
+    "explanation": "On retire 18 de 33 pour obtenir 15. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 33 - 18 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 41,
+    "qType": "MCQ",
+    "question": "Quel est 29 - 13 ?",
+    "options": [
+      "15",
+      "16",
+      "18",
+      "17"
+    ],
+    "imageUrl": "",
+    "answer": "16",
+    "explanation": "On retire 13 de 29 pour obtenir 16. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 29 - 13 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 41,
+    "qType": "MCQ",
+    "question": "Quel est 82 + 38 ?",
+    "options": [
+      "120",
+      "119",
+      "121",
+      "122"
+    ],
+    "imageUrl": "",
+    "answer": "120",
+    "explanation": "On additionne 82 et 38 pour obtenir 120. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 82 + 38 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 42,
+    "qType": "MCQ",
+    "question": "Quel est 62 × 11 ?",
+    "options": [
+      "684",
+      "681",
+      "683",
+      "682"
+    ],
+    "imageUrl": "",
+    "answer": "682",
+    "explanation": "Multiplier 62 par 11 donne 682. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 62 × 11 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 42,
+    "qType": "MCQ",
+    "question": "Quel est 42 × 21 ?",
+    "options": [
+      "883",
+      "882",
+      "881",
+      "884"
+    ],
+    "imageUrl": "",
+    "answer": "882",
+    "explanation": "Multiplier 42 par 21 donne 882. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 42 × 21 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 43,
+    "qType": "MCQ",
+    "question": "Quel est 32 - 22 ?",
+    "options": [
+      "10",
+      "12",
+      "11",
+      "9"
+    ],
+    "imageUrl": "",
+    "answer": "10",
+    "explanation": "On retire 22 de 32 pour obtenir 10. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 32 - 22 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 43,
+    "qType": "MCQ",
+    "question": "Quel est 2 + 4 ?",
+    "options": [
+      "5",
+      "8",
+      "7",
+      "6"
+    ],
+    "imageUrl": "",
+    "answer": "6",
+    "explanation": "On additionne 2 et 4 pour obtenir 6. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 2 + 4 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 44,
+    "qType": "MCQ",
+    "question": "Quel est 71 + 14 ?",
+    "options": [
+      "84",
+      "86",
+      "85",
+      "87"
+    ],
+    "imageUrl": "",
+    "answer": "85",
+    "explanation": "On additionne 71 et 14 pour obtenir 85. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 71 + 14 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 44,
+    "qType": "MCQ",
+    "question": "Quel est 51 × 24 ?",
+    "options": [
+      "1226",
+      "1224",
+      "1225",
+      "1223"
+    ],
+    "imageUrl": "",
+    "answer": "1224",
+    "explanation": "Multiplier 51 par 24 donne 1224. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 51 × 24 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 45,
+    "qType": "MCQ",
+    "question": "Quel est 35 - 31 ?",
+    "options": [
+      "3",
+      "5",
+      "4",
+      "6"
+    ],
+    "imageUrl": "",
+    "answer": "4",
+    "explanation": "On retire 31 de 35 pour obtenir 4. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 35 - 31 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 45,
+    "qType": "MCQ",
+    "question": "Quel est 11 - 7 ?",
+    "options": [
+      "4",
+      "6",
+      "3",
+      "5"
+    ],
+    "imageUrl": "",
+    "answer": "4",
+    "explanation": "On retire 7 de 11 pour obtenir 4. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 11 - 7 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 46,
+    "qType": "MCQ",
+    "question": "Quel est 80 + 17 ?",
+    "options": [
+      "97",
+      "99",
+      "98",
+      "96"
+    ],
+    "imageUrl": "",
+    "answer": "97",
+    "explanation": "On additionne 80 et 17 pour obtenir 97. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 80 + 17 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 46,
+    "qType": "MCQ",
+    "question": "Quel est 60 × 27 ?",
+    "options": [
+      "1621",
+      "1622",
+      "1619",
+      "1620"
+    ],
+    "imageUrl": "",
+    "answer": "1620",
+    "explanation": "Multiplier 60 par 27 donne 1620. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 60 × 27 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 47,
+    "qType": "MCQ",
+    "question": "Quel est 40 × 37 ?",
+    "options": [
+      "1480",
+      "1479",
+      "1481",
+      "1482"
+    ],
+    "imageUrl": "",
+    "answer": "1480",
+    "explanation": "Multiplier 40 par 37 donne 1480. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 40 × 37 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 47,
+    "qType": "MCQ",
+    "question": "Quel est 20 - 10 ?",
+    "options": [
+      "10",
+      "11",
+      "12",
+      "9"
+    ],
+    "imageUrl": "",
+    "answer": "10",
+    "explanation": "On retire 10 de 20 pour obtenir 10. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 20 - 10 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 48,
+    "qType": "MCQ",
+    "question": "Quel est 89 + 20 ?",
+    "options": [
+      "108",
+      "110",
+      "109",
+      "111"
+    ],
+    "imageUrl": "",
+    "answer": "109",
+    "explanation": "On additionne 89 et 20 pour obtenir 109. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 89 + 20 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 48,
+    "qType": "MCQ",
+    "question": "Quel est 69 + 30 ?",
+    "options": [
+      "100",
+      "99",
+      "101",
+      "98"
+    ],
+    "imageUrl": "",
+    "answer": "99",
+    "explanation": "On additionne 69 et 30 pour obtenir 99. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 69 + 30 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 49,
+    "qType": "MCQ",
+    "question": "Quel est 49 × 3 ?",
+    "options": [
+      "146",
+      "148",
+      "147",
+      "149"
+    ],
+    "imageUrl": "",
+    "answer": "147",
+    "explanation": "Multiplier 49 par 3 donne 147. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 49 × 3 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 49,
+    "qType": "MCQ",
+    "question": "Quel est 24 - 9 ?",
+    "options": [
+      "17",
+      "15",
+      "16",
+      "14"
+    ],
+    "imageUrl": "",
+    "answer": "15",
+    "explanation": "On retire 9 de 24 pour obtenir 15. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 24 - 9 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 50,
+    "qType": "MCQ",
+    "question": "Quel est 78 + 33 ?",
+    "options": [
+      "111",
+      "110",
+      "112",
+      "113"
+    ],
+    "imageUrl": "",
+    "answer": "111",
+    "explanation": "On additionne 78 et 33 pour obtenir 111. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 78 + 33 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 50,
+    "qType": "MCQ",
+    "question": "Quel est 58 × 6 ?",
+    "options": [
+      "350",
+      "348",
+      "347",
+      "349"
+    ],
+    "imageUrl": "",
+    "answer": "348",
+    "explanation": "Multiplier 58 par 6 donne 348. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 58 × 6 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 51,
+    "qType": "MCQ",
+    "question": "Quel est 38 × 16 ?",
+    "options": [
+      "607",
+      "610",
+      "609",
+      "608"
+    ],
+    "imageUrl": "",
+    "answer": "608",
+    "explanation": "Multiplier 38 par 16 donne 608. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 38 × 16 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 51,
+    "qType": "MCQ",
+    "question": "Quel est 27 - 18 ?",
+    "options": [
+      "8",
+      "10",
+      "9",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "9",
+    "explanation": "On retire 18 de 27 pour obtenir 9. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 27 - 18 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 52,
+    "qType": "MCQ",
+    "question": "Quel est 87 + 36 ?",
+    "options": [
+      "123",
+      "125",
+      "124",
+      "122"
+    ],
+    "imageUrl": "",
+    "answer": "123",
+    "explanation": "On additionne 87 et 36 pour obtenir 123. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 87 + 36 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 52,
+    "qType": "MCQ",
+    "question": "Quel est 67 + 9 ?",
+    "options": [
+      "77",
+      "75",
+      "78",
+      "76"
+    ],
+    "imageUrl": "",
+    "answer": "76",
+    "explanation": "On additionne 67 et 9 pour obtenir 76. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 67 + 9 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 53,
+    "qType": "MCQ",
+    "question": "Quel est 47 × 19 ?",
+    "options": [
+      "893",
+      "895",
+      "894",
+      "892"
+    ],
+    "imageUrl": "",
+    "answer": "893",
+    "explanation": "Multiplier 47 par 19 donne 893. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 47 × 19 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 53,
+    "qType": "MCQ",
+    "question": "Quel est 30 - 27 ?",
+    "options": [
+      "4",
+      "5",
+      "3",
+      "2"
+    ],
+    "imageUrl": "",
+    "answer": "3",
+    "explanation": "On retire 27 de 30 pour obtenir 3. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 30 - 27 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 54,
+    "qType": "MCQ",
+    "question": "Quel est 7 - 2 ?",
+    "options": [
+      "4",
+      "7",
+      "6",
+      "5"
+    ],
+    "imageUrl": "",
+    "answer": "5",
+    "explanation": "On retire 2 de 7 pour obtenir 5. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 7 - 2 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 54,
+    "qType": "MCQ",
+    "question": "Quel est 76 + 12 ?",
+    "options": [
+      "87",
+      "89",
+      "90",
+      "88"
+    ],
+    "imageUrl": "",
+    "answer": "88",
+    "explanation": "On additionne 76 et 12 pour obtenir 88. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 76 + 12 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 55,
+    "qType": "MCQ",
+    "question": "Quel est 56 × 22 ?",
+    "options": [
+      "1232",
+      "1233",
+      "1231",
+      "1234"
+    ],
+    "imageUrl": "",
+    "answer": "1232",
+    "explanation": "Multiplier 56 par 22 donne 1232. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 56 × 22 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 55,
+    "qType": "MCQ",
+    "question": "Quel est 36 × 32 ?",
+    "options": [
+      "1152",
+      "1154",
+      "1151",
+      "1153"
+    ],
+    "imageUrl": "",
+    "answer": "1152",
+    "explanation": "Multiplier 36 par 32 donne 1152. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 36 × 32 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 56,
+    "qType": "MCQ",
+    "question": "Quel est 16 - 5 ?",
+    "options": [
+      "12",
+      "13",
+      "10",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "11",
+    "explanation": "On retire 5 de 16 pour obtenir 11. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 16 - 5 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 56,
+    "qType": "MCQ",
+    "question": "Quel est 85 + 15 ?",
+    "options": [
+      "102",
+      "101",
+      "99",
+      "100"
+    ],
+    "imageUrl": "",
+    "answer": "100",
+    "explanation": "On additionne 85 et 15 pour obtenir 100. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 85 + 15 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 57,
+    "qType": "MCQ",
+    "question": "Quel est 65 + 25 ?",
+    "options": [
+      "89",
+      "92",
+      "90",
+      "91"
+    ],
+    "imageUrl": "",
+    "answer": "90",
+    "explanation": "On additionne 65 et 25 pour obtenir 90. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 65 + 25 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 57,
+    "qType": "MCQ",
+    "question": "Quel est 45 × 35 ?",
+    "options": [
+      "1576",
+      "1574",
+      "1577",
+      "1575"
+    ],
+    "imageUrl": "",
+    "answer": "1575",
+    "explanation": "Multiplier 45 par 35 donne 1575. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 45 × 35 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 58,
+    "qType": "MCQ",
+    "question": "Quel est 25 - 8 ?",
+    "options": [
+      "19",
+      "17",
+      "18",
+      "16"
+    ],
+    "imageUrl": "",
+    "answer": "17",
+    "explanation": "On retire 8 de 25 pour obtenir 17. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 25 - 8 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 58,
+    "qType": "MCQ",
+    "question": "Quel est 19 - 5 ?",
+    "options": [
+      "13",
+      "14",
+      "16",
+      "15"
+    ],
+    "imageUrl": "",
+    "answer": "14",
+    "explanation": "On retire 5 de 19 pour obtenir 14. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 19 - 5 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 59,
+    "qType": "MCQ",
+    "question": "Quel est 74 + 28 ?",
+    "options": [
+      "102",
+      "104",
+      "101",
+      "103"
+    ],
+    "imageUrl": "",
+    "answer": "102",
+    "explanation": "On additionne 74 et 28 pour obtenir 102. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 74 + 28 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 59,
+    "qType": "MCQ",
+    "question": "Quel est 54 × 38 ?",
+    "options": [
+      "2054",
+      "2053",
+      "2052",
+      "2051"
+    ],
+    "imageUrl": "",
+    "answer": "2052",
+    "explanation": "Multiplier 54 par 38 donne 2052. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 54 × 38 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 60,
+    "qType": "MCQ",
+    "question": "Quel est 34 × 11 ?",
+    "options": [
+      "374",
+      "373",
+      "376",
+      "375"
+    ],
+    "imageUrl": "",
+    "answer": "374",
+    "explanation": "Multiplier 34 par 11 donne 374. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 34 × 11 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 60,
+    "qType": "MCQ",
+    "question": "Quel est 22 - 14 ?",
+    "options": [
+      "10",
+      "8",
+      "9",
+      "7"
+    ],
+    "imageUrl": "",
+    "answer": "8",
+    "explanation": "On retire 14 de 22 pour obtenir 8. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 22 - 14 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 61,
+    "qType": "MCQ",
+    "question": "Quel est 83 + 31 ?",
+    "options": [
+      "113",
+      "114",
+      "116",
+      "115"
+    ],
+    "imageUrl": "",
+    "answer": "114",
+    "explanation": "On additionne 83 et 31 pour obtenir 114. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 83 + 31 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 61,
+    "qType": "MCQ",
+    "question": "Quel est 63 + 4 ?",
+    "options": [
+      "69",
+      "68",
+      "67",
+      "66"
+    ],
+    "imageUrl": "",
+    "answer": "67",
+    "explanation": "On additionne 63 et 4 pour obtenir 67. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 63 + 4 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 61,
+    "qType": "MCQ",
+    "question": "Quel est 43 × 14 ?",
+    "options": [
+      "604",
+      "602",
+      "601",
+      "603"
+    ],
+    "imageUrl": "",
+    "answer": "602",
+    "explanation": "Multiplier 43 par 14 donne 602. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 43 × 14 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 62,
+    "qType": "MCQ",
+    "question": "Quel est 25 - 23 ?",
+    "options": [
+      "4",
+      "1",
+      "3",
+      "2"
+    ],
+    "imageUrl": "",
+    "answer": "2",
+    "explanation": "On retire 23 de 25 pour obtenir 2. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 25 - 23 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 62,
+    "qType": "MCQ",
+    "question": "Quel est 35 - 3 ?",
+    "options": [
+      "31",
+      "34",
+      "33",
+      "32"
+    ],
+    "imageUrl": "",
+    "answer": "32",
+    "explanation": "On retire 3 de 35 pour obtenir 32. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 35 - 3 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 63,
+    "qType": "MCQ",
+    "question": "Quel est 72 + 7 ?",
+    "options": [
+      "79",
+      "80",
+      "81",
+      "78"
+    ],
+    "imageUrl": "",
+    "answer": "79",
+    "explanation": "On additionne 72 et 7 pour obtenir 79. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 72 + 7 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 63,
+    "qType": "MCQ",
+    "question": "Quel est 52 × 17 ?",
+    "options": [
+      "883",
+      "886",
+      "884",
+      "885"
+    ],
+    "imageUrl": "",
+    "answer": "884",
+    "explanation": "Multiplier 52 par 17 donne 884. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 52 × 17 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 64,
+    "qType": "MCQ",
+    "question": "Quel est 32 × 27 ?",
+    "options": [
+      "865",
+      "863",
+      "864",
+      "866"
+    ],
+    "imageUrl": "",
+    "answer": "864",
+    "explanation": "Multiplier 32 par 27 donne 864. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 32 × 27 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 64,
+    "qType": "MCQ",
+    "question": "Quel est 38 - 12 ?",
+    "options": [
+      "28",
+      "25",
+      "27",
+      "26"
+    ],
+    "imageUrl": "",
+    "answer": "26",
+    "explanation": "On retire 12 de 38 pour obtenir 26. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 38 - 12 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 65,
+    "qType": "MCQ",
+    "question": "Quel est 81 + 10 ?",
+    "options": [
+      "91",
+      "92",
+      "90",
+      "93"
+    ],
+    "imageUrl": "",
+    "answer": "91",
+    "explanation": "On additionne 81 et 10 pour obtenir 91. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 81 + 10 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 65,
+    "qType": "MCQ",
+    "question": "Quel est 61 + 20 ?",
+    "options": [
+      "80",
+      "83",
+      "82",
+      "81"
+    ],
+    "imageUrl": "",
+    "answer": "81",
+    "explanation": "On additionne 61 et 20 pour obtenir 81. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 61 + 20 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 66,
+    "qType": "MCQ",
+    "question": "Quel est 41 × 30 ?",
+    "options": [
+      "1231",
+      "1232",
+      "1229",
+      "1230"
+    ],
+    "imageUrl": "",
+    "answer": "1230",
+    "explanation": "Multiplier 41 par 30 donne 1230. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 41 × 30 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 66,
+    "qType": "MCQ",
+    "question": "Quel est 21 - 3 ?",
+    "options": [
+      "18",
+      "19",
+      "17",
+      "20"
+    ],
+    "imageUrl": "",
+    "answer": "18",
+    "explanation": "On retire 3 de 21 pour obtenir 18. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 21 - 3 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 67,
+    "qType": "MCQ",
+    "question": "Quel est 90 - 13 ?",
+    "options": [
+      "79",
+      "78",
+      "77",
+      "76"
+    ],
+    "imageUrl": "",
+    "answer": "77",
+    "explanation": "On retire 13 de 90 pour obtenir 77. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 90 - 13 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 67,
+    "qType": "MCQ",
+    "question": "Quel est 70 + 23 ?",
+    "options": [
+      "93",
+      "94",
+      "95",
+      "92"
+    ],
+    "imageUrl": "",
+    "answer": "93",
+    "explanation": "On additionne 70 et 23 pour obtenir 93. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 70 + 23 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 68,
+    "qType": "MCQ",
+    "question": "Quel est 50 × 33 ?",
+    "options": [
+      "1652",
+      "1650",
+      "1651",
+      "1649"
+    ],
+    "imageUrl": "",
+    "answer": "1650",
+    "explanation": "Multiplier 50 par 33 donne 1650. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 50 × 33 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 68,
+    "qType": "MCQ",
+    "question": "Quel est 30 × 6 ?",
+    "options": [
+      "181",
+      "179",
+      "180",
+      "182"
+    ],
+    "imageUrl": "",
+    "answer": "180",
+    "explanation": "Multiplier 30 par 6 donne 180. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 30 × 6 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 69,
+    "qType": "MCQ",
+    "question": "Quel est 17 - 10 ?",
+    "options": [
+      "7",
+      "9",
+      "6",
+      "8"
+    ],
+    "imageUrl": "",
+    "answer": "7",
+    "explanation": "On retire 10 de 17 pour obtenir 7. La soustraction sert à voir ce qu’il reste après avoir enlevé une quantité. Cette question est : « Quel est 17 - 10 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 69,
+    "qType": "MCQ",
+    "question": "Quel est 79 + 26 ?",
+    "options": [
+      "104",
+      "106",
+      "107",
+      "105"
+    ],
+    "imageUrl": "",
+    "answer": "105",
+    "explanation": "On additionne 79 et 26 pour obtenir 105. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 79 + 26 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 70,
+    "qType": "MCQ",
+    "question": "Quel est 59 + 36 ?",
+    "options": [
+      "97",
+      "95",
+      "96",
+      "94"
+    ],
+    "imageUrl": "",
+    "answer": "95",
+    "explanation": "On additionne 59 et 36 pour obtenir 95. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 59 + 36 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 70,
+    "qType": "MCQ",
+    "question": "Quel est 39 × 9 ?",
+    "options": [
+      "350",
+      "353",
+      "352",
+      "351"
+    ],
+    "imageUrl": "",
+    "answer": "351",
+    "explanation": "Multiplier 39 par 9 donne 351. La multiplication permet de compter rapidement des groupes identiques. Cette question est : « Quel est 39 × 9 ? ».",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse."
+  },
+  {
+    "level": 71,
+    "qType": "MCQ",
+    "question": "Quel est 5 + 7 ?",
+    "options": [
+      "11",
+      "12",
+      "13",
+      "10"
+    ],
+    "imageUrl": "",
+    "answer": "12",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse.",
+    "explanation": "On additionne 5 et 7 pour obtenir 12. Cette opération montre comment deux quantités se combinent pour former un total. Cette question est : « Quel est 5 + 7 ? »."
+  },
+  {
+    "level": 72,
+    "qType": "TRUE_FALSE",
+    "question": "Un carré a 4 côtés égaux.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Vrai",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente.",
+    "explanation": "Vrai est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Un carré a 4 côtés égaux. »."
+  },
+  {
+    "level": 73,
+    "qType": "FILL_BLANK",
+    "question": "Le contraire de « ouvert » est ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "fermé",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore.",
+    "explanation": "fermé est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Le contraire de « ouvert » est ___. »."
+  },
+  {
+    "level": 74,
+    "qType": "MCQ",
+    "question": "Quelle planète est connue comme la planète rouge ?",
+    "options": [
+      "Vénus",
+      "Mars",
+      "Jupiter",
+      "Saturne"
+    ],
+    "imageUrl": "",
+    "answer": "Mars",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse.",
+    "explanation": "Mars est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quelle planète est connue comme la planète rouge ? »."
+  },
+  {
+    "level": 75,
+    "qType": "TRUE_FALSE",
+    "question": "Les abeilles fabriquent du miel.",
+    "options": [
+      "Vrai",
+      "Faux"
+    ],
+    "imageUrl": "",
+    "answer": "Vrai",
+    "successMsg": "Exact !",
+    "errorMsg": "Non, la bonne réponse est différente.",
+    "explanation": "Vrai est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Les abeilles fabriquent du miel. »."
+  },
+  {
+    "level": 76,
+    "qType": "MCQ",
+    "question": "Quel instrument a des cordes ?",
+    "options": [
+      "guitare",
+      "tambour",
+      "flûte",
+      "cloche"
+    ],
+    "imageUrl": "",
+    "answer": "guitare",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse.",
+    "explanation": "guitare est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel instrument a des cordes ? »."
+  },
+  {
+    "level": 77,
+    "qType": "FILL_BLANK",
+    "question": "Une phrase se termine par un ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "point",
+    "successMsg": "Très bien !",
+    "errorMsg": "Essaie encore.",
+    "explanation": "point est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Une phrase se termine par un ___. »."
+  },
+  {
+    "level": 78,
+    "qType": "MCQ",
+    "question": "Quel animal peut aboyer ?",
+    "options": [
+      "chat",
+      "chien",
+      "poisson",
+      "oiseau"
+    ],
+    "imageUrl": "",
+    "answer": "chien",
+    "successMsg": "Bravo !",
+    "errorMsg": "Ce n'est pas la bonne réponse.",
+    "explanation": "chien est la bonne réponse ici parce qu’elle correspond à ce que la question demande. Cette explication aide à relier la réponse à la notion étudiée. Cette question est : « Quel animal peut aboyer ? »."
+  }
+]

@@ -1,0 +1,3118 @@
+[
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 2 + 2?",
+    "options": [
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "imageUrl": "",
+    "answer": "4",
+    "explanation": "Sumar 2 y 2 da 4. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 2 + 2?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "El agua se congela a 0 °C en condiciones normales.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Verdadero",
+    "explanation": "Verdadero es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"El agua se congela a 0 °C en condiciones normales.\".",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "El resultado de una suma se llama ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "suma",
+    "explanation": "suma es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"El resultado de una suma se llama ___.\".",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Cuál es la capital de Portugal?",
+    "options": [
+      "Roma",
+      "Lisboa",
+      "Madrid",
+      "París"
+    ],
+    "imageUrl": "",
+    "answer": "Lisboa",
+    "explanation": "Lisboa es la capital del país que pide la pregunta. Una capital es la ciudad principal de un país, donde suelen estar las instituciones más importantes. La pregunta es: \"¿Cuál es la capital de Portugal?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Francia está en Europa.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Verdadero",
+    "explanation": "Francia está en Europa, así que la afirmación es verdadera. Saber ubicar un país en su continente ayuda con la geografía básica. La pregunta es: \"Francia está en Europa.\".",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "El gas que necesitan respirar los humanos es ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "oxígeno",
+    "explanation": "El oxígeno es el gas que los humanos necesitan para respirar porque el cuerpo lo usa para producir energía. Sin oxígeno, las células no funcionan bien. La pregunta es: \"El gas que necesitan respirar los humanos es ___.\".",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Qué gas necesitan respirar los humanos?",
+    "options": [
+      "Hidrógeno",
+      "dióxido de carbono",
+      "nitrógeno",
+      "Oxígeno"
+    ],
+    "imageUrl": "",
+    "answer": "Oxígeno",
+    "explanation": "El oxígeno es el gas que los humanos necesitan para respirar porque el cuerpo lo usa para producir energía. Sin oxígeno, las células no funcionan bien. La pregunta es: \"¿Qué gas necesitan respirar los humanos?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Un verbo es un sustantivo.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Falso",
+    "explanation": "Un verbo expresa una acción o un estado, mientras que un sustantivo nombra una persona, un lugar o una cosa. Por eso la afirmación es falsa. La pregunta es: \"Un verbo es un sustantivo.\".",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "En programación, un valor que puede cambiar se llama ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "variable",
+    "explanation": "variable es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"En programación, un valor que puede cambiar se llama ___.\".",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Qué palabra es sinónimo de «rápido»?",
+    "options": [
+      "rápido",
+      "lento",
+      "suave",
+      "grande"
+    ],
+    "imageUrl": "",
+    "answer": "rápido",
+    "explanation": "«rápido» es la respuesta correcta porque significa lo mismo que «rápido». Los sinónimos amplían el vocabulario y evitan repetir palabras. La pregunta es: \"¿Qué palabra es sinónimo de «rápido»?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "El Sol es un planeta.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Falso",
+    "explanation": "El Sol no es un planeta; es una estrella. Las estrellas producen su propia luz y su propio calor. La pregunta es: \"El Sol es un planeta.\".",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "El cielo suele verse ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "azul",
+    "explanation": "El cielo suele verse azul porque la atmósfera dispersa la luz del Sol. Es un fenómeno que se puede observar casi todos los días. La pregunta es: \"El cielo suele verse ___.\".",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Qué deporte se juega con una pelota y dos equipos?",
+    "options": [
+      "fútbol",
+      "correr",
+      "natación",
+      "tenis"
+    ],
+    "imageUrl": "",
+    "answer": "fútbol",
+    "explanation": "El fútbol es la respuesta correcta porque es un deporte de equipo que se juega con una pelota. Dos equipos intentan marcar goles uno contra el otro. La pregunta es: \"¿Qué deporte se juega con una pelota y dos equipos?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "El corazón bombea la sangre por el cuerpo.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Verdadero",
+    "explanation": "El corazón bombea la sangre por todo el cuerpo para llevar oxígeno y nutrientes a los órganos. Ese bombeo mantiene la circulación. La pregunta es: \"El corazón bombea la sangre por el cuerpo.\".",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "La Tierra gira alrededor del ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "Sol",
+    "explanation": "La Tierra gira alrededor del Sol, no al revés. Ese movimiento es una de las razones por las que existe el año. La pregunta es: \"La Tierra gira alrededor del ___.\".",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Qué día viene después del lunes?",
+    "options": [
+      "viernes",
+      "miércoles",
+      "martes",
+      "lunes"
+    ],
+    "imageUrl": "",
+    "answer": "martes",
+    "explanation": "El martes viene después del lunes en el orden de los días de la semana. Conocer esa secuencia ayuda a organizar el tiempo. La pregunta es: \"¿Qué día viene después del lunes?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "El piano es un instrumento musical.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Verdadero",
+    "explanation": "El piano es un instrumento musical porque se toca con teclas para producir notas y melodías. La pregunta es: \"El piano es un instrumento musical.\".",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "¿Qué categoría gramatical tiene la palabra «run»? Es un ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "verbo",
+    "explanation": "verbo es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Qué categoría gramatical tiene la palabra «run»? Es un ___.\".",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Qué animal es: jirafa?",
+    "options": [
+      "león",
+      "elefante",
+      "jirafa",
+      "gato"
+    ],
+    "imageUrl": "",
+    "answer": "jirafa",
+    "explanation": "La jirafa es el animal que encaja con la pregunta y se reconoce por su cuello largo. Es un mamífero que vive en África. La pregunta es: \"¿Qué animal es: jirafa?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Paris is the capital of France.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Verdadero",
+    "explanation": "Verdadero es la capital del país que pide la pregunta. Una capital es la ciudad principal de un país, donde suelen estar las instituciones más importantes. La pregunta es: \"Paris is the capital of France.\".",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "Lo opuesto de «hot» es ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "frío",
+    "explanation": "«Frío» es lo contrario de «caliente» porque ambas palabras describen temperaturas opuestas. Los antónimos ayudan a ver contrastes claros. La pregunta es: \"Lo opuesto de «hot» es ___.\".",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Qué alimento es: arroz?",
+    "options": [
+      "arroz",
+      "plátano",
+      "huevo",
+      "agua"
+    ],
+    "imageUrl": "",
+    "answer": "arroz",
+    "explanation": "El arroz es un alimento básico en muchos países. Es fácil de reconocer porque forma parte de la comida diaria de mucha gente. La pregunta es: \"¿Qué alimento es: arroz?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Un triángulo tiene 4 lados.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Falso",
+    "explanation": "Un triángulo no tiene 4 lados; tiene 3. Es una de las figuras geométricas más sencillas de reconocer. La pregunta es: \"Un triángulo tiene 4 lados.\".",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "La capital de Francia es ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "París",
+    "explanation": "París es la capital del país que pide la pregunta. Una capital es la ciudad principal de un país, donde suelen estar las instituciones más importantes. La pregunta es: \"La capital de Francia es ___.\".",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Qué dispositivo se usa para enviar mensajes por Internet?",
+    "options": [
+      "libro",
+      "teléfono",
+      "mesa",
+      "sombrero"
+    ],
+    "imageUrl": "",
+    "answer": "teléfono",
+    "explanation": "teléfono es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Qué dispositivo se usa para enviar mensajes por Internet?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Una semana tiene 8 días.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Falso",
+    "explanation": "Una semana tiene 7 días porque el ciclo semanal se divide en siete partes. Es un dato básico que usamos todos los días. La pregunta es: \"Una semana tiene 8 días.\".",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "Una semana tiene ___ días.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "7",
+    "explanation": "Una semana tiene 7 días porque el ciclo semanal se divide en siete partes. Es un dato básico que usamos todos los días. La pregunta es: \"Una semana tiene ___ días.\".",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Qué objeto se usa para producir sonidos y melodías?",
+    "options": [
+      "instrumento",
+      "silla",
+      "piedra",
+      "bolígrafo"
+    ],
+    "imageUrl": "",
+    "answer": "instrumento",
+    "explanation": "Un instrumento se usa para producir sonidos y melodías. Por eso encaja con la pista de la pregunta. La pregunta es: \"¿Qué objeto se usa para producir sonidos y melodías?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "TRUE_FALSE",
+    "question": "Un bucle en programación repite acciones.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Verdadero",
+    "explanation": "Un bucle en programación repite instrucciones para no escribir la misma acción varias veces. Es un concepto básico del código. La pregunta es: \"Un bucle en programación repite acciones.\".",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente."
+  },
+  {
+    "level": 1,
+    "qType": "FILL_BLANK",
+    "question": "Un instrumento con teclas usado en música es el ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "piano",
+    "explanation": "El piano es el instrumento con teclas que describe la pregunta. Las teclas permiten producir notas y melodías. La pregunta es: \"Un instrumento con teclas usado en música es el ___.\".",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Qué categoría gramatical tiene la palabra «run»?",
+    "options": [
+      "sustantivo",
+      "verbo",
+      "adverbio",
+      "adjetivo"
+    ],
+    "imageUrl": "",
+    "answer": "verbo",
+    "explanation": "verbo es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Qué categoría gramatical tiene la palabra «run»?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "In programming, which term means a value that can change?",
+    "options": [
+      "arreglo",
+      "variable",
+      "función",
+      "bucle"
+    ],
+    "imageUrl": "",
+    "answer": "variable",
+    "explanation": "variable es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"In programming, which term means a value that can change?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Cuál word is closest to \"king\" in history?",
+    "options": [
+      "juez",
+      "soldado",
+      "monarca",
+      "comerciante"
+    ],
+    "imageUrl": "",
+    "answer": "monarca",
+    "explanation": "monarca es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál word is closest to \"king\" in history?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Cuál word is related to color in art?",
+    "options": [
+      "color",
+      "verbo",
+      "nombre",
+      "modo"
+    ],
+    "imageUrl": "",
+    "answer": "color",
+    "explanation": "color es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál word is related to color in art?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Cuál continent is Africa in?",
+    "options": [
+      "Europa",
+      "África",
+      "Asia",
+      "África"
+    ],
+    "imageUrl": "",
+    "answer": "África",
+    "explanation": "África es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál continent is Africa in?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Cuántos meses hay en un año?",
+    "options": [
+      "12",
+      "13",
+      "10",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "12",
+    "explanation": "12 es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuántos meses hay en un año?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 71 × 12?",
+    "options": [
+      "854",
+      "853",
+      "852",
+      "851"
+    ],
+    "imageUrl": "",
+    "answer": "852",
+    "explanation": "Multiplicar 71 por 12 da 852. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 71 × 12?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Cuál animal is: lion?",
+    "options": [
+      "elefante",
+      "león",
+      "gato",
+      "león"
+    ],
+    "imageUrl": "",
+    "answer": "león",
+    "explanation": "león es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál animal is: lion?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Cuál food is: banana?",
+    "options": [
+      "agua",
+      "plátano",
+      "huevo",
+      "plátano"
+    ],
+    "imageUrl": "",
+    "answer": "plátano",
+    "explanation": "plátano es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál food is: banana?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 1,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 51 - 22?",
+    "options": [
+      "29",
+      "31",
+      "30",
+      "28"
+    ],
+    "imageUrl": "",
+    "answer": "29",
+    "explanation": "Restar 22 a 51 da 29. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 51 - 22?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "¿Cuál animal is: elephant?",
+    "options": [
+      "elefante",
+      "elefante",
+      "león",
+      "gato"
+    ],
+    "imageUrl": "",
+    "answer": "elefante",
+    "explanation": "elefante es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál animal is: elephant?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "¿Cuál food is: fish?",
+    "options": [
+      "huevo",
+      "plátano",
+      "pez",
+      "agua"
+    ],
+    "imageUrl": "",
+    "answer": "pez",
+    "explanation": "pez es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál food is: fish?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 33 - 31?",
+    "options": [
+      "1",
+      "3",
+      "2",
+      "4"
+    ],
+    "imageUrl": "",
+    "answer": "2",
+    "explanation": "Restar 31 a 33 da 2. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 33 - 31?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "¿Qué animal es: gato?",
+    "options": [
+      "gato",
+      "elefante",
+      "león",
+      "gato"
+    ],
+    "imageUrl": "",
+    "answer": "gato",
+    "explanation": "gato es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Qué animal es: gato?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "¿Qué alimento es: huevo?",
+    "options": [
+      "plátano",
+      "agua",
+      "huevo",
+      "huevo"
+    ],
+    "imageUrl": "",
+    "answer": "huevo",
+    "explanation": "huevo es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Qué alimento es: huevo?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 2,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 11 + 5?",
+    "options": [
+      "18",
+      "16",
+      "17",
+      "15"
+    ],
+    "imageUrl": "",
+    "answer": "16",
+    "explanation": "Sumar 11 y 5 da 16. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 11 + 5?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "¿Cuál animal is: dog?",
+    "options": [
+      "león",
+      "gato",
+      "perro",
+      "elefante"
+    ],
+    "imageUrl": "",
+    "answer": "perro",
+    "explanation": "perro es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál animal is: dog?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "¿Cuál food is: water?",
+    "options": [
+      "plátano",
+      "agua",
+      "huevo",
+      "agua"
+    ],
+    "imageUrl": "",
+    "answer": "agua",
+    "explanation": "agua es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál food is: water?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 80 × 15?",
+    "options": [
+      "1199",
+      "1201",
+      "1202",
+      "1200"
+    ],
+    "imageUrl": "",
+    "answer": "1200",
+    "explanation": "Multiplicar 80 por 15 da 1200. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 80 × 15?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "¿Cuál animal is: mouse?",
+    "options": [
+      "león",
+      "gato",
+      "elefante",
+      "ratón"
+    ],
+    "imageUrl": "",
+    "answer": "ratón",
+    "explanation": "ratón es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál animal is: mouse?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "¿Cuál food is: apple?",
+    "options": [
+      "agua",
+      "plátano",
+      "manzana",
+      "huevo"
+    ],
+    "imageUrl": "",
+    "answer": "manzana",
+    "explanation": "manzana es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál food is: apple?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 3,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 60 × 25?",
+    "options": [
+      "1500",
+      "1502",
+      "1501",
+      "1499"
+    ],
+    "imageUrl": "",
+    "answer": "1500",
+    "explanation": "Multiplicar 60 por 25 da 1500. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 60 × 25?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 4,
+    "qType": "MCQ",
+    "question": "¿Cuál animal is: whale?",
+    "options": [
+      "gato",
+      "ballena",
+      "león",
+      "elefante"
+    ],
+    "imageUrl": "",
+    "answer": "ballena",
+    "explanation": "ballena es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál animal is: whale?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 4,
+    "qType": "MCQ",
+    "question": "¿Cuál food is: bread?",
+    "options": [
+      "plátano",
+      "huevo",
+      "agua",
+      "pan"
+    ],
+    "imageUrl": "",
+    "answer": "pan",
+    "explanation": "pan es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Cuál food is: bread?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 4,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 40 - 35?",
+    "options": [
+      "6",
+      "7",
+      "4",
+      "5"
+    ],
+    "imageUrl": "",
+    "answer": "5",
+    "explanation": "Restar 35 a 40 da 5. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 40 - 35?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 4,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 20 + 8?",
+    "options": [
+      "29",
+      "27",
+      "28",
+      "30"
+    ],
+    "imageUrl": "",
+    "answer": "28",
+    "explanation": "Sumar 20 y 8 da 28. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 20 + 8?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 5,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 89 + 18?",
+    "options": [
+      "106",
+      "108",
+      "107",
+      "109"
+    ],
+    "imageUrl": "",
+    "answer": "107",
+    "explanation": "Sumar 89 y 18 da 107. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 89 + 18?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 5,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 69 × 28?",
+    "options": [
+      "1932",
+      "1933",
+      "1931",
+      "1934"
+    ],
+    "imageUrl": "",
+    "answer": "1932",
+    "explanation": "Multiplicar 69 por 28 da 1932. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 69 × 28?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 6,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 49 - 38?",
+    "options": [
+      "13",
+      "12",
+      "10",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "11",
+    "explanation": "Restar 38 a 49 da 11. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 49 - 38?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 6,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 29 - 11?",
+    "options": [
+      "19",
+      "17",
+      "18",
+      "20"
+    ],
+    "imageUrl": "",
+    "answer": "18",
+    "explanation": "Restar 11 a 29 da 18. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 29 - 11?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 7,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 9 + 21?",
+    "options": [
+      "32",
+      "29",
+      "30",
+      "31"
+    ],
+    "imageUrl": "",
+    "answer": "30",
+    "explanation": "Sumar 9 y 21 da 30. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 9 + 21?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 7,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 78 × 31?",
+    "options": [
+      "2419",
+      "2417",
+      "2420",
+      "2418"
+    ],
+    "imageUrl": "",
+    "answer": "2418",
+    "explanation": "Multiplicar 78 por 31 da 2418. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 78 × 31?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 8,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 58 × 4?",
+    "options": [
+      "234",
+      "231",
+      "232",
+      "233"
+    ],
+    "imageUrl": "",
+    "answer": "232",
+    "explanation": "Multiplicar 58 por 4 da 232. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 58 × 4?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 8,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 38 - 14?",
+    "options": [
+      "26",
+      "23",
+      "25",
+      "24"
+    ],
+    "imageUrl": "",
+    "answer": "24",
+    "explanation": "Restar 14 a 38 da 24. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 38 - 14?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 9,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 18 + 24?",
+    "options": [
+      "44",
+      "42",
+      "41",
+      "43"
+    ],
+    "imageUrl": "",
+    "answer": "42",
+    "explanation": "Sumar 18 y 24 da 42. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 18 + 24?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 9,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 87 + 34?",
+    "options": [
+      "123",
+      "121",
+      "122",
+      "120"
+    ],
+    "imageUrl": "",
+    "answer": "121",
+    "explanation": "Sumar 87 y 34 da 121. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 87 + 34?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 10,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 67 × 7?",
+    "options": [
+      "471",
+      "470",
+      "469",
+      "468"
+    ],
+    "imageUrl": "",
+    "answer": "469",
+    "explanation": "Multiplicar 67 por 7 da 469. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 67 × 7?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 10,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 47 - 17?",
+    "options": [
+      "31",
+      "30",
+      "29",
+      "32"
+    ],
+    "imageUrl": "",
+    "answer": "30",
+    "explanation": "Restar 17 a 47 da 30. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 47 - 17?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 11,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 28 - 27?",
+    "options": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "imageUrl": "",
+    "answer": "1",
+    "explanation": "Restar 27 a 28 da 1. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 28 - 27?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 11,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 7 + 37?",
+    "options": [
+      "43",
+      "45",
+      "46",
+      "44"
+    ],
+    "imageUrl": "",
+    "answer": "44",
+    "explanation": "Sumar 7 y 37 da 44. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 7 + 37?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 12,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 76 × 10?",
+    "options": [
+      "760",
+      "762",
+      "761",
+      "759"
+    ],
+    "imageUrl": "",
+    "answer": "760",
+    "explanation": "Multiplicar 76 por 10 da 760. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 76 × 10?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 12,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 56 × 20?",
+    "options": [
+      "1122",
+      "1119",
+      "1121",
+      "1120"
+    ],
+    "imageUrl": "",
+    "answer": "1120",
+    "explanation": "Multiplicar 56 por 20 da 1120. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 56 × 20?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 13,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 36 - 30?",
+    "options": [
+      "6",
+      "7",
+      "8",
+      "5"
+    ],
+    "imageUrl": "",
+    "answer": "6",
+    "explanation": "Restar 30 a 36 da 6. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 36 - 30?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 13,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 16 + 3?",
+    "options": [
+      "19",
+      "18",
+      "21",
+      "20"
+    ],
+    "imageUrl": "",
+    "answer": "19",
+    "explanation": "Sumar 16 y 3 da 19. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 16 + 3?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 13,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 85 + 13?",
+    "options": [
+      "97",
+      "98",
+      "99",
+      "100"
+    ],
+    "imageUrl": "",
+    "answer": "98",
+    "explanation": "Sumar 85 y 13 da 98. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 85 + 13?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 14,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 65 × 23?",
+    "options": [
+      "1495",
+      "1494",
+      "1496",
+      "1497"
+    ],
+    "imageUrl": "",
+    "answer": "1495",
+    "explanation": "Multiplicar 65 por 23 da 1495. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 65 × 23?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 14,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 45 - 33?",
+    "options": [
+      "14",
+      "12",
+      "13",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "12",
+    "explanation": "Restar 33 a 45 da 12. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 45 - 33?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 15,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 25 - 6?",
+    "options": [
+      "21",
+      "19",
+      "18",
+      "20"
+    ],
+    "imageUrl": "",
+    "answer": "19",
+    "explanation": "Restar 6 a 25 da 19. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 25 - 6?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 15,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 5 + 16?",
+    "options": [
+      "22",
+      "21",
+      "23",
+      "20"
+    ],
+    "imageUrl": "",
+    "answer": "21",
+    "explanation": "Sumar 5 y 16 da 21. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 5 + 16?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 16,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 74 × 26?",
+    "options": [
+      "1926",
+      "1923",
+      "1925",
+      "1924"
+    ],
+    "imageUrl": "",
+    "answer": "1924",
+    "explanation": "Multiplicar 74 por 26 da 1924. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 74 × 26?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 16,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 54 × 36?",
+    "options": [
+      "1946",
+      "1944",
+      "1945",
+      "1943"
+    ],
+    "imageUrl": "",
+    "answer": "1944",
+    "explanation": "Multiplicar 54 por 36 da 1944. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 54 × 36?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 17,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 34 - 9?",
+    "options": [
+      "27",
+      "25",
+      "24",
+      "26"
+    ],
+    "imageUrl": "",
+    "answer": "25",
+    "explanation": "Restar 9 a 34 da 25. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 34 - 9?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 17,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 14 + 19?",
+    "options": [
+      "35",
+      "34",
+      "33",
+      "32"
+    ],
+    "imageUrl": "",
+    "answer": "33",
+    "explanation": "Sumar 14 y 19 da 33. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 14 + 19?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 18,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 83 + 29?",
+    "options": [
+      "111",
+      "113",
+      "112",
+      "114"
+    ],
+    "imageUrl": "",
+    "answer": "112",
+    "explanation": "Sumar 83 y 29 da 112. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 83 + 29?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 18,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 63 × 2?",
+    "options": [
+      "125",
+      "128",
+      "127",
+      "126"
+    ],
+    "imageUrl": "",
+    "answer": "126",
+    "explanation": "Multiplicar 63 por 2 da 126. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 63 × 2?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 19,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 43 - 12?",
+    "options": [
+      "30",
+      "33",
+      "31",
+      "32"
+    ],
+    "imageUrl": "",
+    "answer": "31",
+    "explanation": "Restar 12 a 43 da 31. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 43 - 12?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 19,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 23 - 22?",
+    "options": [
+      "1",
+      "3",
+      "2",
+      "0"
+    ],
+    "imageUrl": "",
+    "answer": "1",
+    "explanation": "Restar 22 a 23 da 1. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 23 - 22?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 20,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 3 + 32?",
+    "options": [
+      "34",
+      "36",
+      "35",
+      "37"
+    ],
+    "imageUrl": "",
+    "answer": "35",
+    "explanation": "Sumar 3 y 32 da 35. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 3 + 32?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 20,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 72 × 5?",
+    "options": [
+      "359",
+      "362",
+      "360",
+      "361"
+    ],
+    "imageUrl": "",
+    "answer": "360",
+    "explanation": "Multiplicar 72 por 5 da 360. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 72 × 5?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 21,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 52 × 15?",
+    "options": [
+      "780",
+      "781",
+      "779",
+      "782"
+    ],
+    "imageUrl": "",
+    "answer": "780",
+    "explanation": "Multiplicar 52 por 15 da 780. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 52 × 15?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 21,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 32 - 25?",
+    "options": [
+      "8",
+      "7",
+      "9",
+      "6"
+    ],
+    "imageUrl": "",
+    "answer": "7",
+    "explanation": "Restar 25 a 32 da 7. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 32 - 25?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 22,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 12 + 35?",
+    "options": [
+      "49",
+      "46",
+      "48",
+      "47"
+    ],
+    "imageUrl": "",
+    "answer": "47",
+    "explanation": "Sumar 12 y 35 da 47. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 12 + 35?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 22,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 81 + 8?",
+    "options": [
+      "89",
+      "90",
+      "91",
+      "88"
+    ],
+    "imageUrl": "",
+    "answer": "89",
+    "explanation": "Sumar 81 y 8 da 89. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 81 + 8?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 23,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 61 × 18?",
+    "options": [
+      "1099",
+      "1097",
+      "1100",
+      "1098"
+    ],
+    "imageUrl": "",
+    "answer": "1098",
+    "explanation": "Multiplicar 61 por 18 da 1098. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 61 × 18?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 23,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 41 - 28?",
+    "options": [
+      "15",
+      "14",
+      "12",
+      "13"
+    ],
+    "imageUrl": "",
+    "answer": "13",
+    "explanation": "Restar 28 a 41 da 13. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 41 - 28?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 24,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 39 - 21?",
+    "options": [
+      "18",
+      "20",
+      "19",
+      "17"
+    ],
+    "imageUrl": "",
+    "answer": "18",
+    "explanation": "Restar 21 a 39 da 18. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 39 - 21?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 24,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 90 + 11?",
+    "options": [
+      "101",
+      "102",
+      "100",
+      "103"
+    ],
+    "imageUrl": "",
+    "answer": "101",
+    "explanation": "Sumar 90 y 11 da 101. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 90 + 11?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 25,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 70 × 21?",
+    "options": [
+      "1469",
+      "1471",
+      "1472",
+      "1470"
+    ],
+    "imageUrl": "",
+    "answer": "1470",
+    "explanation": "Multiplicar 70 por 21 da 1470. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 70 × 21?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 25,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 50 × 31?",
+    "options": [
+      "1551",
+      "1549",
+      "1550",
+      "1552"
+    ],
+    "imageUrl": "",
+    "answer": "1550",
+    "explanation": "Multiplicar 50 por 31 da 1550. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 50 × 31?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 25,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 30 - 4?",
+    "options": [
+      "28",
+      "25",
+      "27",
+      "26"
+    ],
+    "imageUrl": "",
+    "answer": "26",
+    "explanation": "Restar 4 a 30 da 26. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 30 - 4?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 26,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 10 + 14?",
+    "options": [
+      "24",
+      "23",
+      "25",
+      "26"
+    ],
+    "imageUrl": "",
+    "answer": "24",
+    "explanation": "Sumar 10 y 14 da 24. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 10 + 14?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 26,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 79 + 24?",
+    "options": [
+      "104",
+      "105",
+      "103",
+      "102"
+    ],
+    "imageUrl": "",
+    "answer": "103",
+    "explanation": "Sumar 79 y 24 da 103. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 79 + 24?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 27,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 59 × 34?",
+    "options": [
+      "2005",
+      "2007",
+      "2006",
+      "2008"
+    ],
+    "imageUrl": "",
+    "answer": "2006",
+    "explanation": "Multiplicar 59 por 34 da 2006. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 59 × 34?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 27,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 39 - 7?",
+    "options": [
+      "34",
+      "31",
+      "32",
+      "33"
+    ],
+    "imageUrl": "",
+    "answer": "32",
+    "explanation": "Restar 7 a 39 da 32. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 39 - 7?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 28,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 19 - 17?",
+    "options": [
+      "4",
+      "1",
+      "3",
+      "2"
+    ],
+    "imageUrl": "",
+    "answer": "2",
+    "explanation": "Restar 17 a 19 da 2. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 19 - 17?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 28,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 88 + 27?",
+    "options": [
+      "116",
+      "114",
+      "117",
+      "115"
+    ],
+    "imageUrl": "",
+    "answer": "115",
+    "explanation": "Sumar 88 y 27 da 115. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 88 + 27?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 29,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 68 × 37?",
+    "options": [
+      "2518",
+      "2515",
+      "2517",
+      "2516"
+    ],
+    "imageUrl": "",
+    "answer": "2516",
+    "explanation": "Multiplicar 68 por 37 da 2516. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 68 × 37?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 29,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 48 × 10?",
+    "options": [
+      "479",
+      "481",
+      "480",
+      "482"
+    ],
+    "imageUrl": "",
+    "answer": "480",
+    "explanation": "Multiplicar 48 por 10 da 480. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 48 × 10?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 30,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 28 - 20?",
+    "options": [
+      "9",
+      "8",
+      "10",
+      "7"
+    ],
+    "imageUrl": "",
+    "answer": "8",
+    "explanation": "Restar 20 a 28 da 8. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 28 - 20?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 30,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 8 + 30?",
+    "options": [
+      "38",
+      "40",
+      "39",
+      "37"
+    ],
+    "imageUrl": "",
+    "answer": "38",
+    "explanation": "Sumar 8 y 30 da 38. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 8 + 30?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 31,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 77 + 3?",
+    "options": [
+      "82",
+      "80",
+      "79",
+      "81"
+    ],
+    "imageUrl": "",
+    "answer": "80",
+    "explanation": "Sumar 77 y 3 da 80. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 77 + 3?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 31,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 57 × 13?",
+    "options": [
+      "743",
+      "741",
+      "740",
+      "742"
+    ],
+    "imageUrl": "",
+    "answer": "741",
+    "explanation": "Multiplicar 57 por 13 da 741. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 57 × 13?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 32,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 37 - 23?",
+    "options": [
+      "14",
+      "16",
+      "15",
+      "13"
+    ],
+    "imageUrl": "",
+    "answer": "14",
+    "explanation": "Restar 23 a 37 da 14. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 37 - 23?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 32,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 34 - 17?",
+    "options": [
+      "17",
+      "18",
+      "16",
+      "19"
+    ],
+    "imageUrl": "",
+    "answer": "17",
+    "explanation": "Restar 17 a 34 da 17. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 34 - 17?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 33,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 86 + 6?",
+    "options": [
+      "94",
+      "91",
+      "92",
+      "93"
+    ],
+    "imageUrl": "",
+    "answer": "92",
+    "explanation": "Sumar 86 y 6 da 92. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 86 + 6?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 33,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 66 × 16?",
+    "options": [
+      "1058",
+      "1055",
+      "1056",
+      "1057"
+    ],
+    "imageUrl": "",
+    "answer": "1056",
+    "explanation": "Multiplicar 66 por 16 da 1056. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 66 × 16?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 34,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 46 × 26?",
+    "options": [
+      "1198",
+      "1196",
+      "1197",
+      "1195"
+    ],
+    "imageUrl": "",
+    "answer": "1196",
+    "explanation": "Multiplicar 46 por 26 da 1196. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 46 × 26?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 34,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 37 - 26?",
+    "options": [
+      "11",
+      "10",
+      "12",
+      "13"
+    ],
+    "imageUrl": "",
+    "answer": "11",
+    "explanation": "Restar 26 a 37 da 11. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 37 - 26?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 35,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 6 + 9?",
+    "options": [
+      "15",
+      "14",
+      "17",
+      "16"
+    ],
+    "imageUrl": "",
+    "answer": "15",
+    "explanation": "Sumar 6 y 9 da 15. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 6 + 9?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 35,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 75 + 19?",
+    "options": [
+      "94",
+      "95",
+      "93",
+      "96"
+    ],
+    "imageUrl": "",
+    "answer": "94",
+    "explanation": "Sumar 75 y 19 da 94. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 75 + 19?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 36,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 55 × 29?",
+    "options": [
+      "1596",
+      "1594",
+      "1597",
+      "1595"
+    ],
+    "imageUrl": "",
+    "answer": "1595",
+    "explanation": "Multiplicar 55 por 29 da 1595. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 55 × 29?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 36,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 35 - 2?",
+    "options": [
+      "33",
+      "32",
+      "34",
+      "35"
+    ],
+    "imageUrl": "",
+    "answer": "33",
+    "explanation": "Restar 2 a 35 da 33. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 35 - 2?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 37,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 15 - 12?",
+    "options": [
+      "5",
+      "3",
+      "2",
+      "4"
+    ],
+    "imageUrl": "",
+    "answer": "3",
+    "explanation": "Restar 12 a 15 da 3. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 15 - 12?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 37,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 84 + 22?",
+    "options": [
+      "108",
+      "106",
+      "107",
+      "105"
+    ],
+    "imageUrl": "",
+    "answer": "106",
+    "explanation": "Sumar 84 y 22 da 106. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 84 + 22?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 37,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 64 × 32?",
+    "options": [
+      "2048",
+      "2050",
+      "2049",
+      "2047"
+    ],
+    "imageUrl": "",
+    "answer": "2048",
+    "explanation": "Multiplicar 64 por 32 da 2048. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 64 × 32?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 38,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 44 × 5?",
+    "options": [
+      "222",
+      "221",
+      "220",
+      "219"
+    ],
+    "imageUrl": "",
+    "answer": "220",
+    "explanation": "Multiplicar 44 por 5 da 220. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 44 × 5?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 38,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 24 - 15?",
+    "options": [
+      "9",
+      "10",
+      "8",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "9",
+    "explanation": "Restar 15 a 24 da 9. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 24 - 15?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 39,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 4 + 25?",
+    "options": [
+      "31",
+      "29",
+      "28",
+      "30"
+    ],
+    "imageUrl": "",
+    "answer": "29",
+    "explanation": "Sumar 4 y 25 da 29. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 4 + 25?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 39,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 73 + 35?",
+    "options": [
+      "110",
+      "107",
+      "108",
+      "109"
+    ],
+    "imageUrl": "",
+    "answer": "108",
+    "explanation": "Sumar 73 y 35 da 108. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 73 + 35?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 40,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 53 × 8?",
+    "options": [
+      "425",
+      "424",
+      "426",
+      "423"
+    ],
+    "imageUrl": "",
+    "answer": "424",
+    "explanation": "Multiplicar 53 por 8 da 424. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 53 × 8?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 40,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 33 - 18?",
+    "options": [
+      "14",
+      "17",
+      "15",
+      "16"
+    ],
+    "imageUrl": "",
+    "answer": "15",
+    "explanation": "Restar 18 a 33 da 15. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 33 - 18?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 41,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 29 - 13?",
+    "options": [
+      "15",
+      "16",
+      "18",
+      "17"
+    ],
+    "imageUrl": "",
+    "answer": "16",
+    "explanation": "Restar 13 a 29 da 16. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 29 - 13?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 41,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 82 + 38?",
+    "options": [
+      "120",
+      "119",
+      "121",
+      "122"
+    ],
+    "imageUrl": "",
+    "answer": "120",
+    "explanation": "Sumar 82 y 38 da 120. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 82 + 38?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 42,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 62 × 11?",
+    "options": [
+      "684",
+      "681",
+      "683",
+      "682"
+    ],
+    "imageUrl": "",
+    "answer": "682",
+    "explanation": "Multiplicar 62 por 11 da 682. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 62 × 11?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 42,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 42 × 21?",
+    "options": [
+      "883",
+      "882",
+      "881",
+      "884"
+    ],
+    "imageUrl": "",
+    "answer": "882",
+    "explanation": "Multiplicar 42 por 21 da 882. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 42 × 21?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 43,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 32 - 22?",
+    "options": [
+      "10",
+      "12",
+      "11",
+      "9"
+    ],
+    "imageUrl": "",
+    "answer": "10",
+    "explanation": "Restar 22 a 32 da 10. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 32 - 22?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 43,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 2 + 4?",
+    "options": [
+      "5",
+      "8",
+      "7",
+      "6"
+    ],
+    "imageUrl": "",
+    "answer": "6",
+    "explanation": "Sumar 2 y 4 da 6. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 2 + 4?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 44,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 71 + 14?",
+    "options": [
+      "84",
+      "86",
+      "85",
+      "87"
+    ],
+    "imageUrl": "",
+    "answer": "85",
+    "explanation": "Sumar 71 y 14 da 85. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 71 + 14?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 44,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 51 × 24?",
+    "options": [
+      "1226",
+      "1224",
+      "1225",
+      "1223"
+    ],
+    "imageUrl": "",
+    "answer": "1224",
+    "explanation": "Multiplicar 51 por 24 da 1224. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 51 × 24?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 45,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 35 - 31?",
+    "options": [
+      "3",
+      "5",
+      "4",
+      "6"
+    ],
+    "imageUrl": "",
+    "answer": "4",
+    "explanation": "Restar 31 a 35 da 4. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 35 - 31?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 45,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 11 - 7?",
+    "options": [
+      "4",
+      "6",
+      "3",
+      "5"
+    ],
+    "imageUrl": "",
+    "answer": "4",
+    "explanation": "Restar 7 a 11 da 4. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 11 - 7?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 46,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 80 + 17?",
+    "options": [
+      "97",
+      "99",
+      "98",
+      "96"
+    ],
+    "imageUrl": "",
+    "answer": "97",
+    "explanation": "Sumar 80 y 17 da 97. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 80 + 17?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 46,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 60 × 27?",
+    "options": [
+      "1621",
+      "1622",
+      "1619",
+      "1620"
+    ],
+    "imageUrl": "",
+    "answer": "1620",
+    "explanation": "Multiplicar 60 por 27 da 1620. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 60 × 27?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 47,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 40 × 37?",
+    "options": [
+      "1480",
+      "1479",
+      "1481",
+      "1482"
+    ],
+    "imageUrl": "",
+    "answer": "1480",
+    "explanation": "Multiplicar 40 por 37 da 1480. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 40 × 37?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 47,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 20 - 10?",
+    "options": [
+      "10",
+      "11",
+      "12",
+      "9"
+    ],
+    "imageUrl": "",
+    "answer": "10",
+    "explanation": "Restar 10 a 20 da 10. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 20 - 10?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 48,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 89 + 20?",
+    "options": [
+      "108",
+      "110",
+      "109",
+      "111"
+    ],
+    "imageUrl": "",
+    "answer": "109",
+    "explanation": "Sumar 89 y 20 da 109. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 89 + 20?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 48,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 69 + 30?",
+    "options": [
+      "100",
+      "99",
+      "101",
+      "98"
+    ],
+    "imageUrl": "",
+    "answer": "99",
+    "explanation": "Sumar 69 y 30 da 99. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 69 + 30?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 49,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 49 × 3?",
+    "options": [
+      "146",
+      "148",
+      "147",
+      "149"
+    ],
+    "imageUrl": "",
+    "answer": "147",
+    "explanation": "Multiplicar 49 por 3 da 147. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 49 × 3?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 49,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 24 - 9?",
+    "options": [
+      "17",
+      "15",
+      "16",
+      "14"
+    ],
+    "imageUrl": "",
+    "answer": "15",
+    "explanation": "Restar 9 a 24 da 15. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 24 - 9?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 50,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 78 + 33?",
+    "options": [
+      "111",
+      "110",
+      "112",
+      "113"
+    ],
+    "imageUrl": "",
+    "answer": "111",
+    "explanation": "Sumar 78 y 33 da 111. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 78 + 33?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 50,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 58 × 6?",
+    "options": [
+      "350",
+      "348",
+      "347",
+      "349"
+    ],
+    "imageUrl": "",
+    "answer": "348",
+    "explanation": "Multiplicar 58 por 6 da 348. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 58 × 6?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 51,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 38 × 16?",
+    "options": [
+      "607",
+      "610",
+      "609",
+      "608"
+    ],
+    "imageUrl": "",
+    "answer": "608",
+    "explanation": "Multiplicar 38 por 16 da 608. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 38 × 16?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 51,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 27 - 18?",
+    "options": [
+      "8",
+      "10",
+      "9",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "9",
+    "explanation": "Restar 18 a 27 da 9. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 27 - 18?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 52,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 87 + 36?",
+    "options": [
+      "123",
+      "125",
+      "124",
+      "122"
+    ],
+    "imageUrl": "",
+    "answer": "123",
+    "explanation": "Sumar 87 y 36 da 123. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 87 + 36?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 52,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 67 + 9?",
+    "options": [
+      "77",
+      "75",
+      "78",
+      "76"
+    ],
+    "imageUrl": "",
+    "answer": "76",
+    "explanation": "Sumar 67 y 9 da 76. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 67 + 9?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 53,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 47 × 19?",
+    "options": [
+      "893",
+      "895",
+      "894",
+      "892"
+    ],
+    "imageUrl": "",
+    "answer": "893",
+    "explanation": "Multiplicar 47 por 19 da 893. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 47 × 19?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 53,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 30 - 27?",
+    "options": [
+      "4",
+      "5",
+      "3",
+      "2"
+    ],
+    "imageUrl": "",
+    "answer": "3",
+    "explanation": "Restar 27 a 30 da 3. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 30 - 27?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 54,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 7 - 2?",
+    "options": [
+      "4",
+      "7",
+      "6",
+      "5"
+    ],
+    "imageUrl": "",
+    "answer": "5",
+    "explanation": "Restar 2 a 7 da 5. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 7 - 2?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 54,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 76 + 12?",
+    "options": [
+      "87",
+      "89",
+      "90",
+      "88"
+    ],
+    "imageUrl": "",
+    "answer": "88",
+    "explanation": "Sumar 76 y 12 da 88. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 76 + 12?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 55,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 56 × 22?",
+    "options": [
+      "1232",
+      "1233",
+      "1231",
+      "1234"
+    ],
+    "imageUrl": "",
+    "answer": "1232",
+    "explanation": "Multiplicar 56 por 22 da 1232. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 56 × 22?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 55,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 36 × 32?",
+    "options": [
+      "1152",
+      "1154",
+      "1151",
+      "1153"
+    ],
+    "imageUrl": "",
+    "answer": "1152",
+    "explanation": "Multiplicar 36 por 32 da 1152. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 36 × 32?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 56,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 16 - 5?",
+    "options": [
+      "12",
+      "13",
+      "10",
+      "11"
+    ],
+    "imageUrl": "",
+    "answer": "11",
+    "explanation": "Restar 5 a 16 da 11. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 16 - 5?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 56,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 85 + 15?",
+    "options": [
+      "102",
+      "101",
+      "99",
+      "100"
+    ],
+    "imageUrl": "",
+    "answer": "100",
+    "explanation": "Sumar 85 y 15 da 100. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 85 + 15?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 57,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 65 + 25?",
+    "options": [
+      "89",
+      "92",
+      "90",
+      "91"
+    ],
+    "imageUrl": "",
+    "answer": "90",
+    "explanation": "Sumar 65 y 25 da 90. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 65 + 25?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 57,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 45 × 35?",
+    "options": [
+      "1576",
+      "1574",
+      "1577",
+      "1575"
+    ],
+    "imageUrl": "",
+    "answer": "1575",
+    "explanation": "Multiplicar 45 por 35 da 1575. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 45 × 35?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 58,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 25 - 8?",
+    "options": [
+      "19",
+      "17",
+      "18",
+      "16"
+    ],
+    "imageUrl": "",
+    "answer": "17",
+    "explanation": "Restar 8 a 25 da 17. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 25 - 8?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 58,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 19 - 5?",
+    "options": [
+      "13",
+      "14",
+      "16",
+      "15"
+    ],
+    "imageUrl": "",
+    "answer": "14",
+    "explanation": "Restar 5 a 19 da 14. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 19 - 5?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 59,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 74 + 28?",
+    "options": [
+      "102",
+      "104",
+      "101",
+      "103"
+    ],
+    "imageUrl": "",
+    "answer": "102",
+    "explanation": "Sumar 74 y 28 da 102. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 74 + 28?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 59,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 54 × 38?",
+    "options": [
+      "2054",
+      "2053",
+      "2052",
+      "2051"
+    ],
+    "imageUrl": "",
+    "answer": "2052",
+    "explanation": "Multiplicar 54 por 38 da 2052. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 54 × 38?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 60,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 34 × 11?",
+    "options": [
+      "374",
+      "373",
+      "376",
+      "375"
+    ],
+    "imageUrl": "",
+    "answer": "374",
+    "explanation": "Multiplicar 34 por 11 da 374. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 34 × 11?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 60,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 22 - 14?",
+    "options": [
+      "10",
+      "8",
+      "9",
+      "7"
+    ],
+    "imageUrl": "",
+    "answer": "8",
+    "explanation": "Restar 14 a 22 da 8. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 22 - 14?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 61,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 83 + 31?",
+    "options": [
+      "113",
+      "114",
+      "116",
+      "115"
+    ],
+    "imageUrl": "",
+    "answer": "114",
+    "explanation": "Sumar 83 y 31 da 114. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 83 + 31?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 61,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 63 + 4?",
+    "options": [
+      "69",
+      "68",
+      "67",
+      "66"
+    ],
+    "imageUrl": "",
+    "answer": "67",
+    "explanation": "Sumar 63 y 4 da 67. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 63 + 4?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 61,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 43 × 14?",
+    "options": [
+      "604",
+      "602",
+      "601",
+      "603"
+    ],
+    "imageUrl": "",
+    "answer": "602",
+    "explanation": "Multiplicar 43 por 14 da 602. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 43 × 14?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 62,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 25 - 23?",
+    "options": [
+      "4",
+      "1",
+      "3",
+      "2"
+    ],
+    "imageUrl": "",
+    "answer": "2",
+    "explanation": "Restar 23 a 25 da 2. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 25 - 23?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 62,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 35 - 3?",
+    "options": [
+      "31",
+      "34",
+      "33",
+      "32"
+    ],
+    "imageUrl": "",
+    "answer": "32",
+    "explanation": "Restar 3 a 35 da 32. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 35 - 3?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 63,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 72 + 7?",
+    "options": [
+      "79",
+      "80",
+      "81",
+      "78"
+    ],
+    "imageUrl": "",
+    "answer": "79",
+    "explanation": "Sumar 72 y 7 da 79. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 72 + 7?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 63,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 52 × 17?",
+    "options": [
+      "883",
+      "886",
+      "884",
+      "885"
+    ],
+    "imageUrl": "",
+    "answer": "884",
+    "explanation": "Multiplicar 52 por 17 da 884. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 52 × 17?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 64,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 32 × 27?",
+    "options": [
+      "865",
+      "863",
+      "864",
+      "866"
+    ],
+    "imageUrl": "",
+    "answer": "864",
+    "explanation": "Multiplicar 32 por 27 da 864. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 32 × 27?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 64,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 38 - 12?",
+    "options": [
+      "28",
+      "25",
+      "27",
+      "26"
+    ],
+    "imageUrl": "",
+    "answer": "26",
+    "explanation": "Restar 12 a 38 da 26. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 38 - 12?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 65,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 81 + 10?",
+    "options": [
+      "91",
+      "92",
+      "90",
+      "93"
+    ],
+    "imageUrl": "",
+    "answer": "91",
+    "explanation": "Sumar 81 y 10 da 91. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 81 + 10?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 65,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 61 + 20?",
+    "options": [
+      "80",
+      "83",
+      "82",
+      "81"
+    ],
+    "imageUrl": "",
+    "answer": "81",
+    "explanation": "Sumar 61 y 20 da 81. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 61 + 20?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 66,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 41 × 30?",
+    "options": [
+      "1231",
+      "1232",
+      "1229",
+      "1230"
+    ],
+    "imageUrl": "",
+    "answer": "1230",
+    "explanation": "Multiplicar 41 por 30 da 1230. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 41 × 30?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 66,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 21 - 3?",
+    "options": [
+      "18",
+      "19",
+      "17",
+      "20"
+    ],
+    "imageUrl": "",
+    "answer": "18",
+    "explanation": "Restar 3 a 21 da 18. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 21 - 3?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 67,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 90 - 13?",
+    "options": [
+      "79",
+      "78",
+      "77",
+      "76"
+    ],
+    "imageUrl": "",
+    "answer": "77",
+    "explanation": "Restar 13 a 90 da 77. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 90 - 13?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 67,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 70 + 23?",
+    "options": [
+      "93",
+      "94",
+      "95",
+      "92"
+    ],
+    "imageUrl": "",
+    "answer": "93",
+    "explanation": "Sumar 70 y 23 da 93. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 70 + 23?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 68,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 50 × 33?",
+    "options": [
+      "1652",
+      "1650",
+      "1651",
+      "1649"
+    ],
+    "imageUrl": "",
+    "answer": "1650",
+    "explanation": "Multiplicar 50 por 33 da 1650. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 50 × 33?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 68,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 30 × 6?",
+    "options": [
+      "181",
+      "179",
+      "180",
+      "182"
+    ],
+    "imageUrl": "",
+    "answer": "180",
+    "explanation": "Multiplicar 30 por 6 da 180. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 30 × 6?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 69,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 17 - 10?",
+    "options": [
+      "7",
+      "9",
+      "6",
+      "8"
+    ],
+    "imageUrl": "",
+    "answer": "7",
+    "explanation": "Restar 10 a 17 da 7. La resta muestra lo que queda después de quitar una parte. La pregunta es: \"¿Cuánto es 17 - 10?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 69,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 79 + 26?",
+    "options": [
+      "104",
+      "106",
+      "107",
+      "105"
+    ],
+    "imageUrl": "",
+    "answer": "105",
+    "explanation": "Sumar 79 y 26 da 105. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 79 + 26?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 70,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 59 + 36?",
+    "options": [
+      "97",
+      "95",
+      "96",
+      "94"
+    ],
+    "imageUrl": "",
+    "answer": "95",
+    "explanation": "Sumar 59 y 36 da 95. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 59 + 36?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 70,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 39 × 9?",
+    "options": [
+      "350",
+      "353",
+      "352",
+      "351"
+    ],
+    "imageUrl": "",
+    "answer": "351",
+    "explanation": "Multiplicar 39 por 9 da 351. La multiplicación ayuda a contar grupos iguales con rapidez. La pregunta es: \"¿Cuánto es 39 × 9?\".",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta."
+  },
+  {
+    "level": 71,
+    "qType": "MCQ",
+    "question": "¿Cuánto es 5 + 7?",
+    "options": [
+      "11",
+      "12",
+      "13",
+      "10"
+    ],
+    "imageUrl": "",
+    "answer": "12",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta.",
+    "explanation": "Sumar 5 y 7 da 12. Esta operación muestra cómo dos cantidades se combinan para formar un total. La pregunta es: \"¿Cuánto es 5 + 7?\"."
+  },
+  {
+    "level": 72,
+    "qType": "TRUE_FALSE",
+    "question": "Un cuadrado tiene 4 lados iguales.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Verdadero",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente.",
+    "explanation": "Verdadero es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"Un cuadrado tiene 4 lados iguales.\"."
+  },
+  {
+    "level": 73,
+    "qType": "FILL_BLANK",
+    "question": "Lo opuesto de « abierto » es ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "cerrado",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez.",
+    "explanation": "cerrado es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"Lo opuesto de « abierto » es ___.\"."
+  },
+  {
+    "level": 74,
+    "qType": "MCQ",
+    "question": "¿Qué planeta se conoce como el planeta rojo?",
+    "options": [
+      "Venus",
+      "Marte",
+      "Júpiter",
+      "Saturno"
+    ],
+    "imageUrl": "",
+    "answer": "Marte",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta.",
+    "explanation": "Marte es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Qué planeta se conoce como el planeta rojo?\"."
+  },
+  {
+    "level": 75,
+    "qType": "TRUE_FALSE",
+    "question": "Las abejas hacen miel.",
+    "options": [
+      "Verdadero",
+      "Falso"
+    ],
+    "imageUrl": "",
+    "answer": "Verdadero",
+    "successMsg": "¡Exacto!",
+    "errorMsg": "No, la respuesta correcta es diferente.",
+    "explanation": "Verdadero es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"Las abejas hacen miel.\"."
+  },
+  {
+    "level": 76,
+    "qType": "MCQ",
+    "question": "¿Qué instrumento tiene cuerdas?",
+    "options": [
+      "guitarra",
+      "tambor",
+      "flauta",
+      "campana"
+    ],
+    "imageUrl": "",
+    "answer": "guitarra",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta.",
+    "explanation": "guitarra es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Qué instrumento tiene cuerdas?\"."
+  },
+  {
+    "level": 77,
+    "qType": "FILL_BLANK",
+    "question": "Una oración termina con un ___.",
+    "options": [],
+    "imageUrl": "",
+    "answer": "punto",
+    "successMsg": "¡Bien hecho!",
+    "errorMsg": "Inténtalo otra vez.",
+    "explanation": "punto es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"Una oración termina con un ___.\"."
+  },
+  {
+    "level": 78,
+    "qType": "MCQ",
+    "question": "¿Qué animal puede ladrar?",
+    "options": [
+      "gato",
+      "perro",
+      "pez",
+      "pájaro"
+    ],
+    "imageUrl": "",
+    "answer": "perro",
+    "successMsg": "¡Correcto!",
+    "errorMsg": "Esa no es la respuesta correcta.",
+    "explanation": "perro es la respuesta correcta porque coincide con lo que pide la pregunta. Esta explicación ayuda a conectar la respuesta con la idea principal. La pregunta es: \"¿Qué animal puede ladrar?\"."
+  }
+]
