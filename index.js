@@ -169,7 +169,7 @@ const localizedTrueFalse = {
   en: ["True", "False"],
   fr: ["Vrai", "Faux"],
   es: ["Verdadero", "Falso"],
-  ht: ["Vre", "Fo"]
+  ht: ["Vrè", "Fo"]
 };
 
 function isSimilarToExisting(newText, existingItems) {
@@ -445,23 +445,22 @@ CRITICAL RULES:
 2. The 'question' MUST NOT contain the answer.
 3. The 'options' MUST be an array of exactly 4 short strings (but if you need 3 or less you have to decrease it) that logically answer the question.
 4. The 'answer' MUST be exactly equal to one of the options.
-5. The 'explanation' MUST be 1 or 2 sentences teaching a fact.
-Output exactly this JSON format: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "What is the capital of France?", "options": ["Paris", "London", "Berlin", "Madrid"], "answer": "Paris", "explanation": "Paris is the capital and most populous city of France.", "successMsg": "Excellent!", "errorMsg": "Incorrect."}`;
+5.The "explanation" MUST be 1 or 2 sentences with a total of 300 to 400 characters teaching a fact.
+Generate exactly this example JSON format : {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "What is the capital of France?", "options": ["Paris", "London", "Berlin", "Madrid"], "answer": "Paris", "explanation": "Paris is the capital and most populous city of France.", "successMsg": "Excellent!", "errorMsg": "Incorrect."}`;
         } else if (qType === "TRUE_FALSE") {
           prompt = `Generate a True or False statement in ${langName}. Difficulty: ${level}.
 CRITICAL RULES:
-1. The 'question' MUST be a declarative statement of fact. It MUST NOT be a question. It MUST NOT end with '?'.
+1. The 'question' MUST be a declarative statement of fact. It MUST NOT be a question. .
 2. The 'options' MUST BE EXACTLY: ["${tfOpts[0]}", "${tfOpts[1]}"].
 3. The 'answer' MUST BE EXACTLY "${tfOpts[0]}" OR "${tfOpts[1]}".
 4. The 'explanation' MUST explain why the statement is true or false.
-Output exactly this JSON format: {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "The Earth is the fourth planet from the Sun.", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "${tfOpts[1]}", "explanation": "The Earth is the third planet from the Sun, Mars is the fourth.", "successMsg": "Well done!", "errorMsg": "Not quite."}`;
+Generate exactly this example JSON format : {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "The Earth is the fourth planet from the Sun.", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "${tfOpts[1]}", "explanation": "The Earth is the third planet from the Sun, Mars is the fourth.", "successMsg": "Well done!", "errorMsg": "Not quite."}`;
         } else {
           prompt = `Generate a Fill-in-the-blank question in ${langName}. Difficulty: ${level}.
 CRITICAL RULES:
 1. The 'question' MUST be a full sentence with exactly one word replaced by '______'.
-2. The '______' MUST be placed in the MIDDLE of the sentence, providing context before and after it.
+2. The '______' MUST be placed in the MIDDLE of the sentence, providing the context before and after.
 3. The 'answer' MUST be a SINGLE WORD (or max two words) that fits perfectly in the '______'.
-4. Do NOT use math equations.
 Output exactly this JSON format: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "According to biology, the ______ is the powerhouse of the cell.", "options": [], "answer": "mitochondria", "explanation": "Mitochondria generate most of the chemical energy needed to power the cell.", "successMsg": "Perfect!", "errorMsg": "Wrong."}`;
         }
 
@@ -656,7 +655,7 @@ async function executeMode1ImproveExisting(randomItem, langName, langCode) {
 CRITICAL RULES:
 1. If it's a multiple choice question, it MUST end with '?'.
 2. DO NOT include the exact answer inside the question text.
-3. The options must be realistic distractors, exactly 4 options.
+3. The 'options' MUST be an array of exactly 4 short strings (but if you need 3 or less you have to decrease it) that logically answer the question.
 Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
     const aiResponse = await runAI([{ role: "system", content: "You are an API that ONLY generates valid JSON. You MUST NOT output any text, markdown, or explanation outside the JSON object." }, { role: "user", content: prompt }], 1000);
     const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
@@ -679,7 +678,7 @@ async function executeMode2CreateSimilar(randomItem, langName, langCode) {
 CRITICAL RULES:
 1. If it's a multiple choice question, it MUST end with '?'.
 2. DO NOT include the answer in the question text.
-3. Ensure choices are plausible and provide exactly 4 options.
+3. The 'options' MUST be an array of exactly 4 short strings (but if you need 3 or less you have to decrease it) that logically answer the question.
 Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
     const aiResponse = await runAI([{ role: "system", content: "You are an API that ONLY generates valid JSON. You MUST NOT output any text, markdown, or explanation outside the JSON object." }, { role: "user", content: prompt }], 1000);
     const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
@@ -722,7 +721,7 @@ async function executeMode3PureAIGeneration(session_id, language, langName) {
         {
           "imagePrompt": "A highly detailed English prompt to generate an authentic photo without any text",
           "question": "A clear question in ${langName} ending with '?' asking to identify the image. DO NOT mention the answer.",
-          "answer": "The exact name of the subject"
+          "answer": "The exact answer must be a single word."
         }`;
         
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Requesting AI to generate combined image prompt, question, and answer");
@@ -761,7 +760,7 @@ async function executeMode3PureAIGeneration(session_id, language, langName) {
 CRITICAL RULES:
 1. The 'question' MUST be a direct question and MUST end with a question mark '?'.
 2. The 'question' MUST NOT contain the answer.
-3. The 'options' MUST be exactly 4 short strings that logically answer the question.
+3. The 'options' MUST be an array of exactly 4 short strings (but if you need 3 or less you have to decrease it) that logically answer the question.
 Output exactly this JSON format: {"question": "What is the capital of France?", "options": ["Paris", "London", "Berlin", "Madrid"], "answer": "Paris"}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: mcqPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
@@ -771,7 +770,7 @@ Output exactly this JSON format: {"question": "What is the capital of France?", 
 CRITICAL RULES:
 1. The 'question' MUST be a declarative statement of fact. It MUST NOT be a question. It MUST NOT end with '?'.
 2. The 'options' MUST BE EXACTLY: ["${tfOpts[0]}", "${tfOpts[1]}"].
-Output exactly this JSON format: {"question": "The Earth is the fourth planet from the Sun.", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "${tfOpts[1]}"}`;
+Generate exactly this example JSON format: {"question": "The Earth is the fourth planet from the Sun.", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "${tfOpts[1]}"}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: tfPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
         parsed.options = tfOpts;
@@ -785,7 +784,7 @@ CRITICAL RULES:
 1. The 'question' MUST be a full sentence with exactly one word replaced by '______'.
 2. The '______' MUST be placed in the MIDDLE of the sentence.
 3. The 'answer' MUST be a SINGLE WORD (or max two words) that fits perfectly in the '______'.
-Output exactly this JSON format: {"question": "According to biology, the ______ is the powerhouse of the cell.", "answer": "mitochondria"}`;
+Generate exactly this example JSON format: {"question": "According to biology, the ______ is the powerhouse of the cell.", "answer": "mitochondria"}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: fbPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     }
@@ -1064,7 +1063,7 @@ app.post("/validate", async (req, res) => {
     if (isAiPur) {
       const sysStrict = "You are a strict JSON data generator. Output ONLY raw valid JSON without markdown formatting.";
       if (isCorrect) {
-        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer was: "${current.answer}". Write an encouraging success message and educational explanation in ${langName}. The explanation MUST be strictly between 200 and 400 characters long, teaching a fact. Return ONLY a valid JSON object matching this schema: {"successMsg": "encouraging text", "explanation": "detailed reason"}`;
+        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer was: "${current.answer}". Write an encouraging success message and educational explanation in ${langName}. The explanation MUST be strictly between 300 and 400 characters long, teaching a fact. Return ONLY a valid JSON object matching this schema: {"successMsg": "encouraging text", "explanation": "detailed reason"}`;
         try {
           const aiResp = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: usr }], 800);
           const parsedFeedback = parseAIJsonResponse(aiResp.response, ["successMsg", "explanation"]);
@@ -1075,7 +1074,7 @@ app.post("/validate", async (req, res) => {
           finalFeedback = "Correct!\n\n" + current.answer;
         }
       } else {
-        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". The user CANNOT retry. Write a direct correction and an educational explanation in ${langName} teaching them the fact. The explanation MUST be strictly between 200 and 400 characters long. Return ONLY a valid JSON object matching this schema: {"errorMsg": "direct correction feedback", "explanation": "factual educational context"}`;
+        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". The user CANNOT retry. Write a direct correction and an educational explanation in ${langName} teaching them the fact. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a valid JSON object matching this schema: {"errorMsg": "direct correction feedback", "explanation": "factual educational context"}`;
         try {
           const aiResp = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: usr }], 800);
           const parsedFeedback = parseAIJsonResponse(aiResp.response, ["errorMsg", "explanation"]);
