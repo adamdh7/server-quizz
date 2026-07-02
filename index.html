@@ -8,9 +8,9 @@
     <meta name="apple-touch-fullscreen" content="yes">
     
     <title>Quizzs</title>
-    <meta name="description" content="Plateforme de quiz éducatifs interactifs par D'H7. Testez vos connaissances en Créole, Français, Anglais et Espagnol.">
-    <meta name="keywords" content="quiz, education, apprentissage, haiti, dh7, examen, test, kreyol, digital hub 7, interactif">
-    <meta name="author" content="Adam_D’H7">
+    <meta name="description" content="Plateforme de Quizzs éducatifs interactifs un web D'H7 | Tergene, tester vos connaissances en ht ou Français, Anglais ou encore Espagnol.">
+    <meta name="keywords" content="quiz, edikasyon, aprantisaj, haiti, dh7, examen, test, kreyol, fransè, anglè, espanyòl, digital hub 7, interactif">
+    <meta name="author" content="Adam D’H7">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="https://quiz.adamdh7.org">
     
@@ -23,13 +23,13 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://quiz.adamdh7.org">
     <meta property="og:title" content="Quizzs">
-    <meta property="og:description" content="Plateforme de quiz interactifs. Apprenez en jouant.">
+    <meta property="og:description" content="Plateforme de Quizzs interactifs. Apprenez en jouant.">
     <meta property="og:image" content="https://quiz.adamdh7.org/asset/nwa.png">
-    <meta property="og:site_name" content="Digital HUB 7">
+    <meta property="og:site_name" content="Quizzs">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Quizzs">
-    <meta name="twitter:description" content="Testez vos connaissances sur la plateforme D'H7.">
+    <meta name="twitter:description" content="Testez vos connaissances sur Quizzs.">
     <meta name="twitter:image" content="https://quiz.adamdh7.org/asset/nwa.png">
 
     <link rel="icon" href="https://quiz.adamdh7.org/asset/nwa.png" type="image/png">
@@ -44,9 +44,9 @@
   "url": "https://quiz.adamdh7.org",
   "author": {
     "@type": "Person",
-    "name": "Adam_D’H7"
+    "name": "Adam D’H7"
   },
-  "image": "https://adamdh7.org/adamdh7.png",
+  "image": "https://quiz.adamdh7.org/asset/blan.png",
   "description": "Plateforme éducative de quiz multilingues.",
   "applicationCategory": "EducationalApplication",
   "operatingSystem": "All",
@@ -69,8 +69,8 @@
             --text-main: #ffffff;
             --text-sec: #a1a1aa; 
             --accent: #ffffff; 
-            --error: #ef4444; 
-            --success: #22c55e;
+            --error: #ff453a; 
+            --success: #30d158;
             --border: #27272a;
         }
 
@@ -192,6 +192,7 @@
             width: 100%;
             height: 100%;
             overflow-y: auto;
+            overflow-x: hidden;
             display: none; 
             padding-bottom: 80px; 
         }
@@ -238,16 +239,26 @@
         .dash-content {
             flex: 1; display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            cursor: pointer;
         }
+        .play-btn-wrapper {
+            cursor: pointer;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            transition: transform 0.2s;
+            pointer-events: auto;
+        }
+        .play-btn-wrapper:active .play-icon { transform: scale(0.9); }
         .play-icon {
             width: 80px; height: 80px; fill: white; margin-bottom: 20px;
             transition: transform 0.2s;
         }
-        .dash-content:active .play-icon { transform: scale(0.9); }
         .level-indicator {
-            font-size: 1rem; color: var(--text-sec); letter-spacing: 0.2em; text-transform: uppercase;
+            font-size: 1rem; color: var(--text-sec); letter-spacing: 0.1em;
             margin-bottom: 8px;
+            text-transform: none;
         }
         .progress-dots {
             display: flex; gap: 4px;
@@ -259,8 +270,9 @@
 
         .quiz-container {
             max-width: 600px; width: 100%; margin: 0 auto;
-            padding: 0 24px 40px 24px;
+            padding: 0 24px 100px 24px;
             display: flex; flex-direction: column; flex: 1;
+            overflow-y: auto;
         }
 
         .question-txt {
@@ -287,10 +299,9 @@
         }
 
         .opt-btn.processing {
-            background-color: var(--error) !important;
-            color: white !important;
-            border-color: var(--error) !important;
-            opacity: 1 !important;
+            background-color: transparent !important;
+            color: transparent !important;
+            border-color: transparent !important;
         }
         
         .opt-btn.success {
@@ -306,7 +317,16 @@
 
         .text-answer-area {
             width: 100%; text-align: center; margin-top: 20px;
+            display: flex; flex-direction: column; align-items: center;
         }
+        
+        input[type="search"]::-webkit-search-decoration,
+        input[type="search"]::-webkit-search-cancel-button,
+        input[type="search"]::-webkit-search-results-button,
+        input[type="search"]::-webkit-search-results-decoration {
+            -webkit-appearance: none;
+        }
+
         .quiz-text-input {
             background: transparent; border: none;
             border-bottom: 2px solid var(--text-sec);
@@ -317,6 +337,25 @@
         }
         .quiz-text-input:focus { border-bottom-color: white; }
         .quiz-text-input:disabled { opacity: 0.5; border-bottom-color: #333; }
+        
+        .inline-blank-input {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--text-sec);
+            color: white;
+            font-size: inherit;
+            text-align: center;
+            width: 180px;
+            outline: none;
+            margin: 0 8px;
+            transition: border-bottom-color 0.3s;
+            display: inline-block;
+            border-radius: 0;
+        }
+        .inline-blank-input:focus {
+            border-bottom-color: white;
+        }
+        .inline-blank-input:disabled { opacity: 0.5; border-bottom-color: #333; }
 
         .validate-btn {
             margin-top: 30px;
@@ -332,33 +371,37 @@
         .validate-btn.disabled { pointer-events: none; opacity: 0.8; }
         
         .btn-loader {
-            width: 24px; height: 24px;
-            color: black;
+            width: 32px; height: 32px;
+            color: white;
             animation: spin 1s infinite linear;
+            margin-top: 30px;
         }
 
         .feedback-overlay {
             position: fixed; bottom: 0; left: 0; width: 100%;
-            background: #111; padding: 30px 24px;
-            border-top: 1px solid #333; z-index: 100;
-            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            background: #1c1c1e; z-index: 300;
+            border-top: 1px solid #2c2c2e;
+            border-radius: 24px 24px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.15, 0.85, 0.35, 1);
             display: flex; flex-direction: column; align-items: center; text-align: center;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.7);
+            will-change: transform;
         }
         .feedback-overlay.show { transform: translateY(0); }
-        .feedback-overlay.err { border-top: 2px solid var(--error); }
         
-        .fb-title { font-size: 1.2rem; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; }
+        .fb-title { font-size: 0.6rem; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; color: var(--success); letter-spacing: 0.15em; }
         .err .fb-title { color: var(--error); }
         
-        .fb-desc { color: var(--text-sec); font-size: 0.95rem; margin-bottom: 20px; line-height: 1.4; }
+        .fb-desc { color: var(--text-sec); font-size: 0.95rem; margin-bottom: 20px; line-height: 1.4; width: 100%; white-space: pre-wrap; }
         
         .next-btn {
-            width: 100%; background: #333; color: white;
-            padding: 18px; border-radius: 14px; font-weight: 700; border: none;
+            width: 100%; background: #2c2c2e; color: white;
+            padding: 18px; border-radius: 14px; font-weight: 700; border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.15s ease;
         }
 
         .loader {
-            width: 24px; height: 24px; border: 3px solid #333;
+            width: 48px; height: 48px; border: 5px solid #333;
             border-top-color: white; border-radius: 50%;
             animation: spin 1s infinite linear; margin: auto;
         }
@@ -369,6 +412,14 @@
             z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
         .backdrop.active { opacity: 1; pointer-events: auto; }
+
+        .fullscreen-blur-loader {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            z-index: 250; display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .fullscreen-blur-loader.show { opacity: 1; pointer-events: auto; }
 
         .lang-modal, .ios-info-modal {
             position: fixed; bottom: 0; left: 0; width: 100%;
@@ -424,6 +475,30 @@
             top: 40px;
             opacity: 1;
         }
+
+        .bottom-toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff453a;
+            color: #ffffff;
+            padding: 14px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            z-index: 999999;
+            transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+        .bottom-toast.show {
+            bottom: 40px;
+            opacity: 1;
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -433,6 +508,11 @@
     </div>
 
     <div id="ios-toast" class="ios-toast"></div>
+    <div id="bottom-toast" class="bottom-toast"></div>
+
+    <div id="fullscreen-loader" class="fullscreen-blur-loader">
+        <div class="loader"></div>
+    </div>
 
     <div id="view-auth" class="page-view flex-col items-center justify-center p-8">
         <div class="w-full max-w-sm text-center">
@@ -449,12 +529,12 @@
 
             <div id="reg-form" class="hidden space-y-4">
                 <div class="flex gap-2">
-                    <input type="text" id="reg-nom" placeholder="Nom" class="modern-input" onkeydown="handleEnter(event, 'reg-prenom')">
-                    <input type="text" id="reg-prenom" placeholder="Prénom" class="modern-input" onkeydown="handleEnter(event, 'reg-dh7')">
+                    <input type="text" id="reg-nom" data-key="placeholder-nom" placeholder="Nom" class="modern-input" onkeydown="handleEnter(event, 'reg-prenom')">
+                    <input type="text" id="reg-prenom" data-key="placeholder-prenom" placeholder="Prénom" class="modern-input" onkeydown="handleEnter(event, 'reg-dh7')">
                 </div>
                 <input type="text" id="reg-dh7" placeholder="DH7 ID" class="modern-input" onkeydown="handleEnter(event, 'reg-age')">
-                <input type="date" id="reg-age" class="modern-input" onkeydown="handleEnter(event, 'reg-pass')">
-                <input type="password" id="reg-pass" placeholder="Password" class="modern-input" onkeydown="handleEnter(event, null, handleRegister)">
+                <input type="date" id="reg-age" data-key="placeholder-dob" class="modern-input" onkeydown="handleEnter(event, 'reg-pass')">
+                <input type="password" id="reg-pass" data-key="placeholder-password" placeholder="Password" class="modern-input" onkeydown="handleEnter(event, null, handleRegister)">
                 
                 <button onclick="actionWithLang(handleRegister)" class="w-full bg-white text-black font-black py-4 rounded-xl mt-4" data-key="create-account">JOIN</button>
                 <button onclick="toggleAuthMode()" class="w-full text-zinc-600 text-sm mt-6 font-bold" data-key="back-to-login">RETOUR</button>
@@ -475,10 +555,12 @@
             <div style="width: 32px;"></div>
         </header>
 
-        <div class="dash-content" onclick="router.navigate('/quiz')">
-            <svg class="play-icon" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
-            </svg>
+        <div class="dash-content">
+            <div class="play-btn-wrapper" onclick="router.navigate('/quiz')">
+                <svg class="play-icon" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </div>
             <div class="level-indicator" id="dash-level">STEP 1</div>
             <div class="progress-dots" id="dash-dots">
             </div>
@@ -512,7 +594,7 @@
             Langue
         </button>
         
-        <button class="menu-btn-item logout justify-center mt-auto" onclick="logout()" data-key="logout">
+        <button id="sidebar-logout-btn" class="menu-btn-item logout justify-center mt-auto" onclick="logout()" data-key="logout">
             LOG OUT
         </button>
     </div>
@@ -530,7 +612,7 @@
                         <span class="text-xs text-zinc-500 font-bold block" data-key="info-label-name">NON AK SIYEN</span>
                         <span id="info-name-txt" class="text-white font-semibold text-base">-</span>
                     </div>
-                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 </div>
 
                 <div id="info-tfid-box" class="bg-zinc-900 p-4 rounded-xl flex justify-between items-center cursor-pointer active:bg-zinc-800 transition" onclick="copyTextFromElement('info-tfid-txt', 'TFID')">
@@ -538,7 +620,7 @@
                         <span class="text-xs text-zinc-500 font-bold block">TFID</span>
                         <span id="info-tfid-txt" class="text-white font-semibold text-base">-</span>
                     </div>
-                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 </div>
 
                 <div class="bg-zinc-900 p-4 rounded-xl flex justify-between items-center cursor-pointer active:bg-zinc-800 transition" onclick="copyTextFromElement('info-dh7-txt', 'DH7 ID')">
@@ -546,7 +628,7 @@
                         <span class="text-xs text-zinc-500 font-bold block">DH7 ID</span>
                         <span id="info-dh7-txt" class="text-white font-semibold text-base">-</span>
                     </div>
-                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 </div>
 
                 <div class="bg-zinc-900 p-4 rounded-xl flex justify-between items-center">
@@ -572,9 +654,11 @@
     </div>
 
     <div id="feedback-sheet" class="feedback-overlay">
-        <div class="fb-title" id="fb-title"></div>
-        <div class="fb-desc" id="fb-desc"></div>
-        <button class="next-btn" onclick="nextQuestion()">CONTINUER</button>
+        <div class="swipe-handle-area" style="cursor: default;">
+            <div class="w-12 h-1 bg-zinc-600 rounded-full"></div>
+        </div>
+        <div class="px-6 pb-6 w-full flex flex-col items-center" id="feedback-content-area">
+        </div>
     </div>
 
     <div id="backdrop" class="backdrop" onclick="closeOverlays()"></div>
@@ -591,16 +675,6 @@
             const screen = document.getElementById('loading-screen'); 
             if (screen) screen.classList.add('hidden'); 
         }
-
-        document.addEventListener('keydown', function(e) {
-            if (
-                e.key === 'F5' || 
-                (e.ctrlKey && e.key === 'r') || 
-                (e.metaKey && e.key === 'r')
-            ) {
-                e.preventDefault();
-            }
-        });
 
         document.addEventListener('contextmenu', event => event.preventDefault());
 
@@ -625,30 +699,41 @@
             lastTouchEnd = now;
         }, false);
 
-        window.onbeforeunload = function() {
-            return "Prevent";
-        };
-
         const AUTH_API = "https://server.dh7.adamdh7.org";
         const QUIZ_SERVERS = [
             "https://server.quiz.adamdh7.org"
         ];
 
         const translations = {
-            ht: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID oswa DH7", "placeholder-password": "Modpas", connect: "Konekte", register: "KREYE YON KONT", "create-account": "JOIN", "back-to-login": "RETOUNEN", "change-lang": "Chanje Lang", logout: "Dekonekte", error_title: "ERÈ", success_title: "KÒRÈK", valider: "VALIDE", level_label: "Nivo", "copied-toast": "Ou kopye", "view-profile-btn": "Klike pou wè pwofil ou", "profile-title": "Enfòmasyon Pwofil", "info-label-name": "NON AK SIYEN", "info-label-progression": "PROGRESYON", "placeholder-dob": "Dat nesans" },
-            fr: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID ou DH7", "placeholder-password": "Mot de passe", connect: "Se connecter", register: "CRÉER UN COMPTE", "create-account": "REJOINDRE", "back-to-login": "RETOUR", "change-lang": "Changer Langue", logout: "Déconnexion", error_title: "ERREUR", success_title: "EXCELLENT", valider: "VALIDER", level_label: "Niveau", "copied-toast": "Vous avez copié", "view-profile-btn": "Cliquez pour voir votre profil", "profile-title": "Informations Profil", "info-label-name": "NOM ET PRÉNOM", "info-label-progression": "PROGRESSION", "placeholder-dob": "Date de naissance" },
-            en: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID or DH7", "placeholder-password": "Password", connect: "Login", register: "CREATE ACCOUNT", "create-account": "JOIN", "back-to-login": "BACK", "change-lang": "Change Language", logout: "Log Out", error_title: "WRONG", success_title: "CORRECT", valider: "SUBMIT", level_label: "Level", "copied-toast": "You copied", "view-profile-btn": "Click to view your profile", "profile-title": "Profile Information", "info-label-name": "FULL NAME", "info-label-progression": "PROGRESSION", "placeholder-dob": "Date of birth" },
-            es: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID o DH7", "placeholder-password": "Contraseña", connect: "Conectar", register: "CREAR CUENTA", "create-account": "UNIRSE", "back-to-login": "VOLVER", "change-lang": "Cambiar Idioma", logout: "Cerrar Sesión", error_title: "ERROR", success_title: "CORRECTO", valider: "VALIDAR", level_label: "Nivel", "copied-toast": "Has copiado", "view-profile-btn": "Haz clic para ver tu perfil", "profile-title": "Información del Perfil", "info-label-name": "NOMBRE Y APELLIDO", "info-label-progression": "PROGRESO", "placeholder-dob": "Fecha de nacimiento" }
+            ht: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID oswa DH7", "placeholder-password": "Modpas", connect: "KONEKTE", register: "KREYE YON KONT", "create-account": "ANTRE", "back-to-login": "RETOUNEN", "change-lang": "Chanje Lang", logout: "DEKONEKTE", login_menu: "KONEKTE'W", error_title: "ERÈ", success_title: "KÒRÈK", valider: "VALIDE", continue_btn: "KONTINYE", level_label: "Nivo", "copied-toast": "Ou kopye", "view-profile-btn": "Klike pou wè pwofil ou", "profile-title": "Enfòmasyon Pwofil", "info-label-name": "NON AK SIYEN", "info-label-progression": "PROGRESYON", "placeholder-dob": "Dat nesans", "placeholder-nom": "Non", "placeholder-prenom": "Siyati", guest_name: "Envite", timeout_error: "Quiz sa pa egziste ankò, tanpri eseye ankò." },
+            fr: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID ou DH7", "placeholder-password": "Mot de passe", connect: "SE CONNECTER", register: "CRÉER UN COMPTE", "create-account": "REJOINDRE", "back-to-login": "RETOUR", "change-lang": "Changer Langue", logout: "DÉCONNEXION", login_menu: "SE CONNECTER", error_title: "ERREUR", success_title: "EXCELLENT", valider: "VALIDER", continue_btn: "CONTINUER", level_label: "Niveau", "copied-toast": "Vous avez copié", "view-profile-btn": "Cliquez pour voir votre profil", "profile-title": "Informations Profil", "info-label-name": "NOM ET PRÉNOM", "info-label-progression": "PROGRESSION", "placeholder-dob": "Date de naissance", "placeholder-nom": "Nom", "placeholder-prenom": "Prénom", guest_name: "Invité", timeout_error: "Ce quiz n'existe plus, veuillez réessayer." },
+            en: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID or DH7", "placeholder-password": "Password", connect: "LOGIN", register: "CREATE ACCOUNT", "create-account": "JOIN", "back-to-login": "BACK", "change-lang": "Change Language", logout: "LOG OUT", login_menu: "LOGIN", error_title: "WRONG", success_title: "CORRECT", valider: "SUBMIT", continue_btn: "CONTINUE", level_label: "Level", "copied-toast": "You copied", "view-profile-btn": "Click to view your profile", "profile-title": "Profile Information", "info-label-name": "FULL NAME", "info-label-progression": "PROGRESSION", "placeholder-dob": "Date of birth", "placeholder-nom": "First Name", "placeholder-prenom": "Last Name", guest_name: "Guest", timeout_error: "This quiz no longer exists, please try again." },
+            es: { subtitle: "Digital HUB 7", "placeholder-tfid": "TFID o DH7", "placeholder-password": "Contraseña", connect: "CONECTAR", register: "CREAR CUENTA", "create-account": "UNIRSE", "back-to-login": "VOLVER", "change-lang": "Cambiar Idioma", logout: "CERRAR SESIÓN", login_menu: "INICIAR SESIÓN", error_title: "ERROR", success_title: "CORRECTO", valider: "VALIDAR", continue_btn: "CONTINUAR", level_label: "Nivel", "copied-toast": "Has copiado", "view-profile-btn": "Haz clic para ver tu profil", "profile-title": "Información del Perfil", "info-label-name": "NOMBRE Y APELLIDO", "info-label-progression": "PROGRESO", "placeholder-dob": "Fecha de nacimiento", "placeholder-nom": "Nombre", "placeholder-prenom": "Apellido", guest_name: "Invitado", timeout_error: "Este cuestionario ya no existe, por favor intente de nuevo." }
         };
 
         let state = {
-            user: JSON.parse(localStorage.getItem('dh7_session')) || null,
+            user: null,
             lang: 'ht',
             step: 1,
             progress: 0
         };
 
-        function initLanguage() {
+        function generate17Digits() {
+            let res = '';
+            for(let i=0; i<17; i++) res += Math.floor(Math.random() * 10);
+            return res;
+        }
+
+        function initApp() {
+            let savedSession = localStorage.getItem('dh7_session');
+            if (savedSession) {
+                state.user = JSON.parse(savedSession);
+            } else {
+                let randomTF = 'TF-' + generate17Digits();
+                state.user = { isGuest: true, identifier: randomTF, prenom: '', nom: '' };
+                localStorage.setItem('dh7_session', JSON.stringify(state.user));
+            }
+
             let savedLang = localStorage.getItem('language');
             if (!savedLang) {
                 let navLang = (navigator.language || navigator.userLanguage).slice(0, 2).toLowerCase();
@@ -656,9 +741,10 @@
                 localStorage.setItem('language', savedLang);
             }
             state.lang = savedLang;
+            document.documentElement.lang = state.lang;
         }
 
-        initLanguage();
+        initApp();
 
         function showToast(text) {
             const toast = document.getElementById('ios-toast');
@@ -666,6 +752,13 @@
             toast.innerText = `${prefix}: ${text}`;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function showBottomToast(text) {
+            const toast = document.getElementById('bottom-toast');
+            toast.innerText = text;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3500);
         }
 
         function copyText(text) {
@@ -717,6 +810,22 @@
             }
         }
 
+        function handleQuizEnter(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleTextSubmit();
+            }
+        }
+
+        function toggleAuthInputs(enable) {
+            const authView = document.getElementById('view-auth');
+            if (!authView) return;
+            const inputs = authView.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.disabled = !enable;
+            });
+        }
+
         const router = {
             routes: {
                 '/login': 'view-auth',
@@ -726,7 +835,7 @@
             init: function() {
                 window.addEventListener('popstate', () => this.handleLocation());
                 let path = window.location.pathname;
-                if(path === '/' || path === '') path = state.user ? '/dashboard' : '/login';
+                if(path === '/' || path === '') path = '/dashboard';
                 this.navigate(path, true);
                 
                 const elapsed = Date.now() - appStartTime;
@@ -734,19 +843,30 @@
                 setTimeout(hideSplash, delay);
             },
             navigate: function(path, replace = false) {
-                if(!state.user && path !== '/login') path = '/login';
-                if(state.user && path === '/login') path = '/dashboard';
-
-                if(replace) window.history.replaceState({}, "", path);
+                if (path === '/login' && state.user && !state.user.isGuest) {
+                    path = '/dashboard';
+                }
+                if (replace) window.history.replaceState({}, "", path);
                 else window.history.pushState({}, "", path);
                 
                 this.handleLocation();
             },
             handleLocation: async function() {
                 const path = window.location.pathname;
-                const viewId = this.routes[path] || 'view-auth';
+                const viewId = this.routes[path] || 'view-dashboard';
                 
                 document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
+                
+                if (viewId !== 'view-quiz') {
+                    document.getElementById('feedback-sheet').classList.remove('show');
+                }
+
+                if (viewId === 'view-auth') {
+                    toggleAuthInputs(true);
+                } else {
+                    toggleAuthInputs(false);
+                }
+
                 const view = document.getElementById(viewId);
                 if(view) {
                     view.classList.add('active');
@@ -775,13 +895,14 @@
                 if(data.success) {
                     state.user = data.user;
                     state.user.identifier = id; 
+                    state.user.isGuest = false;
                     localStorage.setItem('dh7_session', JSON.stringify(state.user));
                     router.navigate('/dashboard');
                 } else {
-                    alert(data.error || "Identifiants invalides");
+                    showBottomToast(data.error || "Identifiants invalides");
                 }
             } catch(e) { 
-                alert("Erreur de connexion au serveur"); 
+                showBottomToast("Erreur de connexion au serveur"); 
             } finally {
                 if (btn) btn.innerText = originalText;
             }
@@ -795,12 +916,12 @@
             const password = document.getElementById('reg-pass').value;
 
             if(!nom || !prenom || !dh7Input || !dateVal || !password) {
-                alert("Veuillez remplir tous les champs obligatoires.");
+                showBottomToast("Veuillez remplir tous les champs obligatoires.");
                 return;
             }
 
             if (!/^[a-z0-9]+$/.test(dh7Input)) {
-                alert("Le DH7 ID ne doit contenir que des lettres minuscules et des chiffres.");
+                showBottomToast("Le DH7 ID ne doit contenir que des lettres minuscules et des chiffres.");
                 return;
             }
 
@@ -828,7 +949,8 @@
                         nom: nom,
                         prenom: prenom,
                         identifier: fullIdentifier,
-                        age: dateVal
+                        age: dateVal,
+                        isGuest: false
                     };
                     if (data.tfid) {
                         state.user.tfid = data.tfid;
@@ -841,14 +963,14 @@
                         en: `Account created successfully!\nYour TFID: ${data.tfid || 'not available'}\nUse your DH7 ID or this TFID to log in.`,
                         es: `¡Cuenta creada con éxito!\nSu TFID: ${data.tfid || 'no disponible'}\nUse su DH7 ID o este TFID para iniciar sesión.`
                     };
-                    alert(messages[state.lang] || messages['fr']);
+                    showBottomToast(messages[state.lang] || messages['fr']);
 
                     router.navigate('/dashboard');
                 } else {
-                    alert(data.error || "Erreur lors de l'inscription");
+                    showBottomToast(data.error || "Erreur lors de l'inscription");
                 }
             } catch(e) {
-                alert("Erreur de connexion au serveur");
+                showBottomToast("Erreur de connexion au serveur");
             }
         }
 
@@ -870,7 +992,7 @@
             const sessionId = getSessionId();
 
             try {
-                const res = await fetchQuizAPI(`/step?session_id=${sessionId}`);
+                const res = await fetchQuizAPI(`/step?session_id=${sessionId}&lang=${state.lang}`);
                 const data = await res.json();
                 
                 let sStep = data.current_step;
@@ -913,16 +1035,33 @@
             const levelLabel = (translations[state.lang] && translations[state.lang].level_label) ? translations[state.lang].level_label : "Level";
 
             if (state.user) {
-                const fullName = `${state.user.prenom || ''} ${state.user.nom || ''}`.trim();
-                document.getElementById('menu-name-display').innerText = fullName || 'User';
+                let fullName = `${state.user.prenom || ''} ${state.user.nom || ''}`.trim();
+                if (state.user.isGuest) {
+                    fullName = translations[state.lang].guest_name || 'Guest';
+                }
+                document.getElementById('menu-name-display').innerText = fullName;
                 
-                document.getElementById('info-name-txt').innerText = fullName || 'User';
-                document.getElementById('info-tfid-txt').innerText = state.user.tfid || '-';
-                document.getElementById('info-dh7-txt').innerText = state.user.identifier || '-';
-                document.getElementById('info-tfid-box').style.display = state.user.tfid ? 'flex' : 'none';
+                document.getElementById('info-name-txt').innerText = fullName;
+                document.getElementById('info-tfid-txt').innerText = state.user.tfid || state.user.identifier || '-';
+                document.getElementById('info-dh7-txt').innerText = state.user.isGuest ? '-' : (state.user.identifier || '-');
+                document.getElementById('info-tfid-box').style.display = 'flex';
                 document.getElementById('info-prog-txt').innerText = `${levelLabel} ${state.step} | Points: ${state.progress}`;
                 
-                document.getElementById('dash-level').innerText = `${fullName || 'User'} — ${levelLabel} ${state.step}`;
+                document.getElementById('dash-level').innerText = `${fullName} — ${levelLabel} ${state.step}`;
+
+                const logoutBtn = document.getElementById('sidebar-logout-btn');
+                if (state.user.isGuest) {
+                    logoutBtn.dataset.key = 'login_menu';
+                    logoutBtn.classList.remove('logout');
+                    logoutBtn.onclick = function() {
+                        closeOverlays();
+                        router.navigate('/login');
+                    };
+                } else {
+                    logoutBtn.dataset.key = 'logout';
+                    logoutBtn.classList.add('logout');
+                    logoutBtn.onclick = logout;
+                }
             } else {
                 document.getElementById('dash-level').innerText = `${levelLabel} ${state.step}`;
             }
@@ -934,6 +1073,7 @@
                 dot.className = `dot ${i < state.progress ? 'active' : ''}`;
                 dotsContainer.appendChild(dot);
             }
+            applyTranslations();
         }
 
         function toggleMenu(show) {
@@ -965,6 +1105,21 @@
             content.classList.add('hidden');
             loader.classList.remove('hidden');
 
+            const cachedQuiz = localStorage.getItem('dh7_current_quiz');
+            if (cachedQuiz) {
+                try {
+                    const parsedData = JSON.parse(cachedQuiz);
+                    if (parsedData.timestamp && (Date.now() - parsedData.timestamp) < 17000) {
+                        renderQuiz(parsedData.data);
+                        loader.classList.add('hidden');
+                        content.classList.remove('hidden');
+                        return;
+                    } else {
+                        localStorage.removeItem('dh7_current_quiz');
+                    }
+                } catch(e) {}
+            }
+
             const sessionId = getSessionId();
 
             try {
@@ -974,6 +1129,7 @@
                     body: JSON.stringify({ session_id: sessionId, lang: state.lang })
                 });
                 const data = await res.json();
+                localStorage.setItem('dh7_current_quiz', JSON.stringify({ timestamp: Date.now(), data: data }));
                 renderQuiz(data);
             } catch(e) {
                 console.error(e);
@@ -991,24 +1147,38 @@
                 container.innerHTML += `<img src="${data.image_url}" class="quiz-img" alt="Quiz image">`;
             }
 
-            container.innerHTML += `<div class="question-txt">${data.question}</div>`;
+            let qText = data.question;
+            const t = translations[state.lang];
 
-            if (data.options && Array.isArray(data.options)) {
-                data.options.forEach(opt => {
-                    const btn = document.createElement('button');
-                    btn.className = 'opt-btn';
-                    btn.innerText = opt;
-                    btn.onclick = function() { handleOptionClick(this, opt); };
-                    container.appendChild(btn);
-                });
-            } else {
-                const t = translations[state.lang];
+            if (data.type === 'FILL_BLANK' && qText.includes('__')) {
+                qText = qText.replace(/_{2,}/g, '<input type="search" id="quiz-inline-input" class="inline-blank-input" autocomplete="one-time-code" name="qa_input" autocapitalize="sentences" autocorrect="on" spellcheck="true" enterkeyhint="send" onkeydown="handleQuizEnter(event)" onfocus="handleInputFocus(this)">');
+                container.innerHTML += `<div class="question-txt">${qText}</div>`;
                 container.innerHTML += `
                     <div class="text-answer-area">
-                        <input type="text" id="quiz-input-text" class="quiz-text-input" placeholder="" autocomplete="off" onfocus="handleInputFocus(this)">
                         <button id="btn-valider" class="validate-btn" onclick="handleTextSubmit()">${t.valider || 'VALIDE'}</button>
+                        <svg id="valider-loader" class="btn-loader hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     </div>
                 `;
+            } else {
+                container.innerHTML += `<div class="question-txt">${qText}</div>`;
+                
+                if (data.options && Array.isArray(data.options) && data.options.length > 0) {
+                    data.options.forEach(opt => {
+                        const btn = document.createElement('button');
+                        btn.className = 'opt-btn';
+                        btn.innerText = opt;
+                        btn.onclick = function() { handleOptionClick(this, opt); };
+                        container.appendChild(btn);
+                    });
+                } else {
+                    container.innerHTML += `
+                        <div class="text-answer-area">
+                            <input type="search" id="quiz-input-text" class="quiz-text-input" autocomplete="one-time-code" name="qa_input" autocapitalize="sentences" autocorrect="on" spellcheck="true" enterkeyhint="send" onkeydown="handleQuizEnter(event)" placeholder="" onfocus="handleInputFocus(this)">
+                            <button id="btn-valider" class="validate-btn" onclick="handleTextSubmit()">${t.valider || 'VALIDE'}</button>
+                            <svg id="valider-loader" class="btn-loader hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        </div>
+                    `;
+                }
             }
         }
 
@@ -1023,38 +1193,38 @@
             
             isInteractionLocked = true;
             
-            btnElement.classList.add('processing');
-            
             const allBtns = document.querySelectorAll('.opt-btn');
             allBtns.forEach(btn => btn.classList.add('disabled'));
 
-            submitAnswer(value, btnElement);
+            document.getElementById('fullscreen-loader').classList.add('show');
+
+            submitAnswer(value, btnElement, true);
         }
 
         function handleTextSubmit() {
             if (isInteractionLocked) return;
             
-            const inputField = document.getElementById('quiz-input-text');
+            let inputField = document.getElementById('quiz-inline-input') || document.getElementById('quiz-input-text');
             const val = inputField.value;
             if (!val || !val.trim()) return;
 
             isInteractionLocked = true;
 
             const btn = document.getElementById('btn-valider');
-            const originalText = btn.innerText;
+            const loader = document.getElementById('valider-loader');
             
             inputField.disabled = true; 
-            btn.classList.add('disabled'); 
-            btn.innerHTML = `<svg class="btn-loader" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+            btn.style.display = 'none';
+            loader.classList.remove('hidden');
 
-            submitAnswer(val.trim(), btn, originalText);
+            submitAnswer(val.trim(), btn, false);
         }
 
-        async function submitAnswer(userAnswer, uiElement, originalText = "") {
+        async function submitAnswer(userAnswer, uiElement, isOption) {
             const sessionId = getSessionId();
             
             try {
-                const res = await fetchQuizAPI('/validate', {
+                const fetchPromise = fetchQuizAPI('/validate', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
@@ -1064,31 +1234,43 @@
                     })
                 });
 
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error("TIMEOUT")), 4000);
+                });
+
+                const res = await Promise.race([fetchPromise, timeoutPromise]);
                 const data = await res.json();
                 
                 if (data.error) {
-                    console.error(data.error);
-                    return;
+                    throw new Error(data.error);
                 }
 
                 state.step = data.current_step;
                 state.progress = data.consecutive_correct;
                 localStorage.setItem('dh7_progress', JSON.stringify({step: state.step, progress: state.progress}));
 
-                if(uiElement && uiElement.classList.contains('opt-btn')) {
-                    if (data.correct) {
-                        uiElement.classList.remove('processing');
-                        uiElement.classList.add('success');
-                    }
-                } else if (uiElement && uiElement.id === 'btn-valider') {
-                    uiElement.innerText = originalText; 
+                if (isOption) {
+                    document.getElementById('fullscreen-loader').classList.remove('show');
+                } else {
+                    document.getElementById('valider-loader').classList.add('hidden');
                 }
 
                 showFeedback(data.correct, data.explanation || "");
                 updateDashboard();
 
             } catch (e) {
-                console.error(e);
+                if (isOption) {
+                    document.getElementById('fullscreen-loader').classList.remove('show');
+                } else {
+                    document.getElementById('valider-loader').classList.add('hidden');
+                    if (uiElement) uiElement.style.display = 'inline-flex';
+                    let inputField = document.getElementById('quiz-inline-input') || document.getElementById('quiz-input-text');
+                    if(inputField) inputField.disabled = false;
+                }
+                
+                localStorage.removeItem('dh7_current_quiz');
+                router.navigate('/dashboard');
+                showBottomToast(translations[state.lang].timeout_error || "Erreur de connexion.");
             } finally {
                 isInteractionLocked = false;
             }
@@ -1096,22 +1278,52 @@
 
         function showFeedback(success, explanation) {
             const sheet = document.getElementById('feedback-sheet');
-            const title = document.getElementById('fb-title');
-            const desc = document.getElementById('fb-desc');
+            const area = document.getElementById('feedback-content-area');
             const t = translations[state.lang];
 
             sheet.classList.toggle('err', !success);
 
-            title.innerText = success ? t.success_title : t.error_title;
-            desc.innerText = explanation;
+            let expText = explanation || "";
+            let parts = expText.split('\n');
+            let headerText = parts[0] || (success ? t.success_title : t.error_title);
+            let descText = parts.slice(1).join('\n') || "";
+
+            let iconHtml = success ? `
+                <div class="w-12 h-12 rounded-full bg-[#30d158]/10 flex items-center justify-center mb-3">
+                    <svg class="w-6 h-6 text-[#30d158]" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+            ` : `
+                <div class="w-12 h-12 rounded-full bg-[#ff453a]/10 flex items-center justify-center mb-3">
+                    <svg class="w-6 h-6 text-[#ff453a]" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </div>
+            `;
+
+            area.innerHTML = `
+                ${iconHtml}
+                <div class="fb-title">${headerText}</div>
+                <div class="fb-desc">${descText}</div>
+                <button class="next-btn" onclick="nextQuestion()" data-key="continue_btn">${t.continue_btn || 'CONTINUER'}</button>
+            `;
             
             sheet.classList.add('show');
         }
 
         function nextQuestion() {
-            const sheet = document.getElementById('feedback-sheet');
-            sheet.classList.remove('show');
-            loadQuizQuestion(); 
+            const btn = document.querySelector('.next-btn');
+            if (btn) btn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                if (btn) btn.style.transform = 'scale(1)';
+                localStorage.removeItem('dh7_current_quiz');
+                const sheet = document.getElementById('feedback-sheet');
+                sheet.classList.remove('show');
+                if (window.location.pathname === '/quiz') {
+                    loadQuizQuestion(); 
+                }
+            }, 150);
         }
 
         function actionWithLang(callback) {
@@ -1130,9 +1342,11 @@
             const startT = Date.now();
             state.lang = l;
             localStorage.setItem('language', l);
+            document.documentElement.lang = l;
             closeOverlays();
             applyTranslations();
             if (document.getElementById('view-quiz').classList.contains('active')) {
+                localStorage.removeItem('dh7_current_quiz');
                 await loadQuizQuestion();
             }
             if (document.getElementById('view-dashboard').classList.contains('active')) {
@@ -1151,8 +1365,9 @@
         let startY = 0;
         let currentY = 0;
 
-        document.querySelectorAll('.lang-modal, .ios-info-modal').forEach(modal => {
+        document.querySelectorAll('.lang-modal, .ios-info-modal, .feedback-overlay').forEach(modal => {
             modal.addEventListener('touchstart', (e) => {
+                if (modal.id === 'feedback-sheet') return;
                 if (modal.scrollTop === 0) {
                     swipeModal = modal;
                     startY = e.touches[0].clientY;
