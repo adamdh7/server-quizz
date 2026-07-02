@@ -443,8 +443,8 @@ async function executeBackgroundMassGeneration(isTrigger) {
 CRITICAL RULES:
 1. The 'question' MUST be a direct question and MUST end with a question mark '?'.
 2. The 'question' MUST NOT contain the answer.
-3. The 'options' MUST be an array of exactly 4 short strings that logically answer the question.
-4. The 'answer' MUST be exactly equal to one of the 4 options.
+3. The 'options' MUST be an array of exactly 4 short strings (but if you need 3 or less you have to decrease it) that logically answer the question.
+4. The 'answer' MUST be exactly equal to one of the options.
 5. The 'explanation' MUST be 1 or 2 sentences teaching a fact.
 Output exactly this JSON format: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "What is the capital of France?", "options": ["Paris", "London", "Berlin", "Madrid"], "answer": "Paris", "explanation": "Paris is the capital and most populous city of France.", "successMsg": "Excellent!", "errorMsg": "Incorrect."}`;
         } else if (qType === "TRUE_FALSE") {
