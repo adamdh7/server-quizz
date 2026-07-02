@@ -439,29 +439,37 @@ async function executeBackgroundMassGeneration(isTrigger) {
         let prompt = "";
 
         if (qType === "MCQ") {
-          prompt = `Generate a logical Multiple Choice Question (MCQ) in ${langName}. Difficulty: ${level}.
-CRITICAL RULES:
-1. The 'question' MUST be a direct question and MUST end with a question mark '?'.
-2. The 'question' MUST NOT contain the answer.
-3. The 'options' MUST be an array of exactly 4 short strings (but if you need 3 or less you have to decrease it) that logically answer the question.
-4. The 'answer' MUST be exactly equal to one of the options.
-5.The "explanation" MUST be 1 or 2 sentences with a total of 300 to 400 characters teaching a fact.
-Generate exactly this example JSON format : {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "What is the capital of France?", "options": ["Paris", "London", "Berlin", "Madrid"], "answer": "Paris", "explanation": "Paris is the capital and most populous city of France.", "successMsg": "Excellent!", "errorMsg": "Incorrect."}`;
+          prompt = `Generate an MCQ in ${langName} (${level}) in strict JSON format.
+
+Rules:
+- Question: Direct, ends with '?', no answer inside.
+- Options: Array of max 4  logical choices.
+- Answer: Must match one option.
+- Explanation: 1-2 sentences (300-400 chars) teaching a fact.
+
+Format:
+{"level": "${level}", "lang": "${langName}", "qType": "MCQ", "question": "...", "options": ["A", "B", "C"], "answer": "...", "explanation": "...", "successMsg": "Excellent!", "errorMsg": "Incorrect."}`;
         } else if (qType === "TRUE_FALSE") {
-          prompt = `Generate a True or False statement in ${langName}. Difficulty: ${level}.
-CRITICAL RULES:
-1. The 'question' MUST be a declarative statement of fact. It MUST NOT be a question. .
-2. The 'options' MUST BE EXACTLY: ["${tfOpts[0]}", "${tfOpts[1]}"].
-3. The 'answer' MUST BE EXACTLY "${tfOpts[0]}" OR "${tfOpts[1]}".
-4. The 'explanation' MUST explain why the statement is true or false.
-Generate exactly this example JSON format : {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "The Earth is the fourth planet from the Sun.", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "${tfOpts[1]}", "explanation": "The Earth is the third planet from the Sun, Mars is the fourth.", "successMsg": "Well done!", "errorMsg": "Not quite."}`;
+          prompt = `Generate a True/False statement in ${langName} (${level}) in strict JSON format.
+
+Rules:
+- Question: Declarative statement of fact (not a question).
+- Options: Must be exactly ["${tfOpts[0]}", "${tfOpts[1]}"].
+- Answer: Must be exactly "${tfOpts[0]}" or "${tfOpts[1]}".
+- Explanation: Explain why the statement is true or false.
+
+Format:
+{"level": "${level}", "lang": "${lang}", "qType": "TRUE_FALSE", "question": "...", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "...", "explanation": "...", "successMsg": "Well done!", "errorMsg": "Not quite."}`;
         } else {
-          prompt = `Generate a Fill-in-the-blank question in ${langName}. Difficulty: ${level}.
-CRITICAL RULES:
-1. The 'question' MUST be a full sentence with exactly one word replaced by '______'.
-2. The '______' MUST be placed in the MIDDLE of the sentence, providing the context before and after.
-3. The 'answer' MUST be a SINGLE WORD (or max two words) that fits perfectly in the '______'.
-Output exactly this JSON format: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "According to biology, the ______ is the powerhouse of the cell.", "options": [], "answer": "mitochondria", "explanation": "Mitochondria generate most of the chemical energy needed to power the cell.", "successMsg": "Perfect!", "errorMsg": "Wrong."}`;
+          prompt = `Generate a Fill-in-the-blank question in ${langName} (${level}) in strict JSON format.
+
+Rules:
+- Question: Full sentence with exactly one '______' in the MIDDLE (context before and after).
+- Options: Must be empty [].
+- Answer: only 1 words that fit perfectly in the blank.
+
+Format:
+{"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "...", "options": [], "answer": "...", "explanation": "...", "successMsg": "Perfect!", "errorMsg": "Wrong."}`;
         }
 
         const aiResponse = await runAI([
@@ -651,12 +659,15 @@ async function executeMode0PureDB(randomItem) {
 async function executeMode1ImproveExisting(randomItem, langName, langCode) {
     logEvent("INFO", "MODE_1_IMPROVE_EXISTING", "Execution started");
     if (!randomItem) throw new Error("Source item missing");
-    const prompt = `Improve this quiz question to make it very clear and logical. Language: ${langName}. Original Question: "${randomItem.question}". 
-CRITICAL RULES:
-1. If it's a multiple choice question, it MUST end with '?'.
-2. DO NOT include the exact answer inside the question text.
-3. The 'options' MUST be an array of exactly 4 short strings (but if you need 3 or less you have to decrease it) that logically answer the question.
-Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
+    const prompt = `Improve this quiz question in ${langName} for clarity and logic. Original: "${randomItem.question}".
+
+Rules:
+- Question: only If MCQ, must end with '?'. Do NOT include the answer inside.
+- Options: Array of max 4 logical choices.
+- Output: Return ONLY a valid JSON object matching the format below.
+
+Format:
+{"question":"string","options":["string","string","string"],"answer":"string"}`;
     const aiResponse = await runAI([{ role: "system", content: "You are an API that ONLY generates valid JSON. You MUST NOT output any text, markdown, or explanation outside the JSON object." }, { role: "user", content: prompt }], 1000);
     const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     
@@ -674,12 +685,15 @@ Return ONLY a valid JSON object matching this schema: {"question":"string","opti
 async function executeMode2CreateSimilar(randomItem, langName, langCode) {
     logEvent("INFO", "MODE_2_CREATE_SIMILAR", "Execution started");
     if (!randomItem) throw new Error("Source item missing");
-    const prompt = `Create a completely new, factual quiz question in the EXACT same style and general topic as this one. Language: ${langName}. Original question: "${randomItem.question}".
-CRITICAL RULES:
-1. If it's a multiple choice question, it MUST end with '?'.
-2. DO NOT include the answer in the question text.
-3. The 'options' MUST be an array of exactly 4 short strings (but if you need 3 or less you have to decrease it) that logically answer the question.
-Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
+    const prompt = `Create a new factual quiz question in ${langName} mimicking the style and topic of: "${randomItem.question}".
+
+Rules:
+- Question: only If MCQ, must end with '?'. Do NOT include the answer inside.
+- Options: Array of max 4 logical choices.
+- Output: Return ONLY a valid JSON object matching the format below.
+
+Format:
+{"question":"string","options":["string","string","string"],"answer":"string"}`;
     const aiResponse = await runAI([{ role: "system", content: "You are an API that ONLY generates valid JSON. You MUST NOT output any text, markdown, or explanation outside the JSON object." }, { role: "user", content: prompt }], 1000);
     const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     
@@ -712,17 +726,20 @@ async function executeMode3PureAIGeneration(session_id, language, langName) {
         const usedRes = db.prepare("SELECT person_name FROM used_persons WHERE session_id = ?").all(session_id);
         const usedList = usedRes.map(r => r.person_name);
         
-        const combinedPrompt = `You are designing an image identification quiz. Language for the question: ${langName}. Category: "${selectedCategory}". 
-        Create a subject that is NOT in this list: [${usedList.join(",")}].
-        CRITICAL RULES:
-        1. You must generate a cohesive object where the question directly asks about the image.
-        2. The answer MUST NEVER be written inside the question text.
-        Return ONLY a valid JSON object matching this schema:
-        {
-          "imagePrompt": "A highly detailed English prompt to generate an authentic photo without any text",
-          "question": "A clear question in ${langName} ending with '?' asking to identify the image. DO NOT mention the answer.",
-          "answer": "The exact answer must be a single word."
-        }`;
+        const combinedPrompt = `Create an image quiz item for category "${selectedCategory}" in ${langName}. Exclude subjects in: [${usedList.join(",")}].
+
+Rules:
+- ImagePrompt: Detailed English prompt for an authentic photo (no text).
+- Question: Direct inquiry ending with '?', without the answer inside.
+- Answer: Exactly a single word.
+- Output: Return ONLY a valid JSON object matching the format below.
+
+Format:
+{
+  "imagePrompt": "...",
+  "question": "...",
+  "answer": "..."
+}`;
         
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Requesting AI to generate combined image prompt, question, and answer");
         const comboResp = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: combinedPrompt }], 800);
@@ -756,21 +773,28 @@ async function executeMode3PureAIGeneration(session_id, language, langName) {
         
     } else if (randomType === "MCQ") {
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Sub-mode: MCQ selected");
-        const mcqPrompt = `Generate a logical Multiple Choice Question (MCQ) in ${langName}.
-CRITICAL RULES:
-1. The 'question' MUST be a direct question and MUST end with a question mark '?'.
-2. The 'question' MUST NOT contain the answer.
-3. The 'options' MUST be an array of exactly 4 short strings (but if you need 3 or less you have to decrease it) that logically answer the question.
-Output exactly this JSON format: {"question": "What is the capital of France?", "options": ["Paris", "London", "Berlin", "Madrid"], "answer": "Paris"}`;
+        const mcqPrompt = `Generate an MCQ in ${langName} in strict JSON format.
+
+Rules:
+- Question: Direct, ends with '?', no answer inside.
+- Options: Array of max 4 logical choices.
+- Answer: Must match one option.
+
+Format:
+{"question": "...", "options": ["A", "B", "C"], "answer": "..."}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: mcqPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     } else if (randomType === "TRUE_FALSE") {
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Sub-mode: TRUE_FALSE selected");
-        const tfPrompt = `Generate a True or False statement in ${langName}.
-CRITICAL RULES:
-1. The 'question' MUST be a declarative statement of fact. It MUST NOT be a question. It MUST NOT end with '?'.
-2. The 'options' MUST BE EXACTLY: ["${tfOpts[0]}", "${tfOpts[1]}"].
-Generate exactly this example JSON format: {"question": "The Earth is the fourth planet from the Sun.", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "${tfOpts[1]}"}`;
+        const tfPrompt = `Generate a True/False statement in ${langName} in strict JSON format.
+
+Rules:
+- Question: Declarative statement of fact (no question mark).
+- Options: Must be exactly ["${tfOpts[0]}", "${tfOpts[1]}"].
+- Answer: Must match one option.
+
+Format:
+{"question": "...", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "..."}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: tfPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
         parsed.options = tfOpts;
@@ -779,12 +803,14 @@ Generate exactly this example JSON format: {"question": "The Earth is the fourth
         }
     } else if (randomType === "FILL_BLANK") {
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Sub-mode: FILL_BLANK selected");
-        const fbPrompt = `Generate a Fill-in-the-blank question in ${langName}.
-CRITICAL RULES:
-1. The 'question' MUST be a full sentence with exactly one word replaced by '______'.
-2. The '______' MUST be placed in the MIDDLE of the sentence.
-3. The 'answer' MUST be a SINGLE WORD (or max two words) that fits perfectly in the '______'.
-Generate exactly this example JSON format: {"question": "According to biology, the ______ is the powerhouse of the cell.", "answer": "mitochondria"}`;
+        const fbPrompt = `Generate a Fill-in-the-blank question in ${langName} in strict JSON format.
+
+Rules:
+- Question: Full sentence with exactly one '______' in the MIDDLE.
+- Answer: One single word to fill the empty space, to complete the sentence.
+
+Format:
+{"question": "...", "answer": "..."}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: fbPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     }
