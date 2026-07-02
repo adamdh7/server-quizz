@@ -648,29 +648,6 @@ async function executeMode0PureDB(randomItem) {
     return { parsed, randomType, imgUrl, finalSuccess, finalError, finalExplanation };
 }
 
-async function executeMode1ImproveExisting(randomItem, langName, langCode) {
-    logEvent("INFO", "MODE_1_IMPROVE_EXISTING", "Execution started");
-    if (!randomItem) throw new Error("Source item missing");
-    const prompt = `Improve this quiz question to make it very clear and logical. Language: ${langName}. Original Question: "${randomItem.question}". 
-CRITICAL RULES:
-1. If it's a multiple choice question, it MUST end with '?'.
-2. DO NOT include the exact answer inside the question text.
-3. The 'options' MUST be an array of exactly 4 short strings (but if you need 3 or less you have to decrease it) that logically answer the question.
-Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
-    const aiResponse = await runAI([{ role: "system", content: "You are an API that ONLY generates valid JSON. You MUST NOT output any text, markdown, or explanation outside the JSON object." }, { role: "user", content: prompt }], 1000);
-    const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
-    
-    if (randomItem.qType === "TRUE_FALSE") {
-        parsed.options = localizedTrueFalse[langCode] || ["True", "False"];
-        if (parsed.answer !== parsed.options[0] && parsed.answer !== parsed.options[1]) {
-            parsed.answer = parsed.options[0];
-        }
-    }
-    
-    logEvent("SUCCESS", "MODE_1_IMPROVE_EXISTING", "Execution completed successfully");
-    return { parsed, randomType: randomItem.qType || "MCQ", imgUrl: null, finalSuccess: "", finalError: "", finalExplanation: "" };
-}
-
 async function executeMode2CreateSimilar(randomItem, langName, langCode) {
     logEvent("INFO", "MODE_2_CREATE_SIMILAR", "Execution started");
     if (!randomItem) throw new Error("Source item missing");
@@ -886,7 +863,7 @@ app.post("/quizz", async (req, res) => {
         logEvent("WARN", "STRATEGY_SELECTOR", "No randomItem found from DB or JSON. Forcing Mode 3 to ensure generation.");
     }
 
-    let availableStrategies = [0, 1, 2, 3];
+    let availableStrategies = [0, 2, 3];
     for (let i = availableStrategies.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       const temp = availableStrategies[i];
@@ -916,7 +893,6 @@ app.post("/quizz", async (req, res) => {
         logEvent("INFO", "STRATEGY_SELECTOR", `Attempting to execute Strategy ${strategy}`);
         let strategyResult;
         if (strategy === 0) strategyResult = await executeMode0PureDB(randomItem);
-        else if (strategy === 1) strategyResult = await executeMode1ImproveExisting(randomItem, langName, language);
         else if (strategy === 2) strategyResult = await executeMode2CreateSimilar(randomItem, langName, language);
         else if (strategy === 3) strategyResult = await executeMode3PureAIGeneration(session_id, language, langName);
 
