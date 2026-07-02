@@ -666,8 +666,12 @@ Rules:
 - Options: Array of max 4 logical choices.
 
 If a true/false the "question" must be an affirmation (Declarative statement of fact)
-- Options: Must be exactly ["${tfOpts[0]}", "${tfOpts[1]}"].
-- Answer: Must be exactly "${tfOpts[0]}" or "${tfOpts[1]}".
+  en: ["True", "False"],
+  fr: ["Vrai", "Faux"],
+  es: ["Verdadero", "Falso"],
+  ht: ["Vrè", "Fo"]
+- Options: Must be exactly ["True", "False"].
+- Answer: Answer: Must be exactly (But Translated) ; "False" or "True".
 - Explanation: Explain why the statement is true or false.
 
 If a Fill-in-the-blank Question: Full sentence with exactly one '______' in the MIDDLE (context before and after).
@@ -702,8 +706,12 @@ Rules:
 - Options: Array of max 4 logical choices.
 
 If a true/false the "question" must be an affirmation (Declarative statement of fact)
-- Options: Must be exactly ["${tfOpts[0]}", "${tfOpts[1]}"].
-- Answer: Must be exactly "${tfOpts[0]}" or "${tfOpts[1]}".
+  en: ["True", "False"],
+  fr: ["Vrai", "Faux"],
+  es: ["Verdadero", "Falso"],
+  ht: ["Vrè", "Fo"]
+- Options: Must be exactly ["True", "False"].
+- Answer: Answer: Must be exactly (But Translated) ; "False" or "True".
 - Explanation: Explain why the statement is true or false.
 
 If a Fill-in-the-blank Question: Full sentence with exactly one '______' in the MIDDLE (context before and after).
