@@ -662,8 +662,18 @@ async function executeMode1ImproveExisting(randomItem, langName, langCode) {
     const prompt = `Improve this quiz question in ${langName} for clarity and logic. Original: "${randomItem.question}".
 
 Rules:
-- Question: only If MCQ, must end with '?',  If a true/false the "question" must be an affirmation. Do NOT include the answer inside.
+- Question: only If MCQ, must end with '?'
 - Options: Array of max 4 logical choices.
+
+If a true/false the "question" must be an affirmation (Declarative statement of fact)
+- Options: Must be exactly ["${tfOpts[0]}", "${tfOpts[1]}"].
+- Answer: Must be exactly "${tfOpts[0]}" or "${tfOpts[1]}".
+- Explanation: Explain why the statement is true or false.
+
+If a Fill-in-the-blank Question: Full sentence with exactly one '______' in the MIDDLE (context before and after).
+- Options: Must be empty [].
+- Answer: only 1 words that fit perfectly in the blank. Do NOT include the answer inside.
+
 - Output: Return ONLY a valid JSON object matching the format below.
 
 Format:
@@ -688,8 +698,23 @@ async function executeMode2CreateSimilar(randomItem, langName, langCode) {
     const prompt = `Create a new factual quiz question in ${langName} mimicking the style and topic of: "${randomItem.question}".
 
 Rules:
-- Question: only If MCQ, must end with '?',  If a true/false the "question" must be an affirmation. Do NOT include the answer inside.
+- Question: only If MCQ, must end with '?'
 - Options: Array of max 4 logical choices.
+
+If a true/false the "question" must be an affirmation (Declarative statement of fact)
+- Options: Must be exactly ["${tfOpts[0]}", "${tfOpts[1]}"].
+- Answer: Must be exactly "${tfOpts[0]}" or "${tfOpts[1]}".
+- Explanation: Explain why the statement is true or false.
+
+If a Fill-in-the-blank Question: Full sentence with exactly one '______' in the MIDDLE (context before and after).
+- Options: Must be empty [].
+- Answer: only 1 words that fit perfectly in the blank. Do NOT include the answer inside.
+
+- Output: Return ONLY a valid JSON object matching the format below.
+
+Format:
+{"question":"string","options":["string","string","string"],"answer":"string"}
+
 - Output: Return ONLY a valid JSON object matching the format below.
 
 Format:
