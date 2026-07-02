@@ -727,17 +727,19 @@ Rules:
 - Question: Direct inquiry ending with '?', without the answer inside.
 - Answer: Exactly a single word.
 - Output: Return ONLY a valid JSON object matching the format below.
+- options : empty.
 
 Format:
 {
   "imagePrompt": "...",
+  "options": [],
   "question": "...",
   "answer": "..."
 }`;
         
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Requesting AI to generate combined image prompt, question, and answer");
         const comboResp = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: combinedPrompt }], 800);
-        const parsedCombo = parseAIJsonResponse(comboResp.response, ["imagePrompt", "question", "answer"]);
+        const parsedCombo = parseAIJsonResponse(comboResp.response, ["imagePrompt", "options", "question", "answer"]);
         
         const subjectName = parsedCombo.answer;
         db.prepare("INSERT INTO used_persons (session_id, person_name) VALUES (?, ?)").run(session_id, subjectName);
