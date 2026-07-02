@@ -123,6 +123,55 @@ function calculateSimilarity(str1, str2) {
   return intersection.size / union.size;
 }
 
+function getLevenshteinDistance(a, b) {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+function checkAnswerTolerance(userAns, realAns) {
+  if (!userAns || !realAns) return false;
+  const u = userAns.toLowerCase().trim();
+  const r = realAns.toLowerCase().trim();
+  
+  if (u === r) return true;
+  
+  if (!isNaN(u) && !isNaN(r)) {
+    return Number(u) === Number(r);
+  }
+  
+  if (r.length > 3 && (u.includes(r) || r.includes(u))) return true;
+  
+  const tokenSim = calculateSimilarity(u, r);
+  if (tokenSim >= 0.5) return true;
+  
+  const distance = getLevenshteinDistance(u, r);
+  const maxLength = Math.max(u.length, r.length);
+  const charSim = (maxLength - distance) / maxLength;
+  if (charSim >= 0.5) return true;
+  
+  return false;
+}
+
+const localizedTrueFalse = {
+  en: ["True", "False"],
+  fr: ["Vrai", "Faux"],
+  es: ["Verdadero", "Falso"],
+  ht: ["Vre", "Fo"]
+};
+
 function isSimilarToExisting(newText, existingItems) {
   if (!newText || !existingItems || existingItems.length === 0) return { similar: false, pct: 0, matchedText: "" };
   for (const item of existingItems) {
@@ -366,6 +415,7 @@ async function executeBackgroundMassGeneration(isTrigger) {
 
   for (const lang of langs) {
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[lang] || "English";
+    const tfOpts = localizedTrueFalse[lang] || ["True", "False"];
     
     for (let i = 0; i < 7; i++) {
       try {
@@ -389,11 +439,29 @@ async function executeBackgroundMassGeneration(isTrigger) {
         let prompt = "";
 
         if (qType === "MCQ") {
-          prompt = `Create a highly logical, accurate and unique MCQ quiz question in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". The options must be realistic but only one is correct. DO NOT put the answer inside the question text. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "Write the MCQ question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "Exact correct choice", "explanation": "Detailed explanation, strictly between 300 and 400 characters long.", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+          prompt = `Create a highly logical, accurate and unique Multiple Choice Question (MCQ) in ${langName}. Difficulty Level: ${level}. Theme inspiration: "${seedText}".
+CRITICAL RULES:
+1. The question text MUST NOT contain the correct answer. Do not write the answer inside the question.
+2. You MUST provide exactly 4 distinct and plausible options.
+3. The explanation MUST be strictly between 200 and 400 characters, teaching the user facts.
+Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "MCQ", "question": "The question here", "options": ["Choice A", "Choice B", "Choice C", "Choice D"], "answer": "The exact correct choice", "explanation": "Educational explanation.", "successMsg": "Good job!", "errorMsg": "Incorrect."}`;
         } else if (qType === "TRUE_FALSE") {
-          prompt = `Create a completely factual and unique True or False statement in ${langName}. Difficulty Level: ${level}. Use this existing question as theme inspiration: "${seedText}". Do not make confusing statements. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "Write the factual statement", "options": ["True", "False"], "answer": "True", "explanation": "Detailed explanation, strictly between 300 and 400 characters long.", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+          prompt = `Create a completely factual True or False statement in ${langName}. Difficulty Level: ${level}. Theme inspiration: "${seedText}".
+CRITICAL RULES:
+1. The question MUST be a clear, declarative sentence. Do not ask a question, make a statement.
+2. The options MUST be EXACTLY: ["${tfOpts[0]}", "${tfOpts[1]}"].
+3. The answer MUST be exactly one of those two options.
+4. The explanation MUST be strictly between 200 and 400 characters.
+Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "TRUE_FALSE", "question": "The factual statement here", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "The correct option", "explanation": "Educational explanation.", "successMsg": "Good job!", "errorMsg": "Incorrect."}`;
         } else {
-          prompt = `Create a unique Fill-in-the-blank question in ${langName}. Difficulty Level: ${level}. Theme inspiration: "${seedText}". You MUST use ______ to represent the missing word. IMPORTANT: The question text MUST NOT contain the correct answer itself. The answer is ONLY the missing word. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "Write the question with ______ inside", "options": [], "answer": "Expected exact missing word", "explanation": "Detailed explanation, strictly between 300 and 400 characters long.", "successMsg": "Encouraging success feedback", "errorMsg": "Constructive correction feedback"}`;
+          prompt = `Create a unique Fill-in-the-blank question in ${langName}. Difficulty Level: ${level}. Theme inspiration: "${seedText}".
+CRITICAL RULES:
+1. The question MUST be a full sentence providing context. (e.g. "According to history, ______ was the first president.")
+2. DO NOT use math equations or numbers without heavy text context.
+3. You MUST use exactly "______" to represent the missing word.
+4. The question text MUST NOT contain the correct answer itself.
+5. The explanation MUST be strictly between 200 and 400 characters.
+Return ONLY a raw valid JSON object matching this schema: {"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "The sentence with ______ inside", "options": [], "answer": "The exact missing word", "explanation": "Educational explanation.", "successMsg": "Good job!", "errorMsg": "Incorrect."}`;
         }
 
         const aiResponse = await runAI([
@@ -403,6 +471,14 @@ async function executeBackgroundMassGeneration(isTrigger) {
 
         try {
           const parsed = parseAIJsonResponse(aiResponse.response, ["question", "answer", "explanation", "qType"]);
+          
+          if (parsed.qType === "TRUE_FALSE") {
+            parsed.options = tfOpts;
+            if (parsed.answer !== tfOpts[0] && parsed.answer !== tfOpts[1]) {
+                parsed.answer = tfOpts[0];
+            }
+          }
+
           const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
           const simCheck = isSimilarToExisting(parsed.question, existingItems);
           
@@ -572,22 +648,46 @@ async function executeMode0PureDB(randomItem) {
     return { parsed, randomType, imgUrl, finalSuccess, finalError, finalExplanation };
 }
 
-async function executeMode1ImproveExisting(randomItem, langName) {
+async function executeMode1ImproveExisting(randomItem, langName, langCode) {
     logEvent("INFO", "MODE_1_IMPROVE_EXISTING", "Execution started");
     if (!randomItem) throw new Error("Source item missing");
-    const prompt = `Improve this quiz question to make it very clear and logical. Language: ${langName}. Original Question: "${randomItem.question}". DO NOT include the exact answer inside the question text. The options must be realistic distractors, but only one is correct. Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
+    const prompt = `Improve this quiz question to make it very clear and logical. Language: ${langName}. Original Question: "${randomItem.question}". 
+CRITICAL RULES:
+1. DO NOT include the exact answer inside the question text.
+2. The options must be realistic distractors, exactly 4 options.
+Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
     const aiResponse = await runAI([{ role: "system", content: "You are a strict JSON API generator. Output ONLY raw valid JSON." }, { role: "user", content: prompt }], 1000);
     const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+    
+    if (randomItem.qType === "TRUE_FALSE") {
+        parsed.options = localizedTrueFalse[langCode] || ["True", "False"];
+        if (parsed.answer !== parsed.options[0] && parsed.answer !== parsed.options[1]) {
+            parsed.answer = parsed.options[0];
+        }
+    }
+    
     logEvent("SUCCESS", "MODE_1_IMPROVE_EXISTING", "Execution completed successfully");
     return { parsed, randomType: randomItem.qType || "MCQ", imgUrl: null, finalSuccess: "", finalError: "", finalExplanation: "" };
 }
 
-async function executeMode2CreateSimilar(randomItem, langName) {
+async function executeMode2CreateSimilar(randomItem, langName, langCode) {
     logEvent("INFO", "MODE_2_CREATE_SIMILAR", "Execution started");
     if (!randomItem) throw new Error("Source item missing");
-    const prompt = `Create a completely new, factual quiz question in the EXACT same style and general topic as this one. Language: ${langName}. Original question: "${randomItem.question}". DO NOT include the answer in the question. Ensure choices are plausible. Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
+    const prompt = `Create a completely new, factual quiz question in the EXACT same style and general topic as this one. Language: ${langName}. Original question: "${randomItem.question}".
+CRITICAL RULES:
+1. DO NOT include the answer in the question.
+2. Ensure choices are plausible and provide exactly 4 options.
+Return ONLY a valid JSON object matching this schema: {"question":"string","options":["string","string","string","string"],"answer":"string"}`;
     const aiResponse = await runAI([{ role: "system", content: "You are a strict JSON API generator. Output ONLY raw valid JSON." }, { role: "user", content: prompt }], 1000);
     const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+    
+    if (randomItem.qType === "TRUE_FALSE") {
+        parsed.options = localizedTrueFalse[langCode] || ["True", "False"];
+        if (parsed.answer !== parsed.options[0] && parsed.answer !== parsed.options[1]) {
+            parsed.answer = parsed.options[0];
+        }
+    }
+    
     logEvent("SUCCESS", "MODE_2_CREATE_SIMILAR", "Execution completed successfully");
     return { parsed, randomType: randomItem.qType || "MCQ", imgUrl: null, finalSuccess: "", finalError: "", finalExplanation: "" };
 }
@@ -599,6 +699,7 @@ async function executeMode3PureAIGeneration(session_id, language, langName) {
     const systemInstructionStrict = "You are a strict JSON API generator. Output ONLY raw valid JSON.";
     let parsed = null;
     let imgUrl = null;
+    const tfOpts = localizedTrueFalse[language] || ["True", "False"];
 
     if (randomType === "IDENTITY_IMAGE") {
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Sub-mode: IDENTITY_IMAGE selected");
@@ -611,12 +712,14 @@ async function executeMode3PureAIGeneration(session_id, language, langName) {
         
         const combinedPrompt = `You are designing an image identification quiz. Language for the question: ${langName}. Category: "${selectedCategory}". 
         Create a subject that is NOT in this list: [${usedList.join(",")}].
-        You must generate a cohesive object where the question directly asks about the image, and the answer matches the subject of the image.
-        Return ONLY a valid JSON object matching this exact schema:
+        CRITICAL RULES:
+        1. You must generate a cohesive object where the question directly asks about the image.
+        2. The answer MUST NEVER be written inside the question text.
+        Return ONLY a valid JSON object matching this schema:
         {
-          "imagePrompt": "A highly detailed English prompt to generate an authentic, realistic photo or high-quality illustration of the specific subject without any text",
-          "question": "A clear question in ${langName} asking the user to identify what is in the image. DO NOT mention the answer in the question",
-          "answer": "The exact name of the subject expected from the user"
+          "imagePrompt": "A highly detailed English prompt to generate an authentic photo without any text",
+          "question": "A clear question in ${langName} asking to identify the image. DO NOT mention the answer.",
+          "answer": "The exact name of the subject"
         }`;
         
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Requesting AI to generate combined image prompt, question, and answer");
@@ -651,24 +754,39 @@ async function executeMode3PureAIGeneration(session_id, language, langName) {
         
     } else if (randomType === "MCQ") {
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Sub-mode: MCQ selected");
-        const mcqPrompt = `Create a brand new, logical Multiple Choice Question (MCQ). Topic: General Knowledge. Language: ${langName}. DO NOT put the answer in the question. Distractors must be realistic.
-        Return ONLY a raw JSON object matching this schema: {"question":"Your question","options":["Choice A","Choice B","Choice C","Choice D"],"answer":"The exact correct choice from the options"}`;
+        const mcqPrompt = `Create a brand new, logical Multiple Choice Question (MCQ). Topic: General Knowledge. Language: ${langName}.
+CRITICAL RULES:
+1. DO NOT put the answer in the question text.
+2. Provide exactly 4 realistic distractors.
+Return ONLY a raw JSON object matching this schema: {"question":"Your question","options":["Choice A","Choice B","Choice C","Choice D"],"answer":"The exact correct choice"}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: mcqPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     } else if (randomType === "TRUE_FALSE") {
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Sub-mode: TRUE_FALSE selected");
         const tfPrompt = `Create a completely factual True or False statement. Topic: General Knowledge. Language: ${langName}.
-        Return ONLY a raw JSON object matching this schema: {
+CRITICAL RULES:
+1. The question must be a declarative statement, not a question.
+2. Options MUST BE EXACTLY: ["${tfOpts[0]}", "${tfOpts[1]}"].
+Return ONLY a raw JSON object matching this schema: {
   "question": "Your factual statement.",
-  "options": ["True", "False"],
+  "options": ["${tfOpts[0]}", "${tfOpts[1]}"],
   "answer": "The correct choice"
 }`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: tfPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
+        parsed.options = tfOpts;
+        if (parsed.answer !== tfOpts[0] && parsed.answer !== tfOpts[1]) {
+            parsed.answer = tfOpts[0];
+        }
     } else if (randomType === "FILL_BLANK") {
         logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Sub-mode: FILL_BLANK selected");
-        const fbPrompt = `Create a unique Fill-in-the-blank question. Topic: General Knowledge. Language: ${langName}. Use ______ for the blank space. IMPORTANT: Do NOT include the correct answer in the question text.
-        Return ONLY a raw JSON object matching this schema: {
+        const fbPrompt = `Create a unique Fill-in-the-blank question. Topic: General Knowledge. Language: ${langName}.
+CRITICAL RULES:
+1. The question must be a sentence providing full context (e.g. "According to science, ______ is the center of the solar system.").
+2. DO NOT use math equations or numbers.
+3. Use ______ for the blank space.
+4. Do NOT include the correct answer in the question text.
+Return ONLY a raw JSON object matching this schema: {
   "question": "Your text with ______.",
   "answer": "The exact missing word"
 }`;
@@ -803,8 +921,8 @@ app.post("/quizz", async (req, res) => {
         logEvent("INFO", "STRATEGY_SELECTOR", `Attempting to execute Strategy ${strategy}`);
         let strategyResult;
         if (strategy === 0) strategyResult = await executeMode0PureDB(randomItem);
-        else if (strategy === 1) strategyResult = await executeMode1ImproveExisting(randomItem, langName);
-        else if (strategy === 2) strategyResult = await executeMode2CreateSimilar(randomItem, langName);
+        else if (strategy === 1) strategyResult = await executeMode1ImproveExisting(randomItem, langName, language);
+        else if (strategy === 2) strategyResult = await executeMode2CreateSimilar(randomItem, langName, language);
         else if (strategy === 3) strategyResult = await executeMode3PureAIGeneration(session_id, language, langName);
 
         parsed = strategyResult.parsed;
@@ -935,24 +1053,14 @@ app.post("/validate", async (req, res) => {
     }
 
     const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[progress.language] || "English";
-    const cleanUser = user_answer.toLowerCase().trim();
     const cleanAnswer = current.answer ? current.answer.toLowerCase().trim() : "";
-
+    
     let isCorrect = false;
-
     if (cleanAnswer !== "") {
-      if (cleanAnswer.length <= 3) {
-        if (cleanUser === cleanAnswer) {
-          isCorrect = true;
-        }
-      } else {
-        if (cleanUser === cleanAnswer || (cleanUser.length >= 3 && (cleanUser.includes(cleanAnswer) || cleanAnswer.includes(cleanUser)))) {
-          isCorrect = true;
-        }
-      }
+        isCorrect = checkAnswerTolerance(user_answer, cleanAnswer);
     }
 
-    logEvent("INFO", "VALIDATION", `Answer checking completed. User Answer: ${cleanUser}. Correct Answer: ${cleanAnswer}. Status: ${isCorrect}`);
+    logEvent("INFO", "VALIDATION", `Answer checking completed. User Answer: ${user_answer}. Correct Answer: ${cleanAnswer}. Status: ${isCorrect}`);
 
     let finalFeedback = "";
     const isAiPur = (!current.success_msg && !current.error_msg && !current.explanation);
@@ -960,7 +1068,7 @@ app.post("/validate", async (req, res) => {
     if (isAiPur) {
       const sysStrict = "You are a strict JSON data generator. Output ONLY raw valid JSON without markdown formatting.";
       if (isCorrect) {
-        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer was: "${current.answer}". Write a success message and brief explanation in ${langName}. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a valid JSON object matching this schema: {"successMsg": "encouraging text", "explanation": "detailed reason"}`;
+        const usr = `User answered CORRECTLY to the question: "${current.question}". Correct answer was: "${current.answer}". Write an encouraging success message and educational explanation in ${langName}. The explanation MUST be strictly between 200 and 400 characters long, teaching a fact. Return ONLY a valid JSON object matching this schema: {"successMsg": "encouraging text", "explanation": "detailed reason"}`;
         try {
           const aiResp = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: usr }], 800);
           const parsedFeedback = parseAIJsonResponse(aiResp.response, ["successMsg", "explanation"]);
@@ -971,7 +1079,7 @@ app.post("/validate", async (req, res) => {
           finalFeedback = "Correct!\n\n" + current.answer;
         }
       } else {
-        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". Write a brief error statement and educational explanation in ${langName}. The explanation MUST be strictly between 300 and 400 characters long. Return ONLY a valid JSON object matching this schema: {"errorMsg": "mistake feedback", "explanation": "detailed context"}`;
+        const usr = `User answered INCORRECTLY. Question: "${current.question}". Correct answer: "${current.answer}". User input: "${user_answer}". The user CANNOT retry. Write a direct correction and an educational explanation in ${langName} teaching them the fact. The explanation MUST be strictly between 200 and 400 characters long. Return ONLY a valid JSON object matching this schema: {"errorMsg": "direct correction feedback", "explanation": "factual educational context"}`;
         try {
           const aiResp = await runAI([{ role: "system", content: sysStrict }, { role: "user", content: usr }], 800);
           const parsedFeedback = parseAIJsonResponse(aiResp.response, ["errorMsg", "explanation"]);
