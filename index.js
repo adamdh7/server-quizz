@@ -447,8 +447,8 @@ Rules:
 - Answer: Must match one option.
 - Explanation: 1-2 sentences (300-400 chars) teaching a fact.
 
-Format:
-{"level": "${level}", "lang": "${langName}", "qType": "MCQ", "question": "...", "options": ["A", "B", "C"], "answer": "...", "explanation": "...", "successMsg": "Excellent!", "errorMsg": "Incorrect."}`;
+Format EX :
+{"level": "${level}", "lang": "${langName}", "qType": "MCQ", "question": "...", "options": ["", "", "more..."], "answer": "...", "explanation": "...", "successMsg": "Excellent!", "errorMsg": "Incorrect."}`;
         } else if (qType === "TRUE_FALSE") {
           prompt = `Generate a True/False statement in ${langName} (${level}) in strict JSON format.
 
@@ -458,8 +458,8 @@ Rules:
 - Answer: Must be exactly "${tfOpts[0]}" or "${tfOpts[1]}".
 - Explanation: Explain why the statement is true or false.
 
-Format:
-{"level": "${level}", "lang": "${lang}", "qType": "TRUE_FALSE", "question": "...", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "...", "explanation": "...", "successMsg": "Well done!", "errorMsg": "Not quite."}`;
+Format EX :
+{"level": "${level}", "lang": "${lang}", "qType": "TRUE_FALSE", "question": "...", "options": ["${tfOpts[0]}", "${tfOpts[1]}"], "answer": "...", "explanation": "...", "successMsg": "....", "errorMsg": "...."}`;
         } else {
           prompt = `Generate a Fill-in-the-blank question in ${langName} (${level}) in strict JSON format.
 
@@ -468,8 +468,8 @@ Rules:
 - Options: Must be empty [].
 - Answer: only 1 words that fit perfectly in the blank.
 
-Format:
-{"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "...", "options": [], "answer": "...", "explanation": "...", "successMsg": "Perfect!", "errorMsg": "Wrong."}`;
+Format EX :
+{"level": ${level}, "lang": "${lang}", "qType": "FILL_BLANK", "question": "...", "options": [], "answer": "...", "explanation": "...", "successMsg": "....!", "errorMsg": "...."}`;
         }
 
         const aiResponse = await runAI([
@@ -478,7 +478,7 @@ Format:
         ], 1000);
 
         try {
-          const parsed = parseAIJsonResponse(aiResponse.response, ["question", "answer", "explanation", "qType"]);
+          const parsed = parseAIJsonResponse(aiResponse.response, ["question", "answer", "options", "explanation", "qType"]);
           
           if (parsed.qType === "TRUE_FALSE") {
             parsed.options = tfOpts;
@@ -659,29 +659,12 @@ async function executeMode0PureDB(randomItem) {
 async function executeMode1ImproveExisting(randomItem, langName, langCode) {
     logEvent("INFO", "MODE_1_IMPROVE_EXISTING", "Execution started");
     if (!randomItem) throw new Error("Source item missing");
-    const prompt = `Improve this quiz question in ${langName} for clarity and logic. Original: "${randomItem.question}".
+    const prompt = `Improve this question in ${langName}: Original question: "${randomItem.question}". Output ONLY JSON: {"question":"", "options":[], "answer":""}
 
-Rules:
-- Question: only If MCQ, must end with '?'
-- Options: Array of max 4 logical choices.
-
-If a true/false the "question" must be an affirmation (Declarative statement of fact)
-  en: ["True", "False"],
-  fr: ["Vrai", "Faux"],
-  es: ["Verdadero", "Falso"],
-  ht: ["Vrè", "Fo"]
-- Options: Must be exactly ["True", "False"].
-- Answer: Answer: Must be exactly (But Translated) ; "False" or "True".
-- Explanation: Explain why the statement is true or false.
-
-If a Fill-in-the-blank Question: Full sentence with exactly one '______' in the MIDDLE (context before and after).
-- Options: Must be empty [].
-- Answer: only 1 words that fit perfectly in the blank. Do NOT include the answer inside.
-
-- Output: Return ONLY a valid JSON object matching the format below.
-
-Format:
-{"question":"string","options":["string","string","string"],"answer":"string"}`;
+Strict Rules:
+- MCQ: End with '?'. Max 4 options. No answer inside text.
+- True/False: Must be a declarative statement. Options must be localized (en: ["True","False"], fr: ["Vrai","Faux"], es: ["Verdadero","Falso"], ht: ["Vrè","Fo"]).
+- Fill-blank: One '______' in the middle. Options = []. Answer = only 1 word.`;
     const aiResponse = await runAI([{ role: "system", content: "You are an API that ONLY generates valid JSON. You MUST NOT output any text, markdown, or explanation outside the JSON object." }, { role: "user", content: prompt }], 1000);
     const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     
@@ -699,34 +682,12 @@ Format:
 async function executeMode2CreateSimilar(randomItem, langName, langCode) {
     logEvent("INFO", "MODE_2_CREATE_SIMILAR", "Execution started");
     if (!randomItem) throw new Error("Source item missing");
-    const prompt = `Create a new factual quiz question in ${langName} mimicking the style and topic of: "${randomItem.question}".
+    const prompt = `Create a new factual question in ${langName} mimicking the style/topic of: "${randomItem.question}". Output ONLY JSON: {"question":"", "options":[], "answer":""}
 
-Rules:
-- Question: only If MCQ, must end with '?'
-- Options: Array of max 4 logical choices.
-
-If a true/false the "question" must be an affirmation (Declarative statement of fact)
-  en: ["True", "False"],
-  fr: ["Vrai", "Faux"],
-  es: ["Verdadero", "Falso"],
-  ht: ["Vrè", "Fo"]
-- Options: Must be exactly ["True", "False"].
-- Answer: Answer: Must be exactly (But Translated) ; "False" or "True".
-- Explanation: Explain why the statement is true or false.
-
-If a Fill-in-the-blank Question: Full sentence with exactly one '______' in the MIDDLE (context before and after).
-- Options: Must be empty [].
-- Answer: only 1 words that fit perfectly in the blank. Do NOT include the answer inside.
-
-- Output: Return ONLY a valid JSON object matching the format below.
-
-Format:
-{"question":"string","options":["string","string","string"],"answer":"string"}
-
-- Output: Return ONLY a valid JSON object matching the format below.
-
-Format:
-{"question":"string","options":["string","string","string"],"answer":"string"}`;
+Strict Rules:
+- MCQ: End with '?'. Max 4 options. No answer inside text.
+- True/False: Must be a declarative statement. Options must be localized (en: ["True","False"], fr: ["Vrai","Faux"], es: ["Verdadero","Falso"], ht: ["Vrè","Fo"]).
+- Fill-blank: One '______' in the middle. Options = []. Answer = only 1 word.`;
     const aiResponse = await runAI([{ role: "system", content: "You are an API that ONLY generates valid JSON. You MUST NOT output any text, markdown, or explanation outside the JSON object." }, { role: "user", content: prompt }], 1000);
     const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     
