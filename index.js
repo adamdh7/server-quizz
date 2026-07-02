@@ -662,7 +662,7 @@ async function executeMode1ImproveExisting(randomItem, langName, langCode) {
     const prompt = `Improve this quiz question in ${langName} for clarity and logic. Original: "${randomItem.question}".
 
 Rules:
-- Question: only If MCQ, must end with '?'. Do NOT include the answer inside.
+- Question: only If MCQ, must end with '?',  If a true/false the "question" must be an affirmation. Do NOT include the answer inside.
 - Options: Array of max 4 logical choices.
 - Output: Return ONLY a valid JSON object matching the format below.
 
@@ -688,7 +688,7 @@ async function executeMode2CreateSimilar(randomItem, langName, langCode) {
     const prompt = `Create a new factual quiz question in ${langName} mimicking the style and topic of: "${randomItem.question}".
 
 Rules:
-- Question: only If MCQ, must end with '?'. Do NOT include the answer inside.
+- Question: only If MCQ, must end with '?',  If a true/false the "question" must be an affirmation. Do NOT include the answer inside.
 - Options: Array of max 4 logical choices.
 - Output: Return ONLY a valid JSON object matching the format below.
 
@@ -776,12 +776,12 @@ Format:
         const mcqPrompt = `Generate an MCQ in ${langName} in strict JSON format.
 
 Rules:
-- Question: Direct, ends with '?', no answer inside.
+- Question: Direct, ends with '?', don't put The answer inside.
 - Options: Array of max 4 logical choices.
 - Answer: Must match one option.
 
 Format:
-{"question": "...", "options": ["A", "B", "C"], "answer": "..."}`;
+{"question": "... ?", "options": ["A", "B", "more if necessary"], "answer": "..."}`;
         const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: mcqPrompt }], 1000);
         parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
     } else if (randomType === "TRUE_FALSE") {
