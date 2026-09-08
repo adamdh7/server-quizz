@@ -495,7 +495,7 @@ async function hydrateCurrentQuizFeedback(sessionId, current, language) {
   current.explanation = String(source.explanation || current.explanation || "").trim();
   if (!current.answer && source.answer !== undefined && source.answer !== null) current.answer = String(source.answer);
   if (!current.q_type && source.qType) current.q_type = source.qType;
-  await saveCurrentQuiz(sessionId, current.q_type || "MCQ", current.question || source.question || "", current.options || "[]", current.image_url || source.imageUrl || null, current.answer || source.answer || "", current.explanation, current.success_msg, current.error_msg);
+  await saveCurrentQuiz(sessionId, current.q_type || source.qType || "MCQ", current.question || source.question || "", JSON.stringify(Array.isArray(current.options) ? current.options : (source.options || [])), current.image_url || source.imageUrl || null, current.answer || source.answer || "", current.explanation, current.success_msg, current.error_msg, current.game_slug || source.gameSlug || null, current.quiz_id || source._id?.toString() || null);
   return current;
 }
 
@@ -1109,16 +1109,25 @@ async function getPreGenerationLevel(preferredLevel = null) {
 
 async function generateBackgroundQuestion(game, language, level, mode, source) {
   const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[language] || "English";
-  let result;
-  if (mode === 1 && source) {
-    result = await executeMode1ImproveExisting(source, langName, language);
-  } else if (mode === 2 && source) {
-    result = await executeMode2CreateSimilar(source, langName, language);
-  } else {
-    result = await executeMode3PureAIGeneration(language, langName, game.slug, null, "", level);
-    mode = 3;
+  let lastError = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      let result;
+      if (mode === 1 && source) {
+        result = await executeMode1ImproveExisting(source, langName, language);
+      } else if (mode === 2 && source) {
+        result = await executeMode2CreateSimilar(source, langName, language);
+      } else {
+        result = await executeMode3PureAIGeneration(language, langName, game.slug, null, "", level);
+        mode = 3;
+      }
+      await saveGeneratedQuizQuestion(result, game, language, level, `MODE_${mode}`);
+      return true;
+    } catch (error) {
+      lastError = error;
+    }
   }
-  await saveGeneratedQuizQuestion(result, game, language, level, `MODE_${mode}`);
+  throw lastError || new Error("Quiz generation failed");
 }
 
 function chooseBackgroundMode(source, reason) {
@@ -1172,7 +1181,7 @@ async function generateOnePreGenerationTask(game, language, level, reason, force
     await generateBackgroundQuestion(game, language, level, mode, source);
     return true;
   } catch {
-    if (mode !== 3) {
+    if (mode !== 3 && source) {
       try {
         await generateBackgroundQuestion(game, language, level, 3, null);
         return true;
@@ -1647,112 +1656,164 @@ async function loadStoredGameQuestion(game, language, level, excludedIds = []) {
   return selected;
 }
 
+const quizBuildLocks = new Map();
+
+async function withQuizBuildLock(sessionId, task) {
+  const key = String(sessionId || "").trim();
+  if (!key) return task();
+  const previous = quizBuildLocks.get(key) || Promise.resolve();
+  const current = previous.catch(() => {}).then(task);
+  quizBuildLocks.set(key, current);
+  try {
+    return await current;
+  } finally {
+    if (quizBuildLocks.get(key) === current) quizBuildLocks.delete(key);
+  }
+}
+
 async function buildQuizForSession(body) {
   const session_id = resolveQuizUserKey(body);
   if (!session_id) throw new Error("session_id required");
-
-  const rawLang = body.lang?.trim();
-  const incomingLevel = body.level;
-  let progress = await getProgress(session_id);
-  if (!progress) {
-    const default_lang = rawLang ? normalizeLanguage(rawLang) : "en";
-    const start_step = Math.max(1, Number(incomingLevel) || 1);
-    await saveProgress(session_id, default_lang, start_step, 0, []);
-    progress = { language: default_lang, current_step: start_step, consecutive_correct: 0, recent_quiz_ids: [] };
-  } else {
-    let updated = false;
-    if (rawLang && normalizeLanguage(rawLang) !== progress.language) {
-      progress.language = normalizeLanguage(rawLang);
-      updated = true;
+  return withQuizBuildLock(session_id, async () => {
+    const rawLang = body.lang?.trim();
+    const incomingLevel = body.level;
+    let progress = await getProgress(session_id);
+    if (!progress) {
+      const default_lang = rawLang ? normalizeLanguage(rawLang) : "en";
+      const start_step = Math.max(1, Number(incomingLevel) || 1);
+      await saveProgress(session_id, default_lang, start_step, 0, []);
+      progress = { language: default_lang, current_step: start_step, consecutive_correct: 0, recent_quiz_ids: [] };
+    } else {
+      let updated = false;
+      if (rawLang && normalizeLanguage(rawLang) !== progress.language) {
+        progress.language = normalizeLanguage(rawLang);
+        updated = true;
+      }
+      if (incomingLevel !== undefined && Math.max(1, Number(incomingLevel) || 1) !== progress.current_step) {
+        progress.current_step = Math.max(1, Number(incomingLevel) || 1);
+        updated = true;
+      }
+      if (updated) await saveProgress(session_id, progress.language, progress.current_step, progress.consecutive_correct, progress.recent_quiz_ids);
     }
-    if (incomingLevel !== undefined && Math.max(1, Number(incomingLevel) || 1) !== progress.current_step) {
-      progress.current_step = Math.max(1, Number(incomingLevel) || 1);
-      updated = true;
+
+    const current_step_num = Math.max(1, Number(progress.current_step) || 1);
+    const language = normalizeLanguage(progress.language);
+    const stableUserId = String(body.DH7 || body.dh7 || body.TFID || body.tfid || session_id).trim();
+    await saveUserInfo(stableUserId, JSON.stringify({
+      level: current_step_num,
+      nivo: progress.consecutive_correct,
+      TFID: body.TFID || body.tfid || progress?.TFID || null,
+      language
+    })).catch(() => {});
+
+    const availableGameSlugs = await getAvailableQuizGames(language, current_step_num);
+    if (!availableGameSlugs.length) {
+      triggerPreGeneration("quiz_missing", current_step_num, language);
+      throw new Error("Quiz pool is being prepared");
     }
-    if (updated) await saveProgress(session_id, progress.language, progress.current_step, progress.consecutive_correct, progress.recent_quiz_ids);
-  }
 
-  const current_step_num = Math.max(1, Number(progress.current_step) || 1);
-  const language = normalizeLanguage(progress.language);
-  const stableUserId = String(body.DH7 || body.dh7 || body.TFID || body.tfid || "").trim();
-  if (stableUserId) {
-    await saveUserInfo(stableUserId, JSON.stringify({ level: current_step_num, nivo: progress.consecutive_correct, TFID: body.TFID || body.tfid || null })).catch(() => {});
-  }
-
-  const availableGameSlugs = await getAvailableQuizGames(language, current_step_num);
-  if (!availableGameSlugs.length) throw new Error("Quiz pool is being prepared");
-  const shuffledGames = [...availableGameSlugs];
-  for (let i = shuffledGames.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffledGames[i], shuffledGames[j]] = [shuffledGames[j], shuffledGames[i]];
-  }
-
-  let selectedGame = null;
-  let randomItem = null;
-  for (const gameSlug of shuffledGames) {
-    const candidateGame = builtInGames.find(game => game.slug === gameSlug);
-    if (!candidateGame) continue;
-    const candidateItem = await loadStoredGameQuestion(candidateGame, language, current_step_num, progress.recent_quiz_ids);
-    if (candidateItem) {
-      selectedGame = candidateGame;
-      randomItem = candidateItem;
-      break;
+    const shuffledGames = [...availableGameSlugs];
+    for (let i = shuffledGames.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledGames[i], shuffledGames[j]] = [shuffledGames[j], shuffledGames[i]];
     }
-  }
-  if (!selectedGame || !randomItem) throw new Error("Quiz pool is being prepared");
 
-  const result = executeMode0PureDB(randomItem);
-  let imgUrl = result.imgUrl || null;
-  const parsed = result.parsed;
-  if (imgUrl && !/^https?:\/\//i.test(imgUrl)) imgUrl = null;
-  const safeOptions = Array.isArray(parsed.options) ? parsed.options : [];
+    let selectedGame = null;
+    let randomItem = null;
+    for (const gameSlug of shuffledGames) {
+      const candidateGame = builtInGames.find(game => game.slug === gameSlug);
+      if (!candidateGame) continue;
+      const candidateItem = await loadStoredGameQuestion(candidateGame, language, current_step_num, progress.recent_quiz_ids || []);
+      if (candidateItem) {
+        selectedGame = candidateGame;
+        randomItem = candidateItem;
+        break;
+      }
+    }
 
-  await saveCurrentQuiz(session_id, result.randomType, parsed.question || "", JSON.stringify(safeOptions), imgUrl, parsed.answer ?? "", result.finalExplanation || parsed.explanation || "", result.finalSuccess || parsed.successMsg || "", result.finalError || parsed.errorMsg || "", selectedGame.slug, randomItem._id?.toString() || null);
-  await markQuizUsedForUser(session_id, randomItem._id?.toString() || null);
+    if (!selectedGame || !randomItem) {
+      triggerPreGeneration("quiz_missing", current_step_num, language);
+      throw new Error("Quiz pool is being prepared");
+    }
 
-  const quizData = {
-    success: true,
-    current_step: current_step_num,
-    consecutive_correct: progress.consecutive_correct,
-    language,
-    needed_for_next_level: Math.max(0, 7 - progress.consecutive_correct),
-    type: result.randomType,
-    question: parsed.question || ""
-  };
-  if (imgUrl) quizData.image_url = imgUrl;
-  if (safeOptions.length > 0) quizData.options = safeOptions;
-  if (parsed.scrambled) quizData.scrambled = parsed.scrambled;
-  if (parsed.letters) quizData.letters = parsed.letters;
-  if (parsed.boardSize) quizData.boardSize = parsed.boardSize;
-  if (parsed.startTileValues) quizData.startTileValues = parsed.startTileValues;
-  if (parsed.targetValue) quizData.targetValue = parsed.targetValue;
-  quizData.game = selectedGame.slug;
-  quizData.q_type = result.randomType;
-  quizData.quiz_type = result.randomType;
-  quizData.qType = result.randomType;
-  quizData.game_slug = selectedGame.slug;
-  quizData.gameSlug = selectedGame.slug;
-  quizData.imageUrl = imgUrl;
-  quizData.choices = safeOptions;
-  quizData.data = {
-    type: quizData.type,
-    q_type: quizData.q_type,
-    quiz_type: quizData.quiz_type,
-    game: quizData.game_slug,
-    question: quizData.question,
-    options: safeOptions,
-    image_url: imgUrl,
-    scrambled: parsed.scrambled || null,
-    letters: parsed.letters || null,
-    boardSize: parsed.boardSize || null,
-    startTileValues: Array.isArray(parsed.startTileValues) ? parsed.startTileValues : null,
-    targetValue: parsed.targetValue || null,
-    current_step: current_step_num,
-    consecutive_correct: progress.consecutive_correct,
-    needed_for_next_level: Math.max(0, 7 - progress.consecutive_correct),
-    language
-  };
-  return quizData;
+    const result = executeMode0PureDB(randomItem);
+    let imgUrl = result.imgUrl || null;
+    const parsed = result.parsed;
+    if (imgUrl && !/^https?:\/\//i.test(imgUrl)) imgUrl = null;
+    const safeOptions = Array.isArray(parsed.options) ? parsed.options : [];
+    const quizId = randomItem._id?.toString() || null;
+    const usedAt = new Date();
+    const selectedTimeLimit = Number(parsed.timeLimit || randomItem.timeLimit || randomItem.gameData?.timeLimit || 0);
+
+    await saveCurrentQuiz(
+      session_id,
+      result.randomType,
+      parsed.question || "",
+      JSON.stringify(safeOptions),
+      imgUrl,
+      parsed.answer ?? "",
+      result.finalExplanation || parsed.explanation || "",
+      result.finalSuccess || parsed.successMsg || "",
+      result.finalError || parsed.errorMsg || "",
+      selectedGame.slug,
+      quizId
+    );
+    await markQuizUsedForUser(session_id, quizId);
+    triggerPreGeneration("quiz_served", current_step_num, language);
+
+    const quizData = {
+      success: true,
+      current_step: current_step_num,
+      consecutive_correct: progress.consecutive_correct,
+      language,
+      needed_for_next_level: Math.max(0, 7 - progress.consecutive_correct),
+      type: result.randomType,
+      q_type: result.randomType,
+      quiz_type: result.randomType,
+      question: parsed.question || "",
+      game: selectedGame.slug,
+      game_slug: selectedGame.slug,
+      game_name: selectedGame.name,
+      question_id: quizId,
+      last_used_at: usedAt instanceof Date ? usedAt.toISOString() : new Date(usedAt || Date.now()).toISOString(),
+      time_limit: selectedTimeLimit,
+      image_url: imgUrl,
+      imageUrl: imgUrl,
+      choices: safeOptions,
+      options: safeOptions,
+      data: {
+        type: result.randomType,
+        q_type: result.randomType,
+        quiz_type: result.randomType,
+        game: selectedGame.slug,
+        game_slug: selectedGame.slug,
+        game_name: selectedGame.name,
+        question: parsed.question || "",
+        options: safeOptions,
+        image_url: imgUrl,
+        scrambled: parsed.scrambled || null,
+        letters: parsed.letters || null,
+        boardSize: parsed.boardSize || null,
+        startTileValues: Array.isArray(parsed.startTileValues) ? parsed.startTileValues : null,
+        targetValue: parsed.targetValue || null,
+        current_step: current_step_num,
+        consecutive_correct: progress.consecutive_correct,
+        needed_for_next_level: Math.max(0, 7 - progress.consecutive_correct),
+        language,
+        question_id: quizId,
+        last_used_at: usedAt instanceof Date ? usedAt.toISOString() : new Date(usedAt || Date.now()).toISOString(),
+        time_limit: selectedTimeLimit
+      }
+    };
+
+    if (parsed.scrambled) quizData.scrambled = parsed.scrambled;
+    if (parsed.letters) quizData.letters = parsed.letters;
+    if (parsed.boardSize) quizData.boardSize = parsed.boardSize;
+    if (parsed.startTileValues) quizData.startTileValues = parsed.startTileValues;
+    if (parsed.targetValue) quizData.targetValue = parsed.targetValue;
+
+    return quizData;
+  });
 }
 
 async function validateQuizForSession(body) {
@@ -1865,6 +1926,9 @@ async function validateQuizForSession(body) {
   };
 }
 app.post("/quizz", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   try {
     const quizData = await buildQuizForSession(req.body || {});
     quizRequestCount += 1;
@@ -1899,6 +1963,9 @@ app.post("/quizz", async (req, res) => {
 });
 
 app.post("/validate", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   try {
     return res.json(await validateQuizForSession(req.body || {}));
   } catch (e) {
@@ -1924,6 +1991,9 @@ app.post("/validate", async (req, res) => {
 });
 
 app.get("/step", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   try {
     const session_id = resolveQuizUserKey({ session_id: req.query.session_id, DH7: req.query.DH7, TFID: req.query.TFID });
     if (!session_id) return res.status(400).json({ error: "session_id required" });
