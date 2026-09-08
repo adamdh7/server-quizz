@@ -1678,25 +1678,50 @@ async function validateQuizForSession(body) {
   const current = await getCurrentQuiz(session_id);
   if (!current) throw new Error("No active quiz");
 
+  let progress = await getProgress(session_id);
+  if (!progress) progress = { language: "en", current_step: 1, consecutive_correct: 0 };
+
   if (silent && !user_answer) {
     const now = Date.now();
     const last = silentValidationAt.get(session_id) || 0;
     if (now - last < SILENT_VALIDATE_COOLDOWN_MS) {
       return {
+        success: true,
         correct: false,
+        isCorrect: false,
+        status: "skipped",
+        validation: "skipped",
         validation_skipped: true,
         next_validation_in_ms: SILENT_VALIDATE_COOLDOWN_MS - (now - last),
         explanation: "",
-        language: (await getProgress(session_id))?.language || "en"
+        message: "",
+        feedback: "",
+        successMsg: "",
+        errorMsg: "",
+        consecutive_correct: progress.consecutive_correct,
+        needed_for_next_level: Math.max(0, 7 - progress.consecutive_correct),
+        current_step: progress.current_step,
+        language: progress.language
       };
     }
     silentValidationAt.set(session_id, now);
     return {
+      success: true,
       correct: false,
+      isCorrect: false,
+      status: "skipped",
+      validation: "skipped",
       validation_skipped: true,
       next_validation_in_ms: SILENT_VALIDATE_COOLDOWN_MS,
       explanation: "",
-      language: (await getProgress(session_id))?.language || "en"
+      message: "",
+      feedback: "",
+      successMsg: "",
+      errorMsg: "",
+      consecutive_correct: progress.consecutive_correct,
+      needed_for_next_level: Math.max(0, 7 - progress.consecutive_correct),
+      current_step: progress.current_step,
+      language: progress.language
     };
   }
 
@@ -1707,27 +1732,26 @@ async function validateQuizForSession(body) {
     if (activeKey) deleteFromR2(activeKey).catch(() => {});
   }
 
-  let progress = await getProgress(session_id);
-  if (!progress) progress = { language: "en", current_step: 1, consecutive_correct: 0 };
-
   const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[progress.language] || "English";
   const gameName = current.q_type || "Quiz";
-  let isCorrect = false;
-  isCorrect = await runAIValidator(current.question, current.answer, user_answer, langName, gameName);
+  const isCorrect = await runAIValidator(current.question || "", current.answer || "", user_answer, langName, gameName);
 
-  let finalFeedback = "";
-  const selectedMessage = isCorrect ? current.success_msg : current.error_msg;
-  if (current.explanation) finalFeedback = selectedMessage ? `${selectedMessage}\n\n${current.explanation}` : current.explanation;
-  else finalFeedback = selectedMessage || "";
+  const successMsg = String(current.success_msg || "").trim();
+  const errorMsg = String(current.error_msg || "").trim();
+  const explanation = String(current.explanation || "").trim();
+  const selectedMessage = isCorrect ? successMsg : errorMsg;
+  const finalFeedback = selectedMessage && explanation ? `${selectedMessage}\n\n${explanation}` : (selectedMessage || explanation);
 
-  let new_consec = progress.consecutive_correct;
-  let new_step = progress.current_step;
+  let new_consec = Number(progress.consecutive_correct || 0);
+  let new_step = Number(progress.current_step || 1);
+  let levelUp = false;
 
   if (isCorrect) {
     new_consec += 1;
     if (new_consec >= 7) {
       new_step += 1;
       new_consec = 0;
+      levelUp = true;
     }
     await clearCurrentQuiz(session_id);
   } else {
@@ -1736,41 +1760,27 @@ async function validateQuizForSession(body) {
 
   await saveProgress(session_id, progress.language, new_step, new_consec);
 
-  if (isCorrect && new_consec === 0 && new_step > progress.current_step) {
+  if (levelUp) {
     triggerPreGeneration("level_up", new_step);
   }
 
-  const selectedFeedback = selectedMessage || "";
   return {
     success: true,
     correct: isCorrect,
     isCorrect,
     status: isCorrect ? "correct" : "incorrect",
     validation: isCorrect ? "correct" : "incorrect",
-    message: selectedFeedback,
-    feedback: selectedFeedback,
-    explanation: current.explanation || "",
-    successMsg: isCorrect ? selectedFeedback : "",
-    errorMsg: isCorrect ? "" : selectedFeedback,
+    message: selectedMessage,
+    feedback: selectedMessage,
+    explanation: finalFeedback,
+    successMsg: isCorrect ? successMsg : "",
+    errorMsg: isCorrect ? "" : errorMsg,
     consecutive_correct: new_consec,
     needed_for_next_level: Math.max(0, 7 - new_consec),
     current_step: new_step,
-    language: progress.language,
-    result: {
-      success: true,
-      correct: isCorrect,
-      isCorrect,
-      status: isCorrect ? "correct" : "incorrect",
-      message: selectedFeedback,
-      explanation: finalFeedback,
-      current_step: new_step,
-      consecutive_correct: new_consec,
-      needed_for_next_level: Math.max(0, 7 - new_consec),
-      language: progress.language
-    }
+    language: progress.language
   };
 }
-
 app.post("/quizz", async (req, res) => {
   try {
     const quizData = await buildQuizForSession(req.body || {});
