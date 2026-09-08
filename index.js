@@ -160,7 +160,7 @@ mongoose.connect(MONGO_URI, { dbName: "quiz" }).then(async () => {
 
 const baseQuizSchema = new mongoose.Schema({
   recordType: { type: String, default: "question" },
-  recordKey: { type: String },
+  recordKey: { type: String, unique: true, sparse: true },
   lang: String,
   level: { type: Number, default: 1 },
   gameSlug: String,
@@ -175,7 +175,6 @@ const baseQuizSchema = new mongoose.Schema({
   timeLimit: Number,
   gameData: mongoose.Schema.Types.Mixed
 });
-baseQuizSchema.index({ recordKey: 1 }, { unique: true, sparse: true });
 const BaseQuiz = mongoose.model("BaseQuiz", baseQuizSchema, "quiz");
 
 function getKeyFromUrl(url) {
@@ -521,7 +520,7 @@ app.post("/user-info", async (req, res) => {
     let newStep = body.level !== undefined && body.level !== null ? parseInt(body.level) : (progress ? progress.current_step : 1);
     let newConsec = body.nivo !== undefined && body.nivo !== null ? parseInt(body.nivo) : (progress ? progress.consecutive_correct : 0);
     await saveProgress(session_id, progress ? progress.language : 'en', newStep, newConsec);
-    triggerPreGeneration("level_up", newStep);
+    triggerPreGeneration("level_up", newStep, progress ? progress.language : "en");
     return res.json({ success: true, message: "User info saved successfully" });
   } catch (e) {
     logEvent("ERROR", "ROUTER", `User info save failed: ${e.message}`);
@@ -529,8 +528,13 @@ app.post("/user-info", async (req, res) => {
   }
 });
 
+function hasUsableQuizFeedback(item) {
+  return Boolean(String(item?.successMsg || "").trim() && String(item?.errorMsg || "").trim() && String(item?.explanation || "").trim());
+}
+
 async function executeMode0PureDB(randomItem) {
   if (!randomItem) throw new Error("Source item missing");
+  if (!hasUsableQuizFeedback(randomItem)) throw new Error("Stored quiz feedback incomplete");
   const parsed = {
     ...(randomItem.gameData && typeof randomItem.gameData === "object" ? randomItem.gameData : {}),
     question: randomItem.question || "",
@@ -648,7 +652,8 @@ async function executeMode3PureAIGeneration(language, langName, requestedGame = 
   const selectedGame = requestedGame ? await getGameDefinition(requestedGame) : null;
   const game = selectedGame;
   if (!game) throw new Error("Game required");
-  const result = await generateGameQuestion(game, language, level, imageUrl, gameContext, []);
+  const pureContext = `${game.name} game generation`;
+  const result = await generateGameQuestion(game, language, level, imageUrl, pureContext, []);
   return {
     parsed: result,
     randomType: result.qType || game.slug.toUpperCase(),
@@ -666,7 +671,7 @@ const builtInGames = [
     description: "Multiple choice knowledge game.",
     systemDirectives: `<system_directives name="mcq">
 You are Asistan, the MCQ game engine for Mizik.
-Create one accurate question in the requested language.
+Create one accurate question in the requested language. Language determines output language only; subject selection remains global and independent of language.
 Build 2 to 4 distinct answer options.
 Set answer to one exact option.
 Explain the verified fact briefly.
@@ -684,7 +689,7 @@ Set qType to MCQ.
     description: "Factual statement judgment game.",
     systemDirectives: `<system_directives name="true_false">
 You are Asistan, the True or False game engine for Mizik.
-Create one accurate factual statement in the requested language.
+Create one accurate factual statement in the requested language. Language determines output language only; subject selection remains global and independent of language.
 Use the two answer labels supplied by the server.
 Set answer to the correct localized label.
 Explain the verified fact briefly.
@@ -702,7 +707,7 @@ Set qType to TRUE_FALSE.
     description: "Factual missing-word game.",
     systemDirectives: `<system_directives name="fill_blank">
 You are Asistan, the Fill Blank game engine for Mizik.
-Create one accurate factual sentence in the requested language.
+Create one accurate factual sentence in the requested language. Language determines output language only; subject selection remains global and independent of language.
 Place one blank marker ____ inside the sentence.
 Set answer to the missing word or short phrase.
 Keep options as an empty array.
@@ -722,7 +727,7 @@ Set qType to FILL_BLANK.
     systemDirectives: `<system_directives name="identity_image">
 You are Asistan, the Identity Image game engine for Mizik.
 An image is supplied for visual identification.
-Identify one clear subject represented by the supplied image context.
+Identify one clear subject represented by the supplied image context. Language determines wording only; the visual subject comes from a global knowledge domain independent of language.
 Write one direct identification question in the requested language.
 Set answer to the exact intended identity.
 Explain the identifying fact briefly.
@@ -740,7 +745,7 @@ Set qType to IDENTITY_IMAGE.
     description: "Unscramble a supplied word.",
     systemDirectives: `<system_directives name="word_twist">
 You are Asistan, the Word Twist game engine for Mizik.
-Use the supplied target word as the answer.
+Use the supplied target word as the answer. Language determines explanatory text only; word selection remains independent of country and language association.
 Produce a scrambled form using the same letters.
 Set qType to WORD_TWIST.
 Explain the word briefly in the requested language.
@@ -757,7 +762,7 @@ Return one JSON object with scrambled, answer, explanation, successMsg, errorMsg
     description: "Build a word from supplied letters.",
     systemDirectives: `<system_directives name="text_twist">
 You are Asistan, the Text Twist game engine for Mizik.
-Use only the supplied letter set for the current round.
+Use only the supplied letter set for the current round. Language determines the accepted word set only; theme selection remains independent of country and language association.
 Select one valid target word in the requested language.
 Set qType to TEXT_TWIST.
 Explain the target word briefly.
@@ -774,7 +779,7 @@ Return one JSON object with letters, answer, explanation, successMsg, errorMsg, 
     description: "Tile merging puzzle game.",
     systemDirectives: `<system_directives name="2048">
 You are Asistan, the 2048 game engine for Mizik.
-Define a playable board configuration for the requested level.
+Define a playable board configuration for the requested level. Language determines explanatory text only; the puzzle configuration remains universal.
 Set qType to 2048.
 Set boardSize, startTileValues and targetValue.
 Explain the current objective briefly in the requested language.
@@ -932,7 +937,8 @@ Level: ${level}`;
 Language: ${language}
 Level: ${level}
 Game: ${game.name}
-Current context: ${gameContext || "general factual knowledge"}`;
+Current context: ${gameContext || "global general knowledge"}
+Language is an output language, not a topic restriction. Select the subject independently from language, country, region or language-speaking community.`;
   if (imageUrl) userPrompt += `\nImage URL: ${imageUrl}`;
   if (game.slug === "true_false") userPrompt += `\nLocalized choices: ${JSON.stringify(localizedTrueFalse[language] || localizedTrueFalse.en)}`;
   const response = await runAI([
@@ -958,6 +964,7 @@ function quizRecordKey({ language, level, gameSlug, question, answer }) {
 async function saveGeneratedQuizQuestion(result, game, language, level, generationMode) {
   const parsed = result?.parsed || result;
   if (!parsed || !parsed.qType) throw new Error("Generated question qType missing");
+  if (!String(parsed.successMsg || "").trim() || !String(parsed.errorMsg || "").trim() || !String(parsed.explanation || "").trim()) throw new Error("Generated question feedback incomplete");
   const normalizedGameSlug = normalizeGameSlug(game?.slug || game?.name || parsed.qType);
   const questionText = String(parsed.question || parsed.scrambled || parsed.letters || normalizedGameSlug).trim();
   const answerText = String(parsed.answer ?? "").trim();
@@ -994,7 +1001,6 @@ const PREGEN_LANGUAGES = ["ht", "fr", "en", "es"];
 const PREGEN_INTERVAL_MS = 15 * 60 * 1000;
 const PREGEN_CONCURRENCY = 4;
 let preGenerationRunning = false;
-let preGenerationModeCursor = 0;
 let quizRequestCount = 0;
 const adminGenerationLocks = new Set();
 
@@ -1031,10 +1037,7 @@ async function generateBackgroundQuestion(game, language, level, mode, source) {
 function chooseBackgroundMode(source, reason) {
   if (!source) return 3;
   if (reason === "level_up") return 1;
-  const sequence = [1, 2, 3];
-  const mode = sequence[preGenerationModeCursor % sequence.length];
-  preGenerationModeCursor += 1;
-  return mode;
+  return 1 + Math.floor(Math.random() * 3);
 }
 
 async function findSourceQuestion(language, level, gameSlug) {
@@ -1057,6 +1060,9 @@ async function findSourceQuestion(language, level, gameSlug) {
     lang: normalizedLanguage,
     level: normalizedLevel,
     recordType: { $in: [null, "question"] },
+    successMsg: { $type: "string", $ne: "" },
+    errorMsg: { $type: "string", $ne: "" },
+    explanation: { $type: "string", $ne: "" },
     $or: [
       { gameSlug: normalizedSlug },
       { gameSlug: { $exists: false }, qType },
@@ -1072,14 +1078,15 @@ async function generateOnePreGenerationTask(game, language, level, reason) {
   await generateBackgroundQuestion(game, language, level, mode, source);
 }
 
-async function runPreGenerationRound(reason = "interval", preferredLevel = null) {
+async function runPreGenerationRound(reason = "interval", preferredLevel = null, preferredLanguage = null) {
   if (preGenerationRunning) return;
   preGenerationRunning = true;
   try {
     const level = await getPreGenerationLevel(preferredLevel);
     const games = choosePreGenerationGames();
+    const languages = preferredLanguage ? [normalizeLanguage(preferredLanguage)] : PREGEN_LANGUAGES;
     const tasks = [];
-    for (const language of PREGEN_LANGUAGES) {
+    for (const language of languages) {
       for (const game of games) tasks.push({ game, language, level });
     }
     let cursor = 0;
@@ -1137,8 +1144,8 @@ async function runAdminGeneration(languages, total, level = 1) {
   return created;
 }
 
-function triggerPreGeneration(reason, preferredLevel = null) {
-  runPreGenerationRound(reason, preferredLevel).catch(error => {
+function triggerPreGeneration(reason, preferredLevel = null, preferredLanguage = null) {
+  runPreGenerationRound(reason, preferredLevel, preferredLanguage).catch(error => {
     logEvent("WARN", "PREGEN", `Background round stopped: ${error.message}`);
   });
 }
@@ -1561,7 +1568,14 @@ async function buildQuizForSession(body) {
 
   const servedRows = db.prepare("SELECT quiz_id FROM served_questions WHERE session_id = ?").all(session_id);
   const servedIds = servedRows.map(row => row.quiz_id).filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
-  const criteria = { recordType: { $in: [null, "question"] }, lang: language, level: current_step_num };
+  const criteria = {
+    recordType: { $in: [null, "question"] },
+    lang: language,
+    level: current_step_num,
+    successMsg: { $type: "string", $ne: "" },
+    errorMsg: { $type: "string", $ne: "" },
+    explanation: { $type: "string", $ne: "" }
+  };
   if (requestedGame) {
     const qType = gameFilter.slug === "true_false" ? "TRUE_FALSE" : gameFilter.slug === "fill_blank" ? "FILL_BLANK" : gameFilter.slug === "identity_image" ? "IDENTITY_IMAGE" : gameFilter.slug === "word_twist" ? "WORD_TWIST" : gameFilter.slug === "text_twist" ? "TEXT_TWIST" : gameFilter.slug === "2048" ? "2048" : "MCQ";
     criteria.$or = [{ gameSlug: gameFilter.slug }, { gameSlug: { $exists: false }, qType }, { gameSlug: null, qType }];
@@ -1739,8 +1753,9 @@ async function validateQuizForSession(body) {
   const successMsg = String(current.success_msg || "").trim();
   const errorMsg = String(current.error_msg || "").trim();
   const explanation = String(current.explanation || "").trim();
+  if (!successMsg || !errorMsg || !explanation) throw new Error("Stored quiz feedback incomplete");
   const selectedMessage = isCorrect ? successMsg : errorMsg;
-  const finalFeedback = selectedMessage && explanation ? `${selectedMessage}\n\n${explanation}` : (selectedMessage || explanation);
+  const finalFeedback = `${selectedMessage}\n\n${explanation}`;
 
   let new_consec = Number(progress.consecutive_correct || 0);
   let new_step = Number(progress.current_step || 1);
@@ -1761,7 +1776,7 @@ async function validateQuizForSession(body) {
   await saveProgress(session_id, progress.language, new_step, new_consec);
 
   if (levelUp) {
-    triggerPreGeneration("level_up", new_step);
+    triggerPreGeneration("level_up", new_step, progress.language);
   }
 
   return {
