@@ -253,7 +253,7 @@ function cleanAIResponse(raw) {
   return text;
 }
 
-async function runAI(messages, max_tokens, retries = 0, model = MAIN_AI_MODEL) {
+async function runAI(messages, max_tokens, retries = 0, model = MAIN_AI_MODEL, temperature = null) {
   const available = getAvailableCFCredential();
   if (!available) throw new Error("Cloudflare AI unavailable");
   const { cred, index } = available;
@@ -268,7 +268,7 @@ async function runAI(messages, max_tokens, retries = 0, model = MAIN_AI_MODEL) {
         "Authorization": `Bearer ${cred.token}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ messages, max_tokens }),
+      body: JSON.stringify({ messages, max_tokens, ...(Number.isFinite(Number(temperature)) ? { temperature: Number(temperature) } : {}) }),
       signal: controller ? controller.signal : undefined
     });
     const rawText = await response.text();
@@ -280,7 +280,7 @@ async function runAI(messages, max_tokens, retries = 0, model = MAIN_AI_MODEL) {
     if (isRateLimited) {
       cfCredentials[index].lockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
       if (timeout) clearTimeout(timeout);
-      if (retries + 1 < cfCredentials.length) return runAI(messages, max_tokens, retries + 1, model);
+      if (retries + 1 < cfCredentials.length) return runAI(messages, max_tokens, retries + 1, model, temperature);
       throw new Error("Cloudflare AI rate limit");
     }
     if (timeout) clearTimeout(timeout);
@@ -299,28 +299,39 @@ async function runAI(messages, max_tokens, retries = 0, model = MAIN_AI_MODEL) {
   } catch (e) {
     if (timeout) clearTimeout(timeout);
     if (retries + 1 < cfCredentials.length && /fetch failed|aborted|network|HTTP 5/i.test(String(e.message))) {
-      return runAI(messages, max_tokens, retries + 1, model);
+      return runAI(messages, max_tokens, retries + 1, model, temperature);
     }
     throw e;
   }
 }
 
+function normalizeValidationText(value) {
+  return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 async function runAIValidator(question, correctAnswer, userAnswer, language, gameName, retries = 0) {
+  const normalizedVerified = normalizeValidationText(correctAnswer);
+  const normalizedUser = normalizeValidationText(userAnswer);
+  const exactMatch = normalizedVerified && normalizedVerified === normalizedUser ? "true" : "false";
   const system = `<system_directives name="answer_validator">
 You are Asistan, the answer validation engine for Mizik.
-Evaluate the supplied user answer against the supplied verified answer and question.
-Recognize valid equivalent wording, ordinary spelling variation, number formatting, and language variation.
-Return one lowercase validation status.
+Determine whether the user answer matches the verified answer for the supplied question.
+Equivalent wording, ordinary spelling variation, accents, punctuation, number formatting, and natural language variation count as valid matches.
+An exact normalized answer match is a correct answer.
+Return exactly one lowercase status word: correct or incorrect.
 </system_directives>`;
   const user = `Question: ${question}
 Verified answer: ${correctAnswer}
 User answer: ${userAnswer}
+Normalized verified answer: ${normalizedVerified}
+Normalized user answer: ${normalizedUser}
+Exact normalized match: ${exactMatch}
 Language: ${language}
 Game: ${gameName}`;
   const result = await runAI([
     { role: "system", content: system },
     { role: "user", content: user }
-  ], 12, retries, VALIDATOR_AI_MODEL);
+  ], 8, retries, VALIDATOR_AI_MODEL, 0);
   const normalized = cleanAIResponse(result.response).toLowerCase().trim();
   try {
     const parsed = JSON.parse(normalized);
@@ -328,8 +339,17 @@ Game: ${gameName}`;
     if (candidate === "correct") return true;
     if (candidate === "incorrect") return false;
   } catch {}
-  const match = normalized.match(/\b(incorrect|correct)\b/);
+  const match = normalized.match(/\b(correct|incorrect)\b/);
   if (match) return match[1] === "correct";
+  if (exactMatch === "true") {
+    const retryResult = await runAI([
+      { role: "system", content: system },
+      { role: "user", content: `${user}\nValidation status: correct` }
+    ], 8, retries, VALIDATOR_AI_MODEL, 0);
+    const retryNormalized = cleanAIResponse(retryResult.response).toLowerCase().trim();
+    const retryMatch = retryNormalized.match(/\b(correct|incorrect)\b/);
+    if (retryMatch) return retryMatch[1] === "correct";
+  }
   throw new Error("Validator status unavailable");
 }
 
