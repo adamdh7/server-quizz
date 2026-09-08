@@ -560,29 +560,39 @@ app.get("/adamdh7=modpas/adamdh7/:lang", (req, res) => {
   return res.json({ success: true, admin: true, total_requested: 17, generation_started: started, language: rawLanguage });
 });
 
+function isAllowedAdamDh7Origin(origin) {
+  if (!origin) return true;
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase().replace(/\.$/, "");
+    return hostname === "adamdh7.org" || hostname.endsWith(".adamdh7.org");
+  } catch {
+    return false;
+  }
+}
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const authHeader = req.headers.authorization;
-  let isAllowed = false;
-  let allowedOrigin = "*";
-  if (origin && origin.endsWith(".adamdh7.org")) {
-    isAllowed = true;
-    allowedOrigin = origin;
-  } else if (authHeader === "Bearer adamdh7") {
-    isAllowed = true;
-    if (origin) {
-      allowedOrigin = origin;
-    }
-  }
+  const originAllowed = isAllowedAdamDh7Origin(origin);
+  const tokenAllowed = authHeader === "Bearer adamdh7";
+  const isAllowed = originAllowed || tokenAllowed;
+  const allowedOrigin = origin && originAllowed ? origin : "*";
+
   res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Vary", "Origin");
+
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    if (!isAllowed) return res.status(403).json({ error: "Forbidden: Origin or Token not allowed" });
+    return res.status(204).end();
   }
+
   if (!isAllowed) {
     return res.status(403).json({ error: "Forbidden: Origin or Token not allowed" });
   }
+
   next();
 });
 
@@ -657,7 +667,7 @@ async function executeMode1ImproveExisting(randomItem, langName, langCode) {
   const game = getBuiltInGameByQType(randomItem.qType) || {
     name: randomItem.qType || "Quiz",
     systemDirectives: `<system_directives name="stored_question">
-You are Asistan, the current Mizik game engine.
+You are Asistan, the current Quizzs game engine.
 Generate one question matching the supplied game type and language.
 Return question, options, answer, explanation, successMsg, errorMsg, timeLimit and qType as a JSON object.
 </system_directives>`
@@ -697,7 +707,7 @@ async function executeMode2CreateSimilar(randomItem, langName, langCode) {
   const game = getBuiltInGameByQType(randomItem.qType) || {
     name: randomItem.qType || "Quiz",
     systemDirectives: `<system_directives name="stored_question">
-You are Asistan, the current Mizik game engine.
+You are Asistan, the current Quizzs game engine.
 Generate one question matching the supplied game type and language.
 Return question, options, answer, explanation, successMsg, errorMsg, timeLimit and qType as a JSON object.
 </system_directives>`
@@ -754,7 +764,7 @@ const builtInGames = [
     name: "MCQ",
     description: "Multiple choice knowledge game.",
     systemDirectives: `<system_directives name="mcq">
-You are Asistan, the MCQ game engine for Mizik.
+You are Asistan, the MCQ game engine for Quizzs.
 Create one accurate question in the requested language. Language determines output language only; subject selection remains global and independent of language.
 Build 2 to 4 distinct answer options.
 Set answer to one exact option.
@@ -772,7 +782,7 @@ Set qType to MCQ.
     name: "True or False",
     description: "Factual statement judgment game.",
     systemDirectives: `<system_directives name="true_false">
-You are Asistan, the True or False game engine for Mizik.
+You are Asistan, the True or False game engine for Quizzs.
 Create one accurate factual statement in the requested language. Language determines output language only; subject selection remains global and independent of language.
 Use the two answer labels supplied by the server.
 Set answer to the correct localized label.
@@ -790,7 +800,7 @@ Set qType to TRUE_FALSE.
     name: "Fill Blank",
     description: "Factual missing-word game.",
     systemDirectives: `<system_directives name="fill_blank">
-You are Asistan, the Fill Blank game engine for Mizik.
+You are Asistan, the Fill Blank game engine for Quizzs.
 Create one accurate factual sentence in the requested language. Language determines output language only; subject selection remains global and independent of language.
 Place one blank marker ____ inside the sentence.
 Set answer to the missing word or short phrase.
@@ -809,7 +819,7 @@ Set qType to FILL_BLANK.
     name: "Identity Image",
     description: "Visual identification game.",
     systemDirectives: `<system_directives name="identity_image">
-You are Asistan, the Identity Image game engine for Mizik.
+You are Asistan, the Identity Image game engine for Quizzs.
 An image is supplied for visual identification.
 Identify one clear subject represented by the supplied image context. Language determines wording only; the visual subject comes from a global knowledge domain independent of language.
 Write one direct identification question in the requested language.
@@ -828,7 +838,7 @@ Set qType to IDENTITY_IMAGE.
     name: "Word Twist",
     description: "Unscramble a supplied word.",
     systemDirectives: `<system_directives name="word_twist">
-You are Asistan, the Word Twist game engine for Mizik.
+You are Asistan, the Word Twist game engine for Quizzs.
 Use the supplied target word as the answer. Language determines explanatory text only; word selection remains independent of country and language association.
 Produce a scrambled form using the same letters.
 Set qType to WORD_TWIST.
@@ -845,7 +855,7 @@ Return one JSON object with scrambled, answer, explanation, successMsg, errorMsg
     name: "Text Twist",
     description: "Build a word from supplied letters.",
     systemDirectives: `<system_directives name="text_twist">
-You are Asistan, the Text Twist game engine for Mizik.
+You are Asistan, the Text Twist game engine for Quizzs.
 Use only the supplied letter set for the current round. Language determines the accepted word set only; theme selection remains independent of country and language association.
 Select one valid target word in the requested language.
 Set qType to TEXT_TWIST.
@@ -862,7 +872,7 @@ Return one JSON object with letters, answer, explanation, successMsg, errorMsg, 
     name: "2048",
     description: "Tile merging puzzle game.",
     systemDirectives: `<system_directives name="2048">
-You are Asistan, the 2048 game engine for Mizik.
+You are Asistan, the 2048 game engine for Quizzs.
 Define a playable board configuration for the requested level. Language determines explanatory text only; the puzzle configuration remains universal.
 Set qType to 2048.
 Set boardSize, startTileValues and targetValue.
@@ -1581,7 +1591,7 @@ async function generateGameHelp(session) {
   if (!game) throw new Error("Game not found");
   const questionData = session.state.questionPayload || {};
   const system = `<system_directives name="${normalizeGameSlug(game.name)}_help">
-You are Asistan, the hint engine for the current Mizik game.
+You are Asistan, the hint engine for the current Quizzs game.
 Help the player reach the stored correct answer through a progressively useful clue.
 The final answer remains hidden.
 Return a raw JSON object containing hint, hintType, nextHintAvailableInMs.
@@ -2449,7 +2459,7 @@ httpServer.on("upgrade", (request, socket, head) => {
   const authHeader = request.headers.authorization || "";
   const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
   const token = url.searchParams.get("token") || "";
-  const authorized = (origin && origin.endsWith(".adamdh7.org")) || authHeader === "Bearer adamdh7" || token === "adamdh7";
+  const authorized = isAllowedAdamDh7Origin(origin) || authHeader === "Bearer adamdh7" || token === "adamdh7";
   if (!authorized) {
     socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
     socket.destroy();
