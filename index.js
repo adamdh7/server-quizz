@@ -62,8 +62,8 @@ const GAME_TTL_MS = 7 * 60 * 1000;
 const SILENT_VALIDATE_COOLDOWN_MS = 17 * 1000;
 const MAIN_AI_MODEL = "@cf/zai-org/glm-4.7-flash";
 const VALIDATOR_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
-const PREGEN_INITIAL_PER_GAME = 1;
-const PREGEN_TARGET_PER_GAME = 2;
+const PREGEN_INITIAL_PER_GAME = 2;
+const PREGEN_TARGET_PER_GAME = 3;
 const PREGEN_INTERVAL_MS = 15 * 60 * 1000;
 const PREGEN_CONCURRENCY = 2;
 const wsClients = new Map();
@@ -1601,7 +1601,6 @@ async function buildQuizForSession(body) {
 
   const current_step_num = Math.max(1, Number(progress.current_step) || 1);
   const language = normalizeLanguage(progress.language);
-  runPreGenerationRound("language", false, language, current_step_num).catch(() => {});
   const requestedGame = body.game?.trim();
   let gameFilter = null;
   if (requestedGame) {
@@ -1694,8 +1693,31 @@ async function buildQuizForSession(body) {
   if (parsed.startTileValues) quizData.startTileValues = parsed.startTileValues;
   if (parsed.targetValue) quizData.targetValue = parsed.targetValue;
   if (requestedGame) quizData.game = gameFilter.slug;
-
-  fillQuestionPool(gameFilter || getBuiltInGameByQType(result.randomType) || builtInGames[0], language, current_step_num, PREGEN_TARGET_PER_GAME, "served").catch(() => {});
+  quizData.q_type = result.randomType;
+  quizData.quiz_type = result.randomType;
+  quizData.qType = result.randomType;
+  quizData.game_slug = gameFilter?.slug || getBuiltInGameByQType(result.randomType)?.slug || null;
+  quizData.gameSlug = quizData.game_slug;
+  quizData.imageUrl = imgUrl;
+  quizData.choices = safeOptions;
+  quizData.data = {
+    type: quizData.type,
+    q_type: quizData.q_type,
+    quiz_type: quizData.quiz_type,
+    game: quizData.game_slug,
+    question: quizData.question,
+    options: safeOptions,
+    image_url: imgUrl,
+    scrambled: parsed.scrambled || null,
+    letters: parsed.letters || null,
+    boardSize: parsed.boardSize || null,
+    startTileValues: Array.isArray(parsed.startTileValues) ? parsed.startTileValues : null,
+    targetValue: parsed.targetValue || null,
+    current_step: current_step_num,
+    consecutive_correct: progress.consecutive_correct,
+    needed_for_next_level: Math.max(0, 7 - progress.consecutive_correct),
+    language
+  };
   return quizData;
 }
 
@@ -1746,9 +1768,9 @@ async function validateQuizForSession(body) {
   isCorrect = await runAIValidator(current.question, current.answer, user_answer, langName, gameName);
 
   let finalFeedback = "";
-  const baseMessage = isCorrect ? current.success_msg : current.error_msg;
-  if (current.explanation) finalFeedback = baseMessage ? `${baseMessage}\n\n${current.explanation}` : current.explanation;
-  else finalFeedback = baseMessage || "";
+  const selectedMessage = isCorrect ? current.success_msg : current.error_msg;
+  if (current.explanation) finalFeedback = selectedMessage ? `${selectedMessage}\n\n${current.explanation}` : current.explanation;
+  else finalFeedback = selectedMessage || "";
 
   let new_consec = progress.consecutive_correct;
   let new_step = progress.current_step;
@@ -1770,15 +1792,33 @@ async function validateQuizForSession(body) {
     runPreGenerationRound("level_up", false, progress.language, new_step).catch(() => {});
   }
 
+  const selectedFeedback = selectedMessage || "";
   return {
+    success: true,
     correct: isCorrect,
+    isCorrect,
+    status: isCorrect ? "correct" : "incorrect",
+    message: selectedFeedback,
+    feedback: selectedFeedback,
     explanation: finalFeedback,
-    successMsg: current.success_msg || "",
-    errorMsg: current.error_msg || "",
+    successMsg: isCorrect ? selectedFeedback : "",
+    errorMsg: isCorrect ? "" : selectedFeedback,
     consecutive_correct: new_consec,
     needed_for_next_level: Math.max(0, 7 - new_consec),
     current_step: new_step,
-    language: progress.language
+    language: progress.language,
+    result: {
+      success: true,
+      correct: isCorrect,
+      isCorrect,
+      status: isCorrect ? "correct" : "incorrect",
+      message: selectedFeedback,
+      explanation: finalFeedback,
+      current_step: new_step,
+      consecutive_correct: new_consec,
+      needed_for_next_level: Math.max(0, 7 - new_consec),
+      language: progress.language
+    }
   };
 }
 
@@ -1790,15 +1830,20 @@ app.post("/quizz", async (req, res) => {
     const sessionId = req.body?.session_id || "";
     const progress = sessionId ? await getProgress(sessionId).catch(() => null) : null;
     const language = normalizeLanguage(req.body?.lang || progress?.language || "en");
+    const message = localizedQuizErrors[language] || localizedQuizErrors.en;
     return res.status(503).json({
       success: false,
       type: null,
+      q_type: null,
+      quiz_type: null,
       question: null,
       options: [],
       image_url: null,
       explanation: "",
+      message,
+      feedback: message,
       successMsg: "",
-      errorMsg: localizedQuizErrors[language] || localizedQuizErrors.en,
+      errorMsg: message,
       language,
       preparing: true,
       retryable: true,
@@ -1814,11 +1859,16 @@ app.post("/validate", async (req, res) => {
     const sessionId = req.body?.session_id || "";
     const progress = sessionId ? await getProgress(sessionId).catch(() => null) : null;
     const language = normalizeLanguage(req.body?.lang || progress?.language || "en");
+    const message = localizedQuizErrors[language] || localizedQuizErrors.en;
     return res.status(422).json({
+      success: false,
       correct: false,
+      status: "error",
+      message,
+      feedback: message,
       explanation: "",
       successMsg: "",
-      errorMsg: localizedQuizErrors[language] || localizedQuizErrors.en,
+      errorMsg: message,
       consecutive_correct: progress?.consecutive_correct || 0,
       needed_for_next_level: Math.max(0, 7 - (progress?.consecutive_correct || 0)),
       current_step: progress?.current_step || 1,
