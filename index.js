@@ -421,6 +421,51 @@ async function getCurrentQuiz(sessionId) {
   return db.prepare("SELECT * FROM current_quiz WHERE session_id = ?").get(sessionId);
 }
 
+async function hydrateCurrentQuizFeedback(sessionId, current, language) {
+  if (!current) return null;
+  const currentSuccess = String(current.success_msg || "").trim();
+  const currentError = String(current.error_msg || "").trim();
+  const currentExplanation = String(current.explanation || "").trim();
+  if (currentSuccess && currentError && currentExplanation) return current;
+
+  const qTypeMap = {
+    MCQ: "MCQ",
+    TRUE_FALSE: "TRUE_FALSE",
+    FILL_BLANK: "FILL_BLANK",
+    IDENTITY_IMAGE: "IDENTITY_IMAGE",
+    WORD_TWIST: "WORD_TWIST",
+    TEXT_TWIST: "TEXT_TWIST",
+    "2048": "2048"
+  };
+  const filters = [];
+  const base = { lang: normalizeLanguage(language || "en") };
+  if (current.question) filters.push({ ...base, question: current.question, answer: current.answer || undefined });
+  if (current.question) filters.push({ ...base, question: current.question });
+  if (current.answer) filters.push({ ...base, answer: current.answer, qType: qTypeMap[String(current.q_type || "").toUpperCase()] || current.q_type || undefined });
+
+  let source = null;
+  for (const filter of filters) {
+    const cleanFilter = Object.fromEntries(Object.entries(filter).filter(([, value]) => value !== undefined && value !== null && value !== ""));
+    source = await BaseQuiz.findOne({
+      ...cleanFilter,
+      successMsg: { $type: "string", $ne: "" },
+      errorMsg: { $type: "string", $ne: "" },
+      explanation: { $type: "string", $ne: "" }
+    }).lean().catch(() => null);
+    if (source) break;
+  }
+
+  if (!source) return current;
+
+  current.success_msg = String(source.successMsg || current.success_msg || "").trim();
+  current.error_msg = String(source.errorMsg || current.error_msg || "").trim();
+  current.explanation = String(source.explanation || current.explanation || "").trim();
+  if (!current.answer && source.answer !== undefined && source.answer !== null) current.answer = String(source.answer);
+  if (!current.q_type && source.qType) current.q_type = source.qType;
+  await saveCurrentQuiz(sessionId, current.q_type || "MCQ", current.question || source.question || "", current.options || "[]", current.image_url || source.imageUrl || null, current.answer || source.answer || "", current.explanation, current.success_msg, current.error_msg);
+  return current;
+}
+
 async function saveCurrentQuiz(sessionId, qType, question, optionsStr, imageUrl, answer, explanation, success_msg, error_msg) {
   db.prepare("REPLACE INTO current_quiz (session_id, q_type, question, options, image_url, answer, explanation, success_msg, error_msg) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(sessionId, qType, question, optionsStr, imageUrl, answer, explanation, success_msg, error_msg);
 }
@@ -1689,7 +1734,7 @@ async function validateQuizForSession(body) {
   const silent = Boolean(body.silent);
   if (!session_id) throw new Error("session_id required");
 
-  const current = await getCurrentQuiz(session_id);
+  let current = await getCurrentQuiz(session_id);
   if (!current) throw new Error("No active quiz");
 
   let progress = await getProgress(session_id);
@@ -1746,6 +1791,8 @@ async function validateQuizForSession(body) {
     if (activeKey) deleteFromR2(activeKey).catch(() => {});
   }
 
+  current = await hydrateCurrentQuizFeedback(session_id, current, progress.language);
+
   const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[progress.language] || "English";
   const gameName = current.q_type || "Quiz";
   const isCorrect = await runAIValidator(current.question || "", current.answer || "", user_answer, langName, gameName);
@@ -1753,10 +1800,9 @@ async function validateQuizForSession(body) {
   const successMsg = String(current.success_msg || "").trim();
   const errorMsg = String(current.error_msg || "").trim();
   const explanation = String(current.explanation || "").trim();
-  if (!successMsg || !errorMsg || !explanation) throw new Error("Stored quiz feedback incomplete");
   const selectedMessage = isCorrect ? successMsg : errorMsg;
-  const finalFeedback = `${selectedMessage}\n\n${explanation}`;
-
+  const finalFeedback = selectedMessage && explanation ? `${selectedMessage}\n\n${explanation}` : (selectedMessage || explanation);
+  if (!finalFeedback) throw new Error("Stored quiz feedback unavailable");
   let new_consec = Number(progress.consecutive_correct || 0);
   let new_step = Number(progress.current_step || 1);
   let levelUp = false;
