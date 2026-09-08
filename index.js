@@ -1471,7 +1471,7 @@ async function advanceGameTurn(session) {
   return await loadGameSession(session.gameId);
 }
 
-function passSameQuestionToOtherPlayer(session) {
+async function passSameQuestionToOtherPlayer(session) {
   if (session.players.length > 1) {
     session.state.turnIndex = (session.state.turnIndex + 1) % session.players.length;
     session.state.askedTo = session.players[session.state.turnIndex];
@@ -1493,7 +1493,7 @@ async function validateGameAnswer(session, tfid, answer) {
   const timeLimit = Number(session.state.timeLimit || 0);
 
   if (timeLimit > 0 && elapsedMs > timeLimit * 1000) {
-    const nextSession = passSameQuestionToOtherPlayer(session);
+    const nextSession = await passSameQuestionToOtherPlayer(session);
     return { correct: false, timedOut: true, completed: false, session: nextSession };
   }
 
@@ -1535,7 +1535,7 @@ async function validateGameAnswer(session, tfid, answer) {
     return { correct: true, completed: false, session: await loadGameSession(session.gameId) };
   }
 
-  const nextSession = passSameQuestionToOtherPlayer(session);
+  const nextSession = await passSameQuestionToOtherPlayer(session);
   nextSession.state.lastResult = {
     correct: false,
     player: tfid,
