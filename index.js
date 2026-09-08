@@ -62,13 +62,8 @@ const GAME_TTL_MS = 7 * 60 * 1000;
 const SILENT_VALIDATE_COOLDOWN_MS = 17 * 1000;
 const MAIN_AI_MODEL = "@cf/zai-org/glm-4.7-flash";
 const VALIDATOR_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
-const PREGEN_INITIAL_PER_GAME = 2;
-const PREGEN_TARGET_PER_GAME = 3;
-const PREGEN_INTERVAL_MS = 15 * 60 * 1000;
-const PREGEN_CONCURRENCY = 2;
 const wsClients = new Map();
 const silentValidationAt = new Map();
-let preGenerationRunning = false;
 
 const invitationVariants = {
   en: [
@@ -157,7 +152,6 @@ const s3 = new S3Client({
 });
 
 mongoose.connect(MONGO_URI, { dbName: "quiz" }).then(async () => {
-  await migrateLegacyGameDefinitions();
   logEvent("SUCCESS", "DATABASE", "Connected to MongoDB successfully");
   startBackgroundPreGeneration();
 }).catch(e => {
@@ -183,54 +177,6 @@ const baseQuizSchema = new mongoose.Schema({
 });
 baseQuizSchema.index({ recordKey: 1 }, { unique: true, sparse: true });
 const BaseQuiz = mongoose.model("BaseQuiz", baseQuizSchema, "quiz");
-
-const gameDefinitionSchema = new mongoose.Schema({
-  recordType: { type: String, default: "game" },
-  recordKey: { type: String, index: true },
-  slug: String,
-  name: String,
-  description: String,
-  systemDirectives: String,
-  soloPoints: { type: Number, default: 1 },
-  modes: [String]
-}, { collection: "quiz" });
-gameDefinitionSchema.index({ recordKey: 1 }, { unique: true, sparse: true });
-const GameDefinition = mongoose.model("GameDefinition", gameDefinitionSchema, "quiz");
-
-const progressSchema = new mongoose.Schema({ sessionId: { type: String, unique: true }, language: String, currentStep: Number, consecutiveCorrect: Number }, { collection: "progression" });
-const Progress = mongoose.model("Progress", progressSchema);
-
-const userSchema = new mongoose.Schema({ sessionId: { type: String, unique: true }, data: String }, { collection: "userinfo" });
-const UserInfo = mongoose.model("UserInfo", userSchema);
-
-async function migrateLegacyGameDefinitions() {
-  try {
-    const database = mongoose.connection.db;
-    const collections = await database.listCollections({ name: "game_definitions" }).toArray();
-    if (!collections.length) return;
-    const legacy = database.collection("game_definitions");
-    const legacyGames = await legacy.find({}).toArray();
-    for (const game of legacyGames) {
-      const slug = normalizeGameSlug(game.slug || game.name);
-      if (!slug || !game.systemDirectives) continue;
-      await GameDefinition.findOneAndUpdate(
-        { recordType: "game", recordKey: `game:${slug}` },
-        {
-          recordType: "game",
-          recordKey: `game:${slug}`,
-          slug,
-          name: String(game.name || slug),
-          description: String(game.description || ""),
-          systemDirectives: String(game.systemDirectives),
-          soloPoints: Number(game.soloPoints) || 1,
-          modes: Array.isArray(game.modes) && game.modes.length ? game.modes : ["solo", "multi"]
-        },
-        { upsert: true, setDefaultsOnInsert: true }
-      );
-    }
-    await legacy.drop();
-  } catch {}
-}
 
 function getKeyFromUrl(url) {
   if (!url) return null;
@@ -362,9 +308,9 @@ async function runAI(messages, max_tokens, retries = 0, model = MAIN_AI_MODEL) {
 async function runAIValidator(question, correctAnswer, userAnswer, language, gameName, retries = 0) {
   const system = `<system_directives name="answer_validator">
 You are Asistan, the answer validation engine for Mizik.
-Assess the supplied user answer against the supplied question and verified answer.
-Interpret equivalent wording, ordinary spelling variation, number formatting, and language variation.
-Return exactly one lowercase status word: correct or incorrect.
+Evaluate the supplied user answer against the supplied verified answer and question.
+Recognize valid equivalent wording, ordinary spelling variation, number formatting, and language variation.
+Return one lowercase validation status.
 </system_directives>`;
   const user = `Question: ${question}
 Verified answer: ${correctAnswer}
@@ -374,11 +320,15 @@ Game: ${gameName}`;
   const result = await runAI([
     { role: "system", content: system },
     { role: "user", content: user }
-  ], 20, retries, VALIDATOR_AI_MODEL);
+  ], 12, retries, VALIDATOR_AI_MODEL);
   const normalized = cleanAIResponse(result.response).toLowerCase().trim();
-  if (normalized === "correct") return true;
-  if (normalized === "incorrect") return false;
-  const match = normalized.match(/^(correct|incorrect)$/);
+  try {
+    const parsed = JSON.parse(normalized);
+    const candidate = String(parsed.status || parsed.validation || parsed.result || "").toLowerCase().trim();
+    if (candidate === "correct") return true;
+    if (candidate === "incorrect") return false;
+  } catch {}
+  const match = normalized.match(/\b(incorrect|correct)\b/);
   if (match) return match[1] === "correct";
   throw new Error("Validator status unavailable");
 }
@@ -526,7 +476,7 @@ app.post("/user-info", async (req, res) => {
     let newStep = body.level !== undefined && body.level !== null ? parseInt(body.level) : (progress ? progress.current_step : 1);
     let newConsec = body.nivo !== undefined && body.nivo !== null ? parseInt(body.nivo) : (progress ? progress.consecutive_correct : 0);
     await saveProgress(session_id, progress ? progress.language : 'en', newStep, newConsec);
-    runPreGenerationRound("language", false, progress ? progress.language : 'en', newStep).catch(() => {});
+    triggerPreGeneration("level_up", newStep);
     return res.json({ success: true, message: "User info saved successfully" });
   } catch (e) {
     logEvent("ERROR", "ROUTER", `User info save failed: ${e.message}`);
@@ -810,21 +760,11 @@ async function getGameDefinition(slugOrName) {
   if (!slugOrName) return null;
   const text = String(slugOrName).trim();
   const normalized = normalizeGameSlug(text);
-  const built = builtInGames.find(game => game.slug === normalized || game.name.toLowerCase() === text.toLowerCase());
-  if (built) return built;
-  const stored = await GameDefinition.findOne({
-    recordType: "game",
-    $or: [{ slug: normalized }, { name: new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") }]
-  }).lean().catch(() => null);
-  return stored || null;
+  return builtInGames.find(game => game.slug === normalized || game.name.toLowerCase() === text.toLowerCase()) || null;
 }
 
 async function listGameDefinitions() {
-  const stored = await GameDefinition.find({ recordType: "game" }).sort({ name: 1 }).lean().catch(() => []);
-  const map = new Map();
-  for (const game of builtInGames) map.set(game.slug, game);
-  for (const game of stored) map.set(game.slug, game);
-  return [...map.values()].map(game => ({
+  return builtInGames.map(game => ({
     slug: game.slug,
     name: game.name,
     description: game.description,
@@ -1004,180 +944,97 @@ async function saveGeneratedQuizQuestion(result, game, language, level, generati
   return document;
 }
 
-async function getGenerationLanguagesAndLevels() {
-  const languages = await Progress.distinct("language").catch(() => []);
-  const levels = await Progress.distinct("currentStep").catch(() => []);
-  const normalizedLanguages = [...new Set(["en", ...languages.map(normalizeLanguage)])];
-  const numericLevels = [...new Set(levels.map(value => Math.max(1, Number(value) || 1)))].sort((a, b) => a - b);
-  const highestLevel = numericLevels.length ? numericLevels[numericLevels.length - 1] : 1;
-  const normalizedLevels = highestLevel > 1 ? [1, highestLevel] : [1];
-  return { languages: normalizedLanguages, levels: normalizedLevels };
-}
+const PREGEN_BATCH_GAMES = 7;
+const PREGEN_LANGUAGES = ["ht", "fr", "en", "es"];
+const PREGEN_INTERVAL_MS = 15 * 60 * 1000;
+const PREGEN_CONCURRENCY = 4;
+let preGenerationRunning = false;
+let preGenerationModeCursor = 0;
+let quizRequestCount = 0;
 
-async function countQuestionsForGame(language, level, gameSlug) {
-  const normalizedSlug = normalizeGameSlug(gameSlug);
-  const game = builtInGames.find(item => item.slug === normalizedSlug);
-  const qTypes = game ? [game.slug === "true_false" ? "TRUE_FALSE" : game.slug === "fill_blank" ? "FILL_BLANK" : game.slug === "identity_image" ? "IDENTITY_IMAGE" : game.slug === "word_twist" ? "WORD_TWIST" : game.slug === "text_twist" ? "TEXT_TWIST" : game.slug === "2048" ? "2048" : "MCQ"] : [];
-  const criteria = {
-    recordType: { $in: [null, "question"] },
-    lang: language,
-    level: Number(level) || 1,
-    $or: [{ gameSlug: normalizedSlug }, ...(qTypes.length ? [{ qType: { $in: qTypes }, gameSlug: { $exists: false } }, { qType: { $in: qTypes }, gameSlug: null }] : [])]
-  };
-  return BaseQuiz.countDocuments(criteria).catch(() => 0);
-}
-
-async function findSourceQuestion(language, level, gameSlug) {
-  const normalizedSlug = normalizeGameSlug(gameSlug);
-  const game = builtInGames.find(item => item.slug === normalizedSlug);
-  const qTypes = game ? [game.slug === "true_false" ? "TRUE_FALSE" : game.slug === "fill_blank" ? "FILL_BLANK" : game.slug === "identity_image" ? "IDENTITY_IMAGE" : game.slug === "word_twist" ? "WORD_TWIST" : game.slug === "text_twist" ? "TEXT_TWIST" : game.slug === "2048" ? "2048" : "MCQ"] : [];
-  const match = {
-    recordType: { $in: [null, "question"] },
-    lang: language,
-    level: Number(level) || 1,
-    $or: [{ gameSlug: normalizedSlug }, ...(qTypes.length ? [{ qType: { $in: qTypes }, gameSlug: { $exists: false } }, { qType: { $in: qTypes }, gameSlug: null }] : [])]
-  };
-  return BaseQuiz.findOne(match).sort({ _id: 1 }).lean().catch(() => null);
-}
-
-async function loadStoredGameQuestion(game, language, level, usedIds = []) {
-  if (!game) throw new Error("Game not found");
-  const normalizedSlug = normalizeGameSlug(game.slug);
-  const qTypes = game.slug === "true_false" ? ["TRUE_FALSE"] : game.slug === "fill_blank" ? ["FILL_BLANK"] : game.slug === "identity_image" ? ["IDENTITY_IMAGE"] : game.slug === "word_twist" ? ["WORD_TWIST"] : game.slug === "text_twist" ? ["TEXT_TWIST"] : game.slug === "2048" ? ["2048"] : ["MCQ"];
-  const match = {
-    recordType: { $in: [null, "question"] },
-    lang: normalizeLanguage(language),
-    level: Math.max(1, Number(level) || 1),
-    $or: [{ gameSlug: normalizedSlug }, { gameSlug: { $exists: false }, qType: { $in: qTypes } }, { gameSlug: null, qType: { $in: qTypes } }]
-  };
-  if (Array.isArray(usedIds) && usedIds.length > 0) match._id = { $nin: usedIds.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id)) };
-  let rows = await BaseQuiz.aggregate([{ $match: match }, { $sample: { size: 1 } }]).catch(() => []);
-  if (!rows.length && match._id) {
-    delete match._id;
-    rows = await BaseQuiz.aggregate([{ $match: match }, { $sample: { size: 1 } }]).catch(() => []);
+function choosePreGenerationGames() {
+  const pool = [...builtInGames];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  if (!rows.length) throw new Error("Game question pool is being prepared");
-  return rows[0];
+  return pool.slice(0, Math.min(PREGEN_BATCH_GAMES, pool.length));
+}
+
+async function getPreGenerationLevel(preferredLevel = null) {
+  if (preferredLevel !== null && preferredLevel !== undefined) return Math.max(1, Number(preferredLevel) || 1);
+  const levels = await Progress.distinct("currentStep").catch(() => []);
+  const validLevels = levels.map(value => Math.max(1, Number(value) || 1)).filter(Number.isFinite);
+  return validLevels.length ? Math.max(...validLevels) : 1;
 }
 
 async function generateBackgroundQuestion(game, language, level, mode, source) {
   const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[language] || "English";
   let result;
-  if (mode === 1) {
+  if (mode === 1 && source) {
     result = await executeMode1ImproveExisting(source, langName, language);
-  } else if (mode === 2) {
+  } else if (mode === 2 && source) {
     result = await executeMode2CreateSimilar(source, langName, language);
   } else {
     result = await executeMode3PureAIGeneration(language, langName, game.slug, null, "", level);
+    mode = 3;
   }
   await saveGeneratedQuizQuestion(result, game, language, level, `MODE_${mode}`);
 }
 
-async function fillQuestionPool(game, language, level, target, reason = "interval") {
-  if (!game) return;
-  const normalizedLevel = Math.max(1, Number(level) || 1);
-  let count = await countQuestionsForGame(language, normalizedLevel, game.slug);
-  if (count >= target) return;
-  let attempts = 0;
-  const maxAttempts = Math.max(2, (target - count) * 2 + 2);
-  while (count < target && attempts < maxAttempts) {
-    attempts += 1;
-    const source = await findSourceQuestion(language, normalizedLevel, game.slug);
-    const mode = source ? (reason === "level_up" ? 1 : 2) : 3;
-    try {
-      await generateBackgroundQuestion(game, language, normalizedLevel, mode, source);
-      const nextCount = await countQuestionsForGame(language, normalizedLevel, game.slug);
-      if (nextCount <= count && attempts >= maxAttempts) break;
-      count = nextCount;
-    } catch (error) {
-      logEvent("WARN", "PREGEN", `Background generation failed for ${game.slug}/${language}/level-${normalizedLevel}: ${error.message}`);
-      break;
-    }
-  }
+function chooseBackgroundMode(source, reason) {
+  if (!source) return 3;
+  if (reason === "level_up") return 1;
+  const sequence = [1, 2, 3];
+  const mode = sequence[preGenerationModeCursor % sequence.length];
+  preGenerationModeCursor += 1;
+  return mode;
 }
 
-async function runPreGenerationRound(reason = "interval", initial = false, specificLanguage = null, specificLevel = null) {
+async function generateOnePreGenerationTask(game, language, level, reason) {
+  const source = await findSourceQuestion(language, level, game.slug);
+  const mode = chooseBackgroundMode(source, reason);
+  await generateBackgroundQuestion(game, language, level, mode, source);
+}
+
+async function runPreGenerationRound(reason = "interval", preferredLevel = null) {
   if (preGenerationRunning) return;
   preGenerationRunning = true;
   try {
-    const targets = specificLanguage && specificLevel ? { languages: [normalizeLanguage(specificLanguage)], levels: [Math.max(1, Number(specificLevel) || 1)] } : await getGenerationLanguagesAndLevels();
-    const targetPerGame = initial ? PREGEN_INITIAL_PER_GAME : PREGEN_TARGET_PER_GAME;
+    const level = await getPreGenerationLevel(preferredLevel);
+    const games = choosePreGenerationGames();
     const tasks = [];
-    for (const language of targets.languages) {
-      for (const level of targets.levels) {
-        for (const game of builtInGames) {
-          tasks.push({ game, language, level, target: targetPerGame });
-        }
-      }
+    for (const language of PREGEN_LANGUAGES) {
+      for (const game of games) tasks.push({ game, language, level });
     }
     let cursor = 0;
     const worker = async () => {
-      while (cursor < tasks.length) {
-        const task = tasks[cursor++];
-        await fillQuestionPool(task.game, task.language, task.level, task.target, reason);
+      while (true) {
+        const index = cursor++;
+        if (index >= tasks.length) return;
+        const task = tasks[index];
+        try {
+          await generateOnePreGenerationTask(task.game, task.language, task.level, reason);
+        } catch (error) {
+          logEvent("WARN", "PREGEN", `Generation failed for ${task.game.slug}/${task.language}/level-${task.level}: ${error.message}`);
+        }
       }
     };
-    await Promise.all(Array.from({ length: Math.min(PREGEN_CONCURRENCY, tasks.length) }, () => worker()));
+    await Promise.all(Array.from({ length: Math.min(PREGEN_CONCURRENCY, tasks.length) }, worker));
   } finally {
     preGenerationRunning = false;
   }
 }
 
-function startBackgroundPreGeneration() {
-  setTimeout(() => {
-    runPreGenerationRound("startup", true).catch(() => {});
-  }, 1000);
-  setInterval(() => {
-    runPreGenerationRound("interval", false).catch(() => {});
-  }, PREGEN_INTERVAL_MS);
+function triggerPreGeneration(reason, preferredLevel = null) {
+  runPreGenerationRound(reason, preferredLevel).catch(error => {
+    logEvent("WARN", "PREGEN", `Background round stopped: ${error.message}`);
+  });
 }
 
-async function generateAndSaveGame(gameInput) {
-  const name = String(gameInput.name || "").trim();
-  const description = String(gameInput.description || "").trim();
-  const language = normalizeLanguage(gameInput.language || "en");
-  const baseRules = String(gameInput.rules || "").trim();
-  if (!name || !description) throw new Error("name and description required");
-  const slug = normalizeGameSlug(gameInput.slug || name);
-  const generatorSystem = `<system_directives name="game_generator">
-You are Asistan, the reusable game-definition engine for Mizik.
-Create one durable game definition from the supplied title, description and rules.
-Produce one English systemDirectives block dedicated to that game.
-The directive identifies the game, its objective, its exact JSON fields, answer semantics, explanation field, feedback fields and timing field.
-The directive is concise, specific and reusable.
-Return one JSON object with slug, name, description, systemDirectives, soloPoints and modes.
-</system_directives>`;
-  const prompt = `Game title: ${name}
-Description: ${description}
-Rules: ${baseRules}
-Language context: ${language}`;
-  const response = await runAI([
-    { role: "system", content: generatorSystem },
-    { role: "user", content: prompt }
-  ], 1000);
-  const generated = parseAIJsonResponse(response.response, ["slug", "name", "description", "systemDirectives", "soloPoints", "modes"]);
-  generated.slug = normalizeGameSlug(generated.slug || slug) || slug;
-  generated.name = String(generated.name || name).trim();
-  generated.description = String(generated.description || description).trim();
-  generated.systemDirectives = String(generated.systemDirectives || "").trim();
-  generated.soloPoints = Math.max(1, Math.min(10, Number(generated.soloPoints) || 1));
-  generated.modes = Array.isArray(generated.modes) && generated.modes.length ? generated.modes : ["solo", "multi"];
-  if (!/^<system_directives\b[\s\S]*<\/system_directives>$/.test(generated.systemDirectives)) throw new Error("Generated game prompt invalid");
-  const saved = await GameDefinition.findOneAndUpdate(
-    { recordType: "game", recordKey: `game:${generated.slug}` },
-    {
-      recordType: "game",
-      recordKey: `game:${generated.slug}`,
-      slug: generated.slug,
-      name: generated.name,
-      description: generated.description,
-      systemDirectives: generated.systemDirectives,
-      soloPoints: generated.soloPoints,
-      modes: generated.modes
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
-  return saved.toObject();
+function startBackgroundPreGeneration() {
+  setTimeout(() => triggerPreGeneration("startup", 1), 1000);
+  setInterval(() => triggerPreGeneration("interval"), PREGEN_INTERVAL_MS);
 }
 
 function normalizeLanguage(language) {
@@ -1552,26 +1409,6 @@ app.get("/games", async (req, res) => {
   }
 });
 
-app.post("/games/generate", async (req, res) => {
-  try {
-    const game = await generateAndSaveGame(req.body || {});
-    const language = normalizeLanguage(req.body?.language || "en");
-    fillQuestionPool(game, language, Math.max(1, Number(req.body?.level) || 1), 1, "startup").catch(() => {});
-    return res.json({
-      success: true,
-      game: {
-        slug: game.slug,
-        name: game.name,
-        description: game.description,
-        soloPoints: game.soloPoints,
-        modes: game.modes
-      }
-    });
-  } catch (e) {
-    return res.status(500).json({ success: false, error: e.message });
-  }
-});
-
 async function buildQuizForSession(body) {
   const session_id = body.session_id?.trim();
   if (!session_id) throw new Error("session_id required");
@@ -1789,7 +1626,7 @@ async function validateQuizForSession(body) {
   await saveProgress(session_id, progress.language, new_step, new_consec);
 
   if (isCorrect && new_consec === 0 && new_step > progress.current_step) {
-    runPreGenerationRound("level_up", false, progress.language, new_step).catch(() => {});
+    triggerPreGeneration("level_up", new_step);
   }
 
   const selectedFeedback = selectedMessage || "";
@@ -1798,9 +1635,10 @@ async function validateQuizForSession(body) {
     correct: isCorrect,
     isCorrect,
     status: isCorrect ? "correct" : "incorrect",
+    validation: isCorrect ? "correct" : "incorrect",
     message: selectedFeedback,
     feedback: selectedFeedback,
-    explanation: finalFeedback,
+    explanation: current.explanation || "",
     successMsg: isCorrect ? selectedFeedback : "",
     errorMsg: isCorrect ? "" : selectedFeedback,
     consecutive_correct: new_consec,
@@ -1825,6 +1663,10 @@ async function validateQuizForSession(body) {
 app.post("/quizz", async (req, res) => {
   try {
     const quizData = await buildQuizForSession(req.body || {});
+    quizRequestCount += 1;
+    if (quizRequestCount % 7 === 0) {
+      triggerPreGeneration("quiz_batch", quizData.current_step);
+    }
     return res.json(quizData);
   } catch (e) {
     const sessionId = req.body?.session_id || "";
