@@ -1596,23 +1596,6 @@ app.get("/games", async (req, res) => {
   }
 });
 
-function quizStorageCriteria(language, level, gameSlug) {
-  const normalizedLanguage = normalizeLanguage(language);
-  const normalizedLevel = Math.max(1, Number(level) || 1);
-  const normalizedSlug = normalizeGameSlug(gameSlug);
-  const qTypeMap = { mcq: "MCQ", true_false: "TRUE_FALSE", fill_blank: "FILL_BLANK", identity_image: "IDENTITY_IMAGE", word_twist: "WORD_TWIST", text_twist: "TEXT_TWIST", "2048": "2048" };
-  const qType = qTypeMap[normalizedSlug];
-  return {
-    lang: normalizedLanguage,
-    level: normalizedLevel,
-    recordType: { $in: [null, "question"] },
-    successMsg: { $type: "string", $ne: "" },
-    errorMsg: { $type: "string", $ne: "" },
-    explanation: { $type: "string", $ne: "" },
-    $or: [{ gameSlug: normalizedSlug }, { gameSlug: { $exists: false }, qType }, { gameSlug: null, qType }]
-  };
-}
-
 async function getAvailableQuizGames(language, level) {
   const normalizedLanguage = normalizeLanguage(language);
   const normalizedLevel = Math.max(1, Number(level) || 1);
