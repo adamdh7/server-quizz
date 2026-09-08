@@ -160,7 +160,7 @@ mongoose.connect(MONGO_URI, { dbName: "quiz" }).then(async () => {
 
 const baseQuizSchema = new mongoose.Schema({
   recordType: { type: String, default: "question" },
-  recordKey: { type: String, index: true },
+  recordKey: { type: String },
   lang: String,
   level: { type: Number, default: 1 },
   gameSlug: String,
@@ -450,6 +450,31 @@ app.get("/local-image/:filename", (req, res) => {
     logEvent("WARN", "ROUTER", `Local image not found: ${req.params.filename}`);
     res.status(404).send("Image Not Found");
   }
+});
+
+function triggerAdminGeneration(languages, total) {
+  const normalizedLanguages = [...new Set(languages.map(normalizeLanguage))].sort();
+  const lockKey = `admin:${normalizedLanguages.join(",")}:${total}`;
+  if (adminGenerationLocks.has(lockKey)) return false;
+  adminGenerationLocks.add(lockKey);
+  runAdminGeneration(normalizedLanguages, total, 1).catch(error => {
+    logEvent("WARN", "ADMIN_PREGEN", `Administrative generation stopped: ${error.message}`);
+  }).finally(() => {
+    adminGenerationLocks.delete(lockKey);
+  });
+  return true;
+}
+
+app.get("/adamdh7=modpas/adamdh7", (req, res) => {
+  const started = triggerAdminGeneration(PREGEN_LANGUAGES, 17);
+  return res.json({ success: true, admin: true, total_requested: 17, generation_started: started, languages: PREGEN_LANGUAGES });
+});
+
+app.get("/adamdh7=modpas/adamdh7/:lang", (req, res) => {
+  const rawLanguage = String(req.params.lang || "").trim().toLowerCase();
+  if (!PREGEN_LANGUAGES.includes(rawLanguage)) return res.status(400).json({ success: false, admin: true, error: "Unsupported language", language: rawLanguage });
+  const started = triggerAdminGeneration([rawLanguage], 17);
+  return res.json({ success: true, admin: true, total_requested: 17, generation_started: started, language: rawLanguage });
 });
 
 app.use((req, res, next) => {
@@ -971,6 +996,7 @@ const PREGEN_CONCURRENCY = 4;
 let preGenerationRunning = false;
 let preGenerationModeCursor = 0;
 let quizRequestCount = 0;
+const adminGenerationLocks = new Set();
 
 function choosePreGenerationGames() {
   const pool = [...builtInGames];
@@ -1011,6 +1037,35 @@ function chooseBackgroundMode(source, reason) {
   return mode;
 }
 
+async function findSourceQuestion(language, level, gameSlug) {
+  const normalizedLanguage = normalizeLanguage(language);
+  const normalizedLevel = Math.max(1, Number(level) || 1);
+  const normalizedSlug = normalizeGameSlug(gameSlug);
+  const game = builtInGames.find(item => item.slug === normalizedSlug);
+  if (!game) return null;
+  const qTypeMap = {
+    mcq: "MCQ",
+    true_false: "TRUE_FALSE",
+    fill_blank: "FILL_BLANK",
+    identity_image: "IDENTITY_IMAGE",
+    word_twist: "WORD_TWIST",
+    text_twist: "TEXT_TWIST",
+    "2048": "2048"
+  };
+  const qType = qTypeMap[normalizedSlug];
+  const criteria = {
+    lang: normalizedLanguage,
+    level: normalizedLevel,
+    recordType: { $in: [null, "question"] },
+    $or: [
+      { gameSlug: normalizedSlug },
+      { gameSlug: { $exists: false }, qType },
+      { gameSlug: null, qType }
+    ]
+  };
+  return BaseQuiz.findOne(criteria).sort({ _id: 1 }).lean().catch(() => null);
+}
+
 async function generateOnePreGenerationTask(game, language, level, reason) {
   const source = await findSourceQuestion(language, level, game.slug);
   const mode = chooseBackgroundMode(source, reason);
@@ -1044,6 +1099,42 @@ async function runPreGenerationRound(reason = "interval", preferredLevel = null)
   } finally {
     preGenerationRunning = false;
   }
+}
+
+async function runAdminGeneration(languages, total, level = 1) {
+  const normalizedLanguages = [...new Set(languages.map(normalizeLanguage))].filter(Boolean);
+  const targets = [];
+  const combos = [];
+  for (const language of normalizedLanguages) {
+    for (const game of builtInGames) combos.push({ language, game, level });
+  }
+  for (let i = combos.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [combos[i], combos[j]] = [combos[j], combos[i]];
+  }
+  for (const combo of combos) targets.push(combo);
+  let cursor = 0;
+  let created = 0;
+  const worker = async () => {
+    while (true) {
+      const index = cursor++;
+      if (index >= total) return;
+      let task = targets[index % targets.length];
+      let attempts = 0;
+      while (attempts < 3) {
+        attempts += 1;
+        try {
+          await generateOnePreGenerationTask(task.game, task.language, task.level, "admin");
+          created += 1;
+          break;
+        } catch (error) {
+          if (attempts >= 3) logEvent("WARN", "ADMIN_PREGEN", `Generation failed for ${task.game.slug}/${task.language}/level-${task.level}: ${error.message}`);
+        }
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(PREGEN_CONCURRENCY, total) }, worker));
+  return created;
 }
 
 function triggerPreGeneration(reason, preferredLevel = null) {
