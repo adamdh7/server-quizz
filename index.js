@@ -135,6 +135,7 @@ const s3 = new S3Client({
 
 mongoose.connect(MONGO_URI, { dbName: "quiz" }).then(async () => {
   logEvent("SUCCESS", "DATABASE", "Connected to MongoDB successfully");
+  await RuntimeData.createCollection().catch(() => {});
   startBackgroundPreGeneration();
 }).catch(e => {
   logEvent("ERROR", "DATABASE", `MongoDB connection failed: ${e.message}`);
@@ -390,6 +391,10 @@ async function runAIImage(prompt, retries = 0) {
     }
 }
 
+function resolveQuizUserKey(body = {}) {
+  return String(body.DH7 || body.dh7 || body.TFID || body.tfid || body.user_id || body.session_id || "").trim();
+}
+
 async function getProgress(sessionId) {
   const key = `progress:${String(sessionId || "").trim()}`;
   if (!key.slice(9)) return null;
@@ -399,7 +404,8 @@ async function getProgress(sessionId) {
       return {
         language: normalizeLanguage(record.data.language || "en"),
         current_step: Math.max(1, Number(record.data.currentStep || record.data.current_step || 1)),
-        consecutive_correct: Math.max(0, Number(record.data.consecutiveCorrect || record.data.consecutive_correct || 0))
+        consecutive_correct: Math.max(0, Number(record.data.consecutiveCorrect || record.data.consecutive_correct || 0)),
+        recent_quiz_ids: Array.isArray(record.data.recentQuizIds) ? record.data.recentQuizIds.map(String).slice(-12) : []
       };
     }
   } catch (e) {
@@ -408,13 +414,35 @@ async function getProgress(sessionId) {
   return null;
 }
 
-async function saveProgress(sessionId, lang, step, consec) {
+async function saveProgress(sessionId, lang, step, consec, recentQuizIds = null) {
   const key = `progress:${String(sessionId || "").trim()}`;
   if (!key.slice(9)) return;
+  const data = {
+    language: normalizeLanguage(lang),
+    currentStep: Math.max(1, Number(step) || 1),
+    consecutiveCorrect: Math.max(0, Number(consec) || 0)
+  };
+  if (Array.isArray(recentQuizIds)) data.recentQuizIds = recentQuizIds.map(String).filter(Boolean).slice(-12);
   await RuntimeData.findOneAndUpdate(
     { recordKey: key },
-    { $set: { kind: "progress", sessionId: String(sessionId).trim(), data: { language: normalizeLanguage(lang), currentStep: Math.max(1, Number(step) || 1), consecutiveCorrect: Math.max(0, Number(consec) || 0) }, expiresAt: null } },
+    { $set: { kind: "progress", sessionId: String(sessionId).trim(), data, expiresAt: null } },
     { upsert: true, setDefaultsOnInsert: true }
+  );
+}
+
+async function markQuizUsedForUser(sessionId, quizId) {
+  const userKey = String(sessionId || "").trim();
+  const questionId = String(quizId || "").trim();
+  if (!userKey || !questionId || !mongoose.Types.ObjectId.isValid(questionId)) return;
+  const key = `progress:${userKey}`;
+  const now = new Date();
+  await RuntimeData.findOneAndUpdate(
+    { recordKey: key, kind: "progress" },
+    {
+      $set: { "data.lastQuizAt": now, sessionId: userKey, expiresAt: null },
+      $push: { "data.recentQuizIds": { $each: [questionId], $slice: -12 } }
+    },
+    { upsert: true }
   );
 }
 
@@ -422,7 +450,53 @@ async function getCurrentQuiz(sessionId) {
   const key = `current_quiz:${String(sessionId || "").trim()}`;
   if (!key.slice(13)) return null;
   const record = await RuntimeData.findOne({ recordKey: key, kind: "current_quiz" }).lean();
-  return record?.data || null;
+  if (!record?.data) return null;
+  return record.data;
+}
+
+async function hydrateCurrentQuizFeedback(sessionId, current, language) {
+  if (!current) return null;
+  const currentSuccess = String(current.success_msg || "").trim();
+  const currentError = String(current.error_msg || "").trim();
+  const currentExplanation = String(current.explanation || "").trim();
+  if (currentSuccess && currentError && currentExplanation) return current;
+
+  const qTypeMap = {
+    MCQ: "MCQ",
+    TRUE_FALSE: "TRUE_FALSE",
+    FILL_BLANK: "FILL_BLANK",
+    IDENTITY_IMAGE: "IDENTITY_IMAGE",
+    WORD_TWIST: "WORD_TWIST",
+    TEXT_TWIST: "TEXT_TWIST",
+    "2048": "2048"
+  };
+  const filters = [];
+  const base = { lang: normalizeLanguage(language || "en") };
+  if (current.question) filters.push({ ...base, question: current.question, answer: current.answer || undefined });
+  if (current.question) filters.push({ ...base, question: current.question });
+  if (current.answer) filters.push({ ...base, answer: current.answer, qType: qTypeMap[String(current.q_type || "").toUpperCase()] || current.q_type || undefined });
+
+  let source = null;
+  for (const filter of filters) {
+    const cleanFilter = Object.fromEntries(Object.entries(filter).filter(([, value]) => value !== undefined && value !== null && value !== ""));
+    source = await BaseQuiz.findOne({
+      ...cleanFilter,
+      successMsg: { $type: "string", $ne: "" },
+      errorMsg: { $type: "string", $ne: "" },
+      explanation: { $type: "string", $ne: "" }
+    }).lean().catch(() => null);
+    if (source) break;
+  }
+
+  if (!source) return current;
+
+  current.success_msg = String(source.successMsg || current.success_msg || "").trim();
+  current.error_msg = String(source.errorMsg || current.error_msg || "").trim();
+  current.explanation = String(source.explanation || current.explanation || "").trim();
+  if (!current.answer && source.answer !== undefined && source.answer !== null) current.answer = String(source.answer);
+  if (!current.q_type && source.qType) current.q_type = source.qType;
+  await saveCurrentQuiz(sessionId, current.q_type || "MCQ", current.question || source.question || "", current.options || "[]", current.image_url || source.imageUrl || null, current.answer || source.answer || "", current.explanation, current.success_msg, current.error_msg);
+  return current;
 }
 
 async function saveCurrentQuiz(sessionId, qType, question, optionsStr, imageUrl, answer, explanation, success_msg, error_msg, gameSlug = null, quizId = null) {
@@ -529,7 +603,7 @@ app.post("/user-info", async (req, res) => {
     let progress = await getProgress(session_id);
     let newStep = body.level !== undefined && body.level !== null ? parseInt(body.level) : (progress ? progress.current_step : 1);
     let newConsec = body.nivo !== undefined && body.nivo !== null ? parseInt(body.nivo) : (progress ? progress.consecutive_correct : 0);
-    await saveProgress(session_id, progress ? progress.language : 'en', newStep, newConsec);
+    await saveProgress(session_id, progress ? progress.language : 'en', newStep, newConsec, progress?.recent_quiz_ids || []);
     triggerPreGeneration("level_up", newStep, progress ? progress.language : "en");
     return res.json({ success: true, message: "User info saved successfully" });
   } catch (e) {
@@ -1006,10 +1080,12 @@ async function saveGeneratedQuizQuestion(result, game, language, level, generati
   return document;
 }
 
-const PREGEN_BATCH_GAMES = 7;
+const PREGEN_BATCH_GAMES = 3;
 const PREGEN_LANGUAGES = ["ht", "fr", "en", "es"];
-const PREGEN_INTERVAL_MS = 5 * 60 * 1000;
-const PREGEN_CONCURRENCY = 4;
+const PREGEN_INTERVAL_MS = 4 * 60 * 1000;
+const PREGEN_CONCURRENCY = 2;
+const MIN_QUIZ_POOL_SIZE = 8;
+const RECENT_GLOBAL_USE_MS = 10 * 60 * 1000;
 let preGenerationRunning = false;
 let quizRequestCount = 0;
 let preGenerationLanguageCursor = 0;
@@ -1051,105 +1127,59 @@ function chooseBackgroundMode(source, reason) {
   return 1 + Math.floor(Math.random() * 3);
 }
 
-async function findSourceQuestion(language, level, gameSlug) {
+function quizStorageCriteria(language, level, gameSlug) {
   const normalizedLanguage = normalizeLanguage(language);
   const normalizedLevel = Math.max(1, Number(level) || 1);
   const normalizedSlug = normalizeGameSlug(gameSlug);
-  const game = builtInGames.find(item => item.slug === normalizedSlug);
-  if (!game) return null;
-  const qTypeMap = {
-    mcq: "MCQ",
-    true_false: "TRUE_FALSE",
-    fill_blank: "FILL_BLANK",
-    identity_image: "IDENTITY_IMAGE",
-    word_twist: "WORD_TWIST",
-    text_twist: "TEXT_TWIST",
-    "2048": "2048"
-  };
-  const qType = qTypeMap[normalizedSlug];
-  const criteria = {
-    lang: normalizedLanguage,
-    level: normalizedLevel,
-    recordType: { $in: [null, "question"] },
-    successMsg: { $type: "string", $ne: "" },
-    errorMsg: { $type: "string", $ne: "" },
-    explanation: { $type: "string", $ne: "" },
-    $or: [
-      { gameSlug: normalizedSlug },
-      { gameSlug: { $exists: false }, qType },
-      { gameSlug: null, qType }
-    ]
-  };
-  const sampled = await BaseQuiz.aggregate([{ $match: criteria }, { $sample: { size: 6 } }]).catch(() => []);
-  if (!sampled.length) return null;
-  sampled.sort((a, b) => {
-    const aTime = a.lastUsedAt ? new Date(a.lastUsedAt).getTime() : 0;
-    const bTime = b.lastUsedAt ? new Date(b.lastUsedAt).getTime() : 0;
-    return aTime - bTime;
-  });
-  return sampled[0];
-}
-
-async function getAvailableQuizGames(language, level) {
-  const normalizedLanguage = normalizeLanguage(language);
-  const normalizedLevel = Math.max(1, Number(level) || 1);
-  const qTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE", "WORD_TWIST", "TEXT_TWIST", "2048"];
-  const rows = await BaseQuiz.aggregate([
-    { $match: {
-      lang: normalizedLanguage,
-      level: normalizedLevel,
-      recordType: { $in: [null, "question"] },
-      successMsg: { $type: "string", $ne: "" },
-      errorMsg: { $type: "string", $ne: "" },
-      explanation: { $type: "string", $ne: "" },
-      $or: [{ gameSlug: { $in: builtInGames.map(game => game.slug) } }, { gameSlug: { $exists: false }, qType: { $in: qTypes } }, { gameSlug: null, qType: { $in: qTypes } }]
-    } },
-    { $group: { _id: { $ifNull: ["$gameSlug", "$qType"] } } }
-  ]).catch(() => []);
-  const games = rows.map(row => {
-    const key = normalizeGameSlug(row?._id);
-    if (builtInGames.some(game => game.slug === key)) return key;
-    return getBuiltInGameByQType(String(row?._id || "").toUpperCase())?.slug || null;
-  }).filter(Boolean);
-  return [...new Set(games)];
-}
-
-async function loadStoredGameQuestion(game, language, level, excludedIds = []) {
-  const normalizedLanguage = normalizeLanguage(language);
-  const normalizedLevel = Math.max(1, Number(level) || 1);
   const qTypeMap = { mcq: "MCQ", true_false: "TRUE_FALSE", fill_blank: "FILL_BLANK", identity_image: "IDENTITY_IMAGE", word_twist: "WORD_TWIST", text_twist: "TEXT_TWIST", "2048": "2048" };
-  const qType = qTypeMap[game.slug];
-  const cleanExcluded = Array.isArray(excludedIds) ? excludedIds.filter(value => mongoose.Types.ObjectId.isValid(value)).map(value => new mongoose.Types.ObjectId(value)) : [];
-  const criteria = {
+  const qType = qTypeMap[normalizedSlug];
+  return {
     lang: normalizedLanguage,
     level: normalizedLevel,
     recordType: { $in: [null, "question"] },
     successMsg: { $type: "string", $ne: "" },
     errorMsg: { $type: "string", $ne: "" },
     explanation: { $type: "string", $ne: "" },
-    $or: [{ gameSlug: game.slug }, { gameSlug: { $exists: false }, qType }, { gameSlug: null, qType }]
+    $or: [{ gameSlug: normalizedSlug }, { gameSlug: { $exists: false }, qType }, { gameSlug: null, qType }]
   };
-  if (cleanExcluded.length) criteria._id = { $nin: cleanExcluded };
-  let rows = await BaseQuiz.aggregate([{ $match: criteria }, { $sample: { size: 8 } }]).catch(() => []);
-  if (!rows.length && cleanExcluded.length) {
-    delete criteria._id;
-    rows = await BaseQuiz.aggregate([{ $match: criteria }, { $sample: { size: 8 } }]).catch(() => []);
-  }
-  if (!rows.length) throw new Error("No stored question available for this game");
-  rows.sort((a, b) => {
-    const aTime = a.lastUsedAt ? new Date(a.lastUsedAt).getTime() : 0;
-    const bTime = b.lastUsedAt ? new Date(b.lastUsedAt).getTime() : 0;
-    return aTime - bTime;
-  });
-  const selected = rows[0];
-  await BaseQuiz.updateOne({ _id: selected._id }, { $set: { lastUsedAt: new Date() }, $inc: { usageCount: 1 } });
-  return selected;
 }
 
-async function generateOnePreGenerationTask(game, language, level, reason) {
+async function countUsableQuizQuestions(language, level, gameSlug) {
+  return BaseQuiz.countDocuments(quizStorageCriteria(language, level, gameSlug)).catch(() => 0);
+}
+
+async function findSourceQuestion(language, level, gameSlug) {
+  const game = builtInGames.find(item => item.slug === normalizeGameSlug(gameSlug));
+  if (!game) return null;
+  const criteria = quizStorageCriteria(language, level, game.slug);
+  const recentCutoff = new Date(Date.now() - RECENT_GLOBAL_USE_MS);
+  const freshCriteria = { ...criteria, $and: [{ $or: criteria.$or }, { $or: [{ lastUsedAt: { $exists: false } }, { lastUsedAt: null }, { lastUsedAt: { $lt: recentCutoff } }] }] };
+  delete freshCriteria.$or;
+  const sampled = await BaseQuiz.aggregate([{ $match: freshCriteria }, { $sample: { size: 8 } }]).catch(() => []);
+  if (sampled.length) return sampled[Math.floor(Math.random() * sampled.length)];
+  const fallback = await BaseQuiz.aggregate([{ $match: criteria }, { $sample: { size: 8 } }]).catch(() => []);
+  return fallback.length ? fallback[Math.floor(Math.random() * fallback.length)] : null;
+}
+
+async function generateOnePreGenerationTask(game, language, level, reason, force = false) {
+  if (!force) {
+    const existingCount = await countUsableQuizQuestions(language, level, game.slug);
+    if (existingCount >= MIN_QUIZ_POOL_SIZE) return false;
+  }
   const source = await findSourceQuestion(language, level, game.slug);
   const mode = chooseBackgroundMode(source, reason);
-  await generateBackgroundQuestion(game, language, level, mode, source);
+  try {
+    await generateBackgroundQuestion(game, language, level, mode, source);
+    return true;
+  } catch {
+    if (mode !== 3) {
+      try {
+        await generateBackgroundQuestion(game, language, level, 3, null);
+        return true;
+      } catch {}
+    }
+    return false;
+  }
 }
 
 async function runPreGenerationRound(reason = "interval", preferredLevel = null, preferredLanguage = null) {
@@ -1169,11 +1199,7 @@ async function runPreGenerationRound(reason = "interval", preferredLevel = null,
         const index = cursor++;
         if (index >= tasks.length) return;
         const task = tasks[index];
-        try {
-          await generateOnePreGenerationTask(task.game, task.language, task.level, reason);
-        } catch (error) {
-          logEvent("WARN", "PREGEN", `Generation failed for ${task.game.slug}/${task.language}/level-${task.level}: ${error.message}`);
-        }
+        await generateOnePreGenerationTask(task.game, task.language, task.level, reason).catch(() => false);
       }
     };
     await Promise.all(Array.from({ length: Math.min(PREGEN_CONCURRENCY, tasks.length) }, worker));
@@ -1204,12 +1230,10 @@ async function runAdminGeneration(languages, total, level = 1) {
       let attempts = 0;
       while (attempts < 3) {
         attempts += 1;
-        try {
-          await generateOnePreGenerationTask(task.game, task.language, task.level, "admin");
+        const generated = await generateOnePreGenerationTask(task.game, task.language, task.level, "admin", true).catch(() => false);
+        if (generated) {
           created += 1;
           break;
-        } catch (error) {
-          if (attempts >= 3) logEvent("WARN", "ADMIN_PREGEN", `Generation failed for ${task.game.slug}/${task.language}/level-${task.level}: ${error.message}`);
         }
       }
     }
@@ -1219,9 +1243,7 @@ async function runAdminGeneration(languages, total, level = 1) {
 }
 
 function triggerPreGeneration(reason, preferredLevel = null, preferredLanguage = null) {
-  runPreGenerationRound(reason, preferredLevel, preferredLanguage).catch(error => {
-    logEvent("WARN", "PREGEN", `Background round stopped: ${error.message}`);
-  });
+  runPreGenerationRound(reason, preferredLevel, preferredLanguage).catch(() => {});
 }
 
 function startBackgroundPreGeneration() {
@@ -1283,8 +1305,9 @@ async function loadPendingInvitationsForTfid(tfid) {
 }
 
 async function updateInvitation(invitationId, status) {
+  const now = new Date();
   const record = await RuntimeData.findOneAndUpdate(
-    { recordKey: `game_invitation:${String(invitationId || "").trim()}`, kind: "game_invitation", "data.status": "pending", expiresAt: { $gt: new Date() } },
+    { recordKey: `game_invitation:${String(invitationId || "").trim()}`, kind: "game_invitation", "data.status": "pending", expiresAt: { $gt: now } },
     { $set: { "data.status": status } },
     { new: true }
   ).lean();
@@ -1336,23 +1359,13 @@ async function sendInvitationToTfid(gameSession, toTfid) {
 }
 
 function gameExpiresAt() {
-  return new Date(Date.now() + GAME_TTL_MS);
-}
-
-function gamePlayersFromRow(row) {
-  return Array.isArray(row?.players) ? row.players : Array.isArray(row?.data?.players) ? row.data.players : [];
-}
-
-function gameStateFromRow(row) {
-  if (row?.state && typeof row.state === "object") return row.state;
-  return row?.data?.state && typeof row.data.state === "object" ? row.data.state : {};
+  return Date.now() + GAME_TTL_MS;
 }
 
 async function saveGameSession(gameId, gameSlug, ownerTfid, players, state, expiresAt = gameExpiresAt()) {
-  const expires = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
   await RuntimeData.findOneAndUpdate(
-    { recordKey: `game_session:${gameId}` },
-    { $set: { kind: "game_session", data: { gameId, gameSlug, ownerTfid, players, state }, expiresAt: expires } },
+    { recordKey: `game_session:${String(gameId || "").trim()}` },
+    { $set: { kind: "game_session", data: { gameId, gameSlug, ownerTfid, players, state }, expiresAt: new Date(expiresAt) } },
     { upsert: true, setDefaultsOnInsert: true }
   );
 }
@@ -1360,25 +1373,25 @@ async function saveGameSession(gameId, gameSlug, ownerTfid, players, state, expi
 async function loadGameSession(gameId) {
   const record = await RuntimeData.findOne({ recordKey: `game_session:${String(gameId || "").trim()}`, kind: "game_session", expiresAt: { $gt: new Date() } }).lean();
   if (!record?.data) return null;
-  return {
-    gameId: record.data.gameId,
-    gameSlug: record.data.gameSlug,
-    ownerTfid: record.data.ownerTfid,
-    players: record.data.players || [],
-    state: record.data.state || {},
-    expiresAt: record.expiresAt ? new Date(record.expiresAt).getTime() : Date.now() + GAME_TTL_MS
-  };
+  return { ...record.data, expiresAt: record.expiresAt?.getTime ? record.expiresAt.getTime() : record.expiresAt };
 }
 
 async function cleanupExpiredGames() {
-  await RuntimeData.deleteMany({ kind: { $in: ["game_session", "game_word", "game_invitation"] }, expiresAt: { $lte: new Date() } });
-  for (const [key, sockets] of wsClients.entries()) {
-    if (key.startsWith("game:")) {
-      const gameId = key.slice(5);
-      const session = await loadGameSession(gameId).catch(() => null);
-      if (!session && sockets.size === 0) wsClients.delete(key);
-    }
+  const now = new Date();
+  await RuntimeData.deleteMany({ kind: { $in: ["game_session", "game_word", "game_invitation"] }, expiresAt: { $lte: now } });
+  for (const [gameId, sockets] of wsClients.entries()) {
+    if (!(await loadGameSession(gameId)) && sockets.size === 0) wsClients.delete(gameId);
   }
+}
+
+function wsSend(ws, payload) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+}
+
+function wsBroadcast(gameId, payload) {
+  const sockets = wsClients.get(gameId);
+  if (!sockets) return;
+  for (const ws of sockets) wsSend(ws, payload);
 }
 
 async function getStoredWords(gameId) {
@@ -1389,7 +1402,7 @@ async function getStoredWords(gameId) {
 async function saveStoredWords(gameId, words) {
   await RuntimeData.findOneAndUpdate(
     { recordKey: `game_words:${String(gameId || "").trim()}` },
-    { $set: { kind: "game_word", data: { words }, expiresAt: gameExpiresAt() } },
+    { $set: { kind: "game_word", data: { words: Array.isArray(words) ? words : [] } }, expiresAt: new Date(gameExpiresAt()) },
     { upsert: true, setDefaultsOnInsert: true }
   );
 }
@@ -1428,7 +1441,7 @@ async function createGameSession({ gameSlug, ownerTfid, tfids, language = "en", 
   if (Array.isArray(words) && words.length > 0) await saveStoredWords(gameId, words);
   if (!pending) {
     const storedQuestion = await loadStoredGameQuestion(game, language, Number(level) || 1);
-    const question = await executeMode0PureDB(storedQuestion);
+    const question = executeMode0PureDB(storedQuestion);
     state.question = question.parsed.question || question.parsed.scrambled || question.parsed.letters || null;
     state.questionPayload = question.parsed;
     state.currentAnswer = question.parsed.answer || null;
@@ -1437,14 +1450,14 @@ async function createGameSession({ gameSlug, ownerTfid, tfids, language = "en", 
     state.servedQuizIds = [String(storedQuestion._id)];
     await saveGameSession(gameId, game.slug, ownerTfid, players, state);
   }
-  return loadGameSession(gameId);
+  return await loadGameSession(gameId);
 }
 
 async function advanceGameTurn(session) {
   const game = await getGameDefinition(session.gameSlug);
   if (!game) throw new Error("Game not found");
   const storedQuestion = await loadStoredGameQuestion(game, session.state.language, session.state.level, session.state.servedQuizIds || []);
-  const question = await executeMode0PureDB(storedQuestion);
+  const question = executeMode0PureDB(storedQuestion);
   session.state.question = question.parsed.question || question.parsed.scrambled || question.parsed.letters || null;
   session.state.questionPayload = question.parsed;
   session.state.currentAnswer = question.parsed.answer || null;
@@ -1455,10 +1468,10 @@ async function advanceGameTurn(session) {
   session.state.answeredBy = null;
   session.state.questionNumber = Number(session.state.questionNumber || 0) + 1;
   await saveGameSession(session.gameId, session.gameSlug, session.ownerTfid, session.players, session.state);
-  return loadGameSession(session.gameId);
+  return await loadGameSession(session.gameId);
 }
 
-async function passSameQuestionToOtherPlayer(session) {
+function passSameQuestionToOtherPlayer(session) {
   if (session.players.length > 1) {
     session.state.turnIndex = (session.state.turnIndex + 1) % session.players.length;
     session.state.askedTo = session.players[session.state.turnIndex];
@@ -1468,8 +1481,73 @@ async function passSameQuestionToOtherPlayer(session) {
   session.state.answeredBy = null;
   session.state.questionStartedAt = Date.now();
   await saveGameSession(session.gameId, session.gameSlug, session.ownerTfid, session.players, session.state);
-  return loadGameSession(session.gameId);
+  return await loadGameSession(session.gameId);
 }
+
+async function validateGameAnswer(session, tfid, answer) {
+  if (!session || !session.state || session.state.status !== "active") throw new Error("Game is not active");
+  if (!session.players.includes(tfid)) throw new Error("TFID is not part of this game");
+  if (session.state.askedTo !== tfid) throw new Error("It is another player's turn");
+
+  const elapsedMs = Date.now() - Number(session.state.questionStartedAt || Date.now());
+  const timeLimit = Number(session.state.timeLimit || 0);
+
+  if (timeLimit > 0 && elapsedMs > timeLimit * 1000) {
+    const nextSession = passSameQuestionToOtherPlayer(session);
+    return { correct: false, timedOut: true, completed: false, session: nextSession };
+  }
+
+  const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[session.state.language] || "English";
+  const visibleQuestion = session.state.questionPayload?.question || session.state.questionPayload?.scrambled || session.state.questionPayload?.letters || session.state.question || "";
+  const correct = await runAIValidator(visibleQuestion, session.state.currentAnswer, answer, langName, session.gameSlug);
+
+  session.state.answeredBy = tfid;
+
+  if (correct) {
+    const game = await getGameDefinition(session.gameSlug);
+    const points = session.players.length === 1 ? Number(game?.soloPoints || 3) : 1;
+    session.state.scores[tfid] = Number(session.state.scores[tfid] || 0) + points;
+    session.state.lastResult = {
+      correct: true,
+      player: tfid,
+      points,
+      answer: session.state.currentAnswer,
+      explanation: session.state.questionPayload?.explanation || "",
+      successMsg: session.state.questionPayload?.successMsg || "",
+      errorMsg: session.state.questionPayload?.errorMsg || ""
+    };
+
+    if (session.players.length === 1 && session.state.scores[tfid] >= 10) {
+      session.state.status = "completed";
+      session.state.winner = tfid;
+      await saveGameSession(session.gameId, session.gameSlug, session.ownerTfid, session.players, session.state);
+      return { correct: true, completed: true, session: await loadGameSession(session.gameId) };
+    }
+
+    if (session.players.length > 1) {
+      session.state.turnIndex = (session.state.turnIndex + 1) % session.players.length;
+      await saveGameSession(session.gameId, session.gameSlug, session.ownerTfid, session.players, session.state);
+      const nextSession = await advanceGameTurn(await loadGameSession(session.gameId));
+      return { correct: true, completed: false, session: nextSession };
+    }
+
+    await saveGameSession(session.gameId, session.gameSlug, session.ownerTfid, session.players, session.state);
+    return { correct: true, completed: false, session: await loadGameSession(session.gameId) };
+  }
+
+  const nextSession = passSameQuestionToOtherPlayer(session);
+  nextSession.state.lastResult = {
+    correct: false,
+    player: tfid,
+    points: 0,
+    explanation: nextSession.state.questionPayload?.explanation || "",
+    successMsg: nextSession.state.questionPayload?.successMsg || "",
+    errorMsg: nextSession.state.questionPayload?.errorMsg || ""
+  };
+  await saveGameSession(nextSession.gameId, nextSession.gameSlug, nextSession.ownerTfid, nextSession.players, nextSession.state);
+  return { correct: false, completed: false, session: await loadGameSession(nextSession.gameId) };
+}
+
 
 function buildPublicGameState(session) {
   return {
@@ -1518,62 +1596,136 @@ app.get("/games", async (req, res) => {
   }
 });
 
+function quizStorageCriteria(language, level, gameSlug) {
+  const normalizedLanguage = normalizeLanguage(language);
+  const normalizedLevel = Math.max(1, Number(level) || 1);
+  const normalizedSlug = normalizeGameSlug(gameSlug);
+  const qTypeMap = { mcq: "MCQ", true_false: "TRUE_FALSE", fill_blank: "FILL_BLANK", identity_image: "IDENTITY_IMAGE", word_twist: "WORD_TWIST", text_twist: "TEXT_TWIST", "2048": "2048" };
+  const qType = qTypeMap[normalizedSlug];
+  return {
+    lang: normalizedLanguage,
+    level: normalizedLevel,
+    recordType: { $in: [null, "question"] },
+    successMsg: { $type: "string", $ne: "" },
+    errorMsg: { $type: "string", $ne: "" },
+    explanation: { $type: "string", $ne: "" },
+    $or: [{ gameSlug: normalizedSlug }, { gameSlug: { $exists: false }, qType }, { gameSlug: null, qType }]
+  };
+}
+
+async function getAvailableQuizGames(language, level) {
+  const normalizedLanguage = normalizeLanguage(language);
+  const normalizedLevel = Math.max(1, Number(level) || 1);
+  const qTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE", "WORD_TWIST", "TEXT_TWIST", "2048"];
+  const rows = await BaseQuiz.aggregate([
+    { $match: {
+      lang: normalizedLanguage,
+      level: normalizedLevel,
+      recordType: { $in: [null, "question"] },
+      successMsg: { $type: "string", $ne: "" },
+      errorMsg: { $type: "string", $ne: "" },
+      explanation: { $type: "string", $ne: "" },
+      $or: [{ gameSlug: { $in: builtInGames.map(game => game.slug) } }, { gameSlug: { $exists: false }, qType: { $in: qTypes } }, { gameSlug: null, qType: { $in: qTypes } }]
+    } },
+    { $group: { _id: { $ifNull: ["$gameSlug", "$qType"] } } }
+  ]).catch(() => []);
+  const games = rows.map(row => {
+    const key = normalizeGameSlug(row?._id);
+    if (builtInGames.some(game => game.slug === key)) return key;
+    return getBuiltInGameByQType(String(row?._id || "").toUpperCase())?.slug || null;
+  }).filter(Boolean);
+  return [...new Set(games)];
+}
+
+async function loadStoredGameQuestion(game, language, level, excludedIds = []) {
+  const criteria = quizStorageCriteria(language, level, game.slug);
+  const cleanExcluded = Array.isArray(excludedIds) ? excludedIds.filter(value => mongoose.Types.ObjectId.isValid(value)).map(value => new mongoose.Types.ObjectId(value)) : [];
+  const recentCutoff = new Date(Date.now() - RECENT_GLOBAL_USE_MS);
+  const freshCriteria = {
+    ...criteria,
+    $and: [
+      { $or: criteria.$or },
+      ...(cleanExcluded.length ? [{ _id: { $nin: cleanExcluded } }] : []),
+      { $or: [{ lastUsedAt: { $exists: false } }, { lastUsedAt: null }, { lastUsedAt: { $lt: recentCutoff } }] }
+    ]
+  };
+  delete freshCriteria.$or;
+  let rows = await BaseQuiz.aggregate([{ $match: freshCriteria }, { $sample: { size: 10 } }]).catch(() => []);
+  if (!rows.length) {
+    const userPoolCriteria = { ...criteria };
+    if (cleanExcluded.length) userPoolCriteria._id = { $nin: cleanExcluded };
+    rows = await BaseQuiz.aggregate([{ $match: userPoolCriteria }, { $sample: { size: 10 } }]).catch(() => []);
+  }
+  if (!rows.length) rows = await BaseQuiz.aggregate([{ $match: criteria }, { $sample: { size: 10 } }]).catch(() => []);
+  if (!rows.length) return null;
+  const selected = rows[Math.floor(Math.random() * rows.length)];
+  const now = new Date();
+  await BaseQuiz.updateOne({ _id: selected._id }, { $set: { lastUsedAt: now }, $inc: { usageCount: 1 } }).catch(() => {});
+  return selected;
+}
+
 async function buildQuizForSession(body) {
-  const session_id = body.session_id?.trim();
+  const session_id = resolveQuizUserKey(body);
   if (!session_id) throw new Error("session_id required");
 
   const rawLang = body.lang?.trim();
-  let lang = rawLang ? normalizeLanguage(rawLang) : null;
   const incomingLevel = body.level;
-
   let progress = await getProgress(session_id);
   if (!progress) {
-    const default_lang = lang || "en";
+    const default_lang = rawLang ? normalizeLanguage(rawLang) : "en";
     const start_step = Math.max(1, Number(incomingLevel) || 1);
-    await saveProgress(session_id, default_lang, start_step, 0);
-    progress = { language: default_lang, current_step: start_step, consecutive_correct: 0 };
+    await saveProgress(session_id, default_lang, start_step, 0, []);
+    progress = { language: default_lang, current_step: start_step, consecutive_correct: 0, recent_quiz_ids: [] };
   } else {
     let updated = false;
-    if (lang && lang !== progress.language) {
-      progress.language = lang;
+    if (rawLang && normalizeLanguage(rawLang) !== progress.language) {
+      progress.language = normalizeLanguage(rawLang);
       updated = true;
     }
     if (incomingLevel !== undefined && Math.max(1, Number(incomingLevel) || 1) !== progress.current_step) {
       progress.current_step = Math.max(1, Number(incomingLevel) || 1);
       updated = true;
     }
-    if (updated) await saveProgress(session_id, progress.language, progress.current_step, progress.consecutive_correct);
+    if (updated) await saveProgress(session_id, progress.language, progress.current_step, progress.consecutive_correct, progress.recent_quiz_ids);
   }
 
   const current_step_num = Math.max(1, Number(progress.current_step) || 1);
   const language = normalizeLanguage(progress.language);
-  const requestedGame = body.game?.trim();
-  let gameFilter = null;
-  if (requestedGame) {
-    gameFilter = await getGameDefinition(requestedGame);
-    if (!gameFilter) throw new Error("Requested game not found");
+  const stableUserId = String(body.DH7 || body.dh7 || body.TFID || body.tfid || "").trim();
+  if (stableUserId) {
+    await saveUserInfo(stableUserId, JSON.stringify({ level: current_step_num, nivo: progress.consecutive_correct, TFID: body.TFID || body.tfid || null })).catch(() => {});
   }
 
-  const availableGameSlugs = requestedGame ? [gameFilter.slug] : await getAvailableQuizGames(language, current_step_num);
+  const availableGameSlugs = await getAvailableQuizGames(language, current_step_num);
   if (!availableGameSlugs.length) throw new Error("Quiz pool is being prepared");
-  const selectedGameSlug = availableGameSlugs[Math.floor(Math.random() * availableGameSlugs.length)];
-  const selectedGame = builtInGames.find(game => game.slug === selectedGameSlug);
-  if (!selectedGame) throw new Error("Quiz game unavailable");
-  let randomItem = await loadStoredGameQuestion(selectedGame, language, current_step_num);
-  if (!randomItem && requestedGame) throw new Error("Quiz pool is being prepared");
-  if (!randomItem) throw new Error("Quiz pool is being prepared");
-  const result = await executeMode0PureDB(randomItem);
+  const shuffledGames = [...availableGameSlugs];
+  for (let i = shuffledGames.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledGames[i], shuffledGames[j]] = [shuffledGames[j], shuffledGames[i]];
+  }
+
+  let selectedGame = null;
+  let randomItem = null;
+  for (const gameSlug of shuffledGames) {
+    const candidateGame = builtInGames.find(game => game.slug === gameSlug);
+    if (!candidateGame) continue;
+    const candidateItem = await loadStoredGameQuestion(candidateGame, language, current_step_num, progress.recent_quiz_ids);
+    if (candidateItem) {
+      selectedGame = candidateGame;
+      randomItem = candidateItem;
+      break;
+    }
+  }
+  if (!selectedGame || !randomItem) throw new Error("Quiz pool is being prepared");
+
+  const result = executeMode0PureDB(randomItem);
   let imgUrl = result.imgUrl || null;
   const parsed = result.parsed;
-
   if (imgUrl && !/^https?:\/\//i.test(imgUrl)) imgUrl = null;
   const safeOptions = Array.isArray(parsed.options) ? parsed.options : [];
-  await saveCurrentQuiz(session_id, result.randomType, parsed.question || "", JSON.stringify(safeOptions), imgUrl, parsed.answer ?? "", result.finalExplanation || parsed.explanation || "", result.finalSuccess || parsed.successMsg || "", result.finalError || parsed.errorMsg || "", selectedGame.slug, randomItem._id?.toString() || null);
 
-  if (imgUrl) {
-    const scheduledKey = getKeyFromUrl(imgUrl);
-    if (scheduledKey) setTimeout(() => { deleteFromR2(scheduledKey).catch(() => {}); }, 7 * 60 * 1000);
-  }
+  await saveCurrentQuiz(session_id, result.randomType, parsed.question || "", JSON.stringify(safeOptions), imgUrl, parsed.answer ?? "", result.finalExplanation || parsed.explanation || "", result.finalSuccess || parsed.successMsg || "", result.finalError || parsed.errorMsg || "", selectedGame.slug, randomItem._id?.toString() || null);
+  await markQuizUsedForUser(session_id, randomItem._id?.toString() || null);
 
   const quizData = {
     success: true,
@@ -1596,7 +1748,7 @@ async function buildQuizForSession(body) {
   quizData.quiz_type = result.randomType;
   quizData.qType = result.randomType;
   quizData.game_slug = selectedGame.slug;
-  quizData.gameSlug = quizData.game_slug;
+  quizData.gameSlug = selectedGame.slug;
   quizData.imageUrl = imgUrl;
   quizData.choices = safeOptions;
   quizData.data = {
@@ -1621,7 +1773,7 @@ async function buildQuizForSession(body) {
 }
 
 async function validateQuizForSession(body) {
-  const session_id = body.session_id?.trim();
+  const session_id = resolveQuizUserKey(body);
   const user_answer = body.user_answer?.trim() || "";
   const silent = Boolean(body.silent);
   if (!session_id) throw new Error("session_id required");
@@ -1678,11 +1830,6 @@ async function validateQuizForSession(body) {
 
   if (!user_answer) throw new Error("user_answer required");
 
-  if (current.image_url) {
-    const activeKey = getKeyFromUrl(current.image_url);
-    if (activeKey) deleteFromR2(activeKey).catch(() => {});
-  }
-
   current = await hydrateCurrentQuizFeedback(session_id, current, progress.language);
 
   const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[progress.language] || "English";
@@ -1711,12 +1858,10 @@ async function validateQuizForSession(body) {
     new_consec = 0;
   }
 
-  await saveProgress(session_id, progress.language, new_step, new_consec);
+  await saveProgress(session_id, progress.language, new_step, new_consec, progress.recent_quiz_ids);
 
   if (levelUp) {
     triggerPreGeneration("level_up", new_step, progress.language);
-  } else if (new_consec >= 3) {
-    triggerPreGeneration("pre_level_up", new_step + 1, progress.language);
   }
 
   return {
@@ -1740,12 +1885,12 @@ app.post("/quizz", async (req, res) => {
   try {
     const quizData = await buildQuizForSession(req.body || {});
     quizRequestCount += 1;
-    if (quizRequestCount % 3 === 0) {
-      triggerPreGeneration("quiz_batch", quizData.current_step, quizData.language);
+    if (quizRequestCount % 7 === 0) {
+      triggerPreGeneration("quiz_batch", quizData.current_step);
     }
     return res.json(quizData);
   } catch (e) {
-    const sessionId = req.body?.session_id || "";
+    const sessionId = resolveQuizUserKey(req.body || {});
     const progress = sessionId ? await getProgress(sessionId).catch(() => null) : null;
     const language = normalizeLanguage(req.body?.lang || progress?.language || "en");
     const message = localizedQuizErrors[language] || localizedQuizErrors.en;
@@ -1774,7 +1919,7 @@ app.post("/validate", async (req, res) => {
   try {
     return res.json(await validateQuizForSession(req.body || {}));
   } catch (e) {
-    const sessionId = req.body?.session_id || "";
+    const sessionId = resolveQuizUserKey(req.body || {});
     const progress = sessionId ? await getProgress(sessionId).catch(() => null) : null;
     const language = normalizeLanguage(req.body?.lang || progress?.language || "en");
     const message = localizedQuizErrors[language] || localizedQuizErrors.en;
@@ -1797,13 +1942,13 @@ app.post("/validate", async (req, res) => {
 
 app.get("/step", async (req, res) => {
   try {
-    const session_id = req.query.session_id;
+    const session_id = resolveQuizUserKey({ session_id: req.query.session_id, DH7: req.query.DH7, TFID: req.query.TFID });
     if (!session_id) return res.status(400).json({ error: "session_id required" });
 
     let progress = await getProgress(session_id);
     if (!progress) {
-      await saveProgress(session_id, "en", 1, 0);
-      progress = { language: "en", current_step: 1, consecutive_correct: 0 };
+      await saveProgress(session_id, "en", 1, 0, []);
+      progress = { language: "en", current_step: 1, consecutive_correct: 0, recent_quiz_ids: [] };
     }
 
     return res.json({
@@ -1904,7 +2049,7 @@ app.post("/game/invitation/accept", async (req, res) => {
       session.state.status = "active";
       const game = await getGameDefinition(session.gameSlug);
       const storedQuestion = await loadStoredGameQuestion(game, session.state.language, session.state.level, session.state.servedQuizIds || []);
-      const question = await executeMode0PureDB(storedQuestion);
+      const question = executeMode0PureDB(storedQuestion);
       session.state.question = question.parsed.question || question.parsed.scrambled || question.parsed.letters || null;
       session.state.questionPayload = question.parsed;
       session.state.currentAnswer = question.parsed.answer || null;
@@ -2008,10 +2153,10 @@ async function unregisterSocket(ws, connectionError = false) {
   const tfid = ws.tfid;
   const activeGameIds = [];
   if (tfid) {
-    const records = await RuntimeData.find({ kind: "game_session", expiresAt: { $gt: new Date() } }).lean();
-    for (const record of records) {
-      const session = { gameId: record.data?.gameId, gameSlug: record.data?.gameSlug, ownerTfid: record.data?.ownerTfid, players: record.data?.players || [], state: record.data?.state || {}, expiresAt: record.expiresAt ? new Date(record.expiresAt).getTime() : Date.now() + GAME_TTL_MS };
-      if (session.gameId && session.players.includes(tfid) && session.state.status === "active") activeGameIds.push(session.gameId);
+    const rows = await RuntimeData.find({ kind: "game_session", expiresAt: { $gt: new Date() } }).lean();
+    for (const row of rows) {
+      const session = await loadGameSession(row.data?.gameId);
+      if (session && session.players.includes(tfid) && session.state.status === "active") activeGameIds.push(session.gameId);
     }
   }
   let userStillConnected = false;
@@ -2049,19 +2194,16 @@ async function handleWebSocketMessage(ws, message) {
     }
     wsSend(ws, { type: "games:list", games: await listGameDefinitions() });
     const activeGames = [];
-    const records = await RuntimeData.find({ kind: "game_session", expiresAt: { $gt: new Date() } }).lean();
-    for (const record of records) {
-      const session = {
-        gameId: record.data?.gameId,
-        gameSlug: record.data?.gameSlug,
-        ownerTfid: record.data?.ownerTfid,
-        players: record.data?.players || [],
-        state: record.data?.state || {},
-        expiresAt: record.expiresAt ? new Date(record.expiresAt).getTime() : Date.now() + GAME_TTL_MS
-      };
-      if ((ws.tfid && session.players.includes(ws.tfid)) || (ws.sessionId && session.ownerTfid === ws.sessionId)) {
-        activeGames.push(buildPublicGameState(session));
-        registerSocketForGame(session.gameId, ws);
+    const activeGameRecords = await RuntimeData.find({ kind: "game_session", expiresAt: { $gt: new Date() } }).lean();
+    for (const row of activeGameRecords) {
+      const stored = row.data || {};
+      const players = Array.isArray(stored.players) ? stored.players : [];
+      if ((ws.tfid && players.includes(ws.tfid)) || (ws.sessionId && stored.ownerTfid === ws.sessionId)) {
+        const activeSession = await loadGameSession(stored.gameId);
+        if (activeSession) {
+          activeGames.push(buildPublicGameState(activeSession));
+          registerSocketForGame(stored.gameId, ws);
+        }
       }
     }
     if (activeGames.length > 0) wsSend(ws, { type: "games:active", games: activeGames });
@@ -2124,7 +2266,7 @@ async function handleWebSocketMessage(ws, message) {
       session.state.askedTo = session.players[0];
       const game = await getGameDefinition(session.gameSlug);
       const storedQuestion = await loadStoredGameQuestion(game, session.state.language, session.state.level, session.state.servedQuizIds || []);
-      const question = await executeMode0PureDB(storedQuestion);
+      const question = executeMode0PureDB(storedQuestion);
       session.state.question = question.parsed.question || question.parsed.scrambled || question.parsed.letters || null;
       session.state.questionPayload = question.parsed;
       session.state.currentAnswer = question.parsed.answer || null;
@@ -2198,6 +2340,8 @@ async function handleWebSocketMessage(ws, message) {
   if (type === "quiz:next") {
     const quiz = await buildQuizForSession({
       session_id: data.session_id || ws.sessionId,
+      DH7: data.DH7 || data.dh7,
+      TFID: data.TFID || data.tfid || ws.tfid,
       lang: data.lang,
       level: data.level,
       game: data.game,
@@ -2211,6 +2355,8 @@ async function handleWebSocketMessage(ws, message) {
   if (type === "quiz:answer") {
     const result = await validateQuizForSession({
       session_id: data.session_id || ws.sessionId,
+      DH7: data.DH7 || data.dh7,
+      TFID: data.TFID || data.tfid || ws.tfid,
       user_answer: data.user_answer,
       silent: Boolean(data.silent)
     });
@@ -2221,6 +2367,8 @@ async function handleWebSocketMessage(ws, message) {
   if (type === "quiz:validate_silent") {
     const result = await validateQuizForSession({
       session_id: data.session_id || ws.sessionId,
+      DH7: data.DH7 || data.dh7,
+      TFID: data.TFID || data.tfid || ws.tfid,
       user_answer: "",
       silent: true
     });
@@ -2259,7 +2407,7 @@ httpServer.on("upgrade", (request, socket, head) => {
   });
 });
 
-setInterval(() => { cleanupExpiredGames().catch(() => {}); }, 60 * 1000);
+setInterval(() => cleanupExpiredGames().catch(() => {}), 60 * 1000);
 setInterval(() => silentValidationAt.clear(), 60 * 60 * 1000);
 
 
