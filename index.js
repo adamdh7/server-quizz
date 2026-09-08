@@ -58,7 +58,6 @@ function getAvailableCFCredential() {
     return null;
 }
 
-let globalRequestCounter = 0;
 const GAME_TTL_MS = 7 * 60 * 1000;
 const SILENT_VALIDATE_COOLDOWN_MS = 17 * 1000;
 const MAIN_AI_MODEL = "@cf/zai-org/glm-4.7-flash";
@@ -105,6 +104,13 @@ const invitationVariants = {
   ]
 };
 
+const localizedQuizErrors = {
+  en: "The requested game question could not be prepared.",
+  fr: "La question demandée n’a pas pu être préparée.",
+  es: "No se pudo preparar la pregunta solicitada.",
+  ht: "Kesyon jwèt yo mande a pa t kapab prepare."
+};
+
 const localizedConnectionMessages = {
   en: {
     connected: "The player connection was established successfully.",
@@ -145,13 +151,16 @@ const s3 = new S3Client({
   },
 });
 
-mongoose.connect(MONGO_URI, { dbName: "quiz" }).then(() => {
+mongoose.connect(MONGO_URI, { dbName: "quiz" }).then(async () => {
+  await migrateLegacyGameDefinitions();
   logEvent("SUCCESS", "DATABASE", "Connected to MongoDB successfully");
 }).catch(e => {
   logEvent("ERROR", "DATABASE", `MongoDB connection failed: ${e.message}`);
 });
 
 const baseQuizSchema = new mongoose.Schema({
+  recordType: { type: String, default: "question" },
+  recordKey: { type: String, index: true },
   lang: String,
   level: { type: Number, default: 1 },
   qType: String,
@@ -163,25 +172,56 @@ const baseQuizSchema = new mongoose.Schema({
   successMsg: String,
   errorMsg: String
 });
+baseQuizSchema.index({ recordKey: 1 }, { unique: true, sparse: true });
 const BaseQuiz = mongoose.model("BaseQuiz", baseQuizSchema, "quiz");
 
-const progressSchema = new mongoose.Schema({ sessionId: String, language: String, currentStep: Number, consecutiveCorrect: Number });
-const Progress = mongoose.model("Progress", progressSchema);
-
-const userSchema = new mongoose.Schema({ sessionId: String, data: String });
-const UserInfo = mongoose.model("UserInfo", userSchema);
-
 const gameDefinitionSchema = new mongoose.Schema({
-  slug: { type: String, unique: true },
+  recordType: { type: String, default: "game" },
+  recordKey: { type: String, index: true },
+  slug: String,
   name: String,
   description: String,
   systemDirectives: String,
   soloPoints: { type: Number, default: 1 },
-  modes: [String],
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-const GameDefinition = mongoose.model("GameDefinition", gameDefinitionSchema, "game_definitions");
+  modes: [String]
+}, { collection: "quiz" });
+gameDefinitionSchema.index({ recordKey: 1 }, { unique: true, sparse: true });
+const GameDefinition = mongoose.model("GameDefinition", gameDefinitionSchema, "quiz");
+
+const progressSchema = new mongoose.Schema({ sessionId: { type: String, unique: true }, language: String, currentStep: Number, consecutiveCorrect: Number });
+const Progress = mongoose.model("Progress", progressSchema);
+
+const userSchema = new mongoose.Schema({ sessionId: { type: String, unique: true }, data: String });
+const UserInfo = mongoose.model("UserInfo", userSchema);
+
+async function migrateLegacyGameDefinitions() {
+  try {
+    const database = mongoose.connection.db;
+    const collections = await database.listCollections({ name: "game_definitions" }).toArray();
+    if (!collections.length) return;
+    const legacy = database.collection("game_definitions");
+    const legacyGames = await legacy.find({}).toArray();
+    for (const game of legacyGames) {
+      const slug = normalizeGameSlug(game.slug || game.name);
+      if (!slug || !game.systemDirectives) continue;
+      await GameDefinition.findOneAndUpdate(
+        { recordType: "game", recordKey: `game:${slug}` },
+        {
+          recordType: "game",
+          recordKey: `game:${slug}`,
+          slug,
+          name: String(game.name || slug),
+          description: String(game.description || ""),
+          systemDirectives: String(game.systemDirectives),
+          soloPoints: Number(game.soloPoints) || 1,
+          modes: Array.isArray(game.modes) && game.modes.length ? game.modes : ["solo", "multi"]
+        },
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+    }
+    await legacy.drop();
+  } catch {}
+}
 
 function getKeyFromUrl(url) {
   if (!url) return null;
@@ -199,62 +239,10 @@ async function deleteFromR2(key) {
       Bucket: process.env.R2_BUCKET,
       Key: key
     }));
-    logEvent("SUCCESS", "STORAGE", `Deleted object from R2: ${key}`);
+    
   } catch (e) {
-    logEvent("ERROR", "STORAGE", `Failed to delete object ${key} from R2: ${e.message}`);
+    
   }
-}
-
-function calculateSimilarity(str1, str2) {
-  if (!str1 || !str2) return 0;
-  const set1 = new Set(str1.toLowerCase().split(/\s+/));
-  const set2 = new Set(str2.toLowerCase().split(/\s+/));
-  const intersection = new Set([...set1].filter(x => set2.has(x)));
-  const union = new Set([...set1, ...set2]);
-  if (union.size === 0) return 0;
-  return intersection.size / union.size;
-}
-
-function getLevenshteinDistance(a, b) {
-  if (a.length === 0) return b.length;
-  if (b.length === 0) return a.length;
-  const matrix = [];
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
-      }
-    }
-  }
-  return matrix[b.length][a.length];
-}
-
-function checkAnswerTolerance(userAns, realAns) {
-  if (!userAns || !realAns) return false;
-  const u = userAns.toLowerCase().trim();
-  const r = realAns.toLowerCase().trim();
-  
-  if (u === r) return true;
-  
-  if (!isNaN(u) && !isNaN(r)) {
-    return Number(u) === Number(r);
-  }
-  
-  if (r.length > 3 && (u.includes(r) || r.includes(u))) return true;
-  
-  const tokenSim = calculateSimilarity(u, r);
-  if (tokenSim >= 0.5) return true;
-  
-  const distance = getLevenshteinDistance(u, r);
-  const maxLength = Math.max(u.length, r.length);
-  const charSim = (maxLength - distance) / maxLength;
-  if (charSim >= 0.5) return true;
-  
-  return false;
 }
 
 const localizedTrueFalse = {
@@ -264,129 +252,41 @@ const localizedTrueFalse = {
   ht: ["Vrè", "Fo"]
 };
 
-function isSimilarToExisting(newText, existingItems) {
-  if (!newText || !existingItems || existingItems.length === 0) return { similar: false, pct: 0, matchedText: "" };
-  for (const item of existingItems) {
-    if (!item.question) continue;
-    const sim = calculateSimilarity(newText, item.question);
-    if (sim > 0.20) {
-      return { similar: true, pct: Math.round(sim * 100), matchedText: item.question };
-    }
-  }
-  return { similar: false, pct: 0, matchedText: "" };
-}
-
-async function getRandomFromJsonFile(lang, level) {
-  try {
-    const p = path.join(process.cwd(), "lang", `${lang}.json`);
-    if (fs.existsSync(p)) {
-      const content = fs.readFileSync(p, "utf-8");
-      const data = JSON.parse(content);
-      let filtered = data.filter(d => (d.level || d.niveau || 1) === level);
-      if (filtered.length === 0) {
-        filtered = data;
-      }
-      if (filtered.length > 0) {
-        const selected = filtered[Math.floor(Math.random() * filtered.length)];
-        logEvent("INFO", "FALLBACK_DATA", `Retrieved random JSON item for lang: ${lang}, level: ${level}`);
-        return selected;
-      }
-    }
-  } catch(e) {
-    logEvent("ERROR", "FALLBACK_DATA", `Error reading JSON file for lang: ${lang} - ${e.message}`);
-  }
-  return null;
-}
-
-async function syncJsonToMongo() {
-  logEvent("INFO", "SYSTEM", "Starting JSON synchronisation, threshold 20%");
-  const langs = ["en", "fr", "es", "ht"];
-  for (const l of langs) {
-    const p = path.join(process.cwd(), "lang", `${l}.json`);
-    if (fs.existsSync(p)) {
-      try {
-        const content = fs.readFileSync(p, "utf-8");
-        const data = JSON.parse(content);
-        const existingItems = await BaseQuiz.find({ lang: l }).limit(500).lean().catch(() => []);
-        let addedCount = 0;
-        for (const item of data) {
-          const itemLevel = item.level || item.niveau || 1;
-          const simCheck = isSimilarToExisting(item.question, existingItems);
-          if (!simCheck.similar || simCheck.pct <= 70) {
-            const exists = await BaseQuiz.findOne({ lang: l, explanation: item.explanation }).catch(() => true);
-            if (!exists) {
-              await BaseQuiz.create({ lang: l, level: itemLevel, ...item }).catch(() => {});
-              addedCount++;
-            }
-          }
-        }
-        logEvent("SUCCESS", "SYSTEM", `Sync completed for language ${l}. Added ${addedCount} items.`);
-      } catch (e) {
-        logEvent("ERROR", "SYSTEM", `Failed to sync JSON to Mongo for lang ${l}: ${e.message}`);
-      }
-    }
-  }
-}
-
-function analyzeJsonParseError(rawStr, err) {
-  logEvent("ERROR", "AI_MANAGER", `JSON parsing failed. Error: ${err.message}`);
-  if (!rawStr || rawStr.trim() === "") {
-    logEvent("WARN", "AI_MANAGER", "Diagnosis -> Response completely empty.");
-    return;
-  }
-  const trimmed = rawStr.trim();
-  if (trimmed[0] !== "{" && trimmed[0] !== "[") {
-    logEvent("WARN", "AI_MANAGER", "Diagnosis -> Response does not start with JSON brackets.");
-    return;
-  }
-}
-
 function parseAIJsonResponse(rawResponse, expectedKeys) {
   const rawText = cleanAIResponse(typeof rawResponse === "string" ? rawResponse : JSON.stringify(rawResponse || {}));
-  const firstBracket = rawText.indexOf('{');
-  const lastBracket = rawText.lastIndexOf('}');
-  const firstSquare = rawText.indexOf('[');
-  const lastSquare = rawText.lastIndexOf(']');
   const isArrayExpected = expectedKeys.includes("ARRAY_FORMAT_ONLY");
   const candidates = [];
-
   if (isArrayExpected) {
-    if (firstSquare !== -1 && lastSquare !== -1 && lastSquare > firstSquare) {
-      candidates.push(rawText.substring(firstSquare, lastSquare + 1));
-    }
+    const first = rawText.indexOf("[");
+    const last = rawText.lastIndexOf("]");
+    if (first !== -1 && last > first) candidates.push(rawText.slice(first, last + 1));
   } else {
-    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
-      candidates.push(rawText.substring(firstBracket, lastBracket + 1));
-    }
+    const first = rawText.indexOf("{");
+    const last = rawText.lastIndexOf("}");
+    if (first !== -1 && last > first) candidates.push(rawText.slice(first, last + 1));
   }
-
-  if (candidates.length === 0) throw new Error(`[Parse Error] JSON structure not found.`);
-
-  let parsedData = null;
+  if (candidates.length === 0) throw new Error("JSON response unavailable");
+  let parsedData;
   try {
     parsedData = JSON.parse(candidates[0]);
-  } catch (err) {
-    analyzeJsonParseError(rawText, err);
-    throw new Error(`[Parse Error] SyntaxError: ${err.message}.`);
+  } catch {
+    throw new Error("JSON response invalid");
   }
-
   if (isArrayExpected) return parsedData;
-
-  const containsKeys = value => value && typeof value === "object" && expectedKeys.every(key => key === "ARRAY_FORMAT_ONLY" || value[key] !== undefined && value[key] !== null);
-  if (containsKeys(parsedData)) return parsedData;
-
+  const hasKeys = value => value && typeof value === "object" && expectedKeys.every(key => key === "ARRAY_FORMAT_ONLY" || Object.prototype.hasOwnProperty.call(value, key));
+  if (hasKeys(parsedData)) return parsedData;
   const queue = [parsedData];
-  while (queue.length > 0) {
+  while (queue.length) {
     const current = queue.shift();
-    if (!current || typeof current !== "object") continue;
-    if (containsKeys(current)) return current;
-    for (const value of Object.values(current)) {
-      if (value && typeof value === "object") queue.push(value);
+    if (hasKeys(current)) return current;
+    if (current && typeof current === "object") {
+      for (const value of Object.values(current)) {
+        if (value && typeof value === "object") queue.push(value);
+      }
     }
   }
-
-  const missing = expectedKeys.filter(key => key !== "ARRAY_FORMAT_ONLY" && (parsedData[key] === undefined || parsedData[key] === null));
-  throw new Error(`[Parse Error] Missing key '${missing[0] || "response"}'.`);
+  const missing = expectedKeys.filter(key => key !== "ARRAY_FORMAT_ONLY" && !Object.prototype.hasOwnProperty.call(parsedData, key));
+  throw new Error(`JSON response missing ${missing[0] || "required field"}`);
 }
 
 function cleanAIResponse(raw) {
@@ -400,17 +300,12 @@ function cleanAIResponse(raw) {
 
 async function runAI(messages, max_tokens, retries = 0, model = MAIN_AI_MODEL) {
   const available = getAvailableCFCredential();
-  if (!available) {
-      logEvent("ERROR", "AI_MANAGER", "All configured Cloudflare AI credentials are locked out or exhausted.");
-      return { response: "{}" };
-  }
-  
+  if (!available) throw new Error("Cloudflare AI unavailable");
   const { cred, index } = available;
-  const aiModel = model;
+  const timeoutMs = model === VALIDATOR_AI_MODEL ? 15000 : 60000;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45000);
-  const aiUrl = `https://api.cloudflare.com/client/v4/accounts/${cred.accountId}/ai/run/${aiModel}`;
-
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const aiUrl = `https://api.cloudflare.com/client/v4/accounts/${cred.accountId}/ai/run/${model}`;
   try {
     const response = await fetch(aiUrl, {
       method: "POST",
@@ -421,27 +316,20 @@ async function runAI(messages, max_tokens, retries = 0, model = MAIN_AI_MODEL) {
       body: JSON.stringify({ messages, max_tokens }),
       signal: controller.signal
     });
-    clearTimeout(timeout);
-
     const rawText = await response.text();
     let json = {};
     try {
-        json = JSON.parse(rawText);
-    } catch(e) {
-        logEvent("ERROR", "AI_MANAGER", "Error parsing Cloudflare API response JSON.");
-    }
-
-    const isRateLimited = response.status === 429 || response.status === 401 || response.status === 403 || (json.errors && json.errors.length > 0 && json.errors.some(err => err.message && (err.message.includes("allocation") || err.message.includes("limit"))));
-
+      json = JSON.parse(rawText);
+    } catch {}
+    const isRateLimited = response.status === 429 || response.status === 401 || response.status === 403 || (json.errors && json.errors.some(err => err?.message && /allocation|limit/i.test(err.message)));
     if (isRateLimited) {
-        logEvent("WARN", "AI_MANAGER", `Fallback Triggered: Credential index ${index} exhausted or limited. Locking out for 24 hours.`);
-        cfCredentials[index].lockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
-        if (retries < cfCredentials.length) {
-            return await runAI(messages, max_tokens, retries + 1, model);
-        }
-        return { response: "{}" };
+      cfCredentials[index].lockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
+      clearTimeout(timeout);
+      if (retries + 1 < cfCredentials.length) return runAI(messages, max_tokens, retries + 1, model);
+      throw new Error("Cloudflare AI rate limit");
     }
-
+    clearTimeout(timeout);
+    if (!response.ok) throw new Error(`Cloudflare AI HTTP ${response.status}`);
     if (json.success && json.result) {
       const result = json.result;
       if (typeof result === "string") return { response: result };
@@ -452,40 +340,44 @@ async function runAI(messages, max_tokens, retries = 0, model = MAIN_AI_MODEL) {
       if (typeof textContent === "string") return { response: textContent };
       return { response: JSON.stringify(result) };
     }
-    return { response: "{}" };
+    throw new Error("Cloudflare AI returned no result");
   } catch (e) {
     clearTimeout(timeout);
-    logEvent("ERROR", "AI_MANAGER", `Network or Abort error on credential index ${index}. Message: ${e.message}`);
-    return { response: "{}" };
+    if (retries + 1 < cfCredentials.length && /fetch failed|aborted|network|HTTP 5/i.test(String(e.message))) {
+      return runAI(messages, max_tokens, retries + 1, model);
+    }
+    throw e;
   }
 }
 
 async function runAIValidator(question, correctAnswer, userAnswer, language, gameName, retries = 0) {
   const system = `<system_directives name="answer_validator">
-You are Asistan, the answer validation engine for Mizik games.
-Validate the user's answer against the supplied correct answer and question.
-Use semantic meaning, spelling tolerance, equivalent wording, and the language supplied.
-Return exactly one lowercase word: correct or incorrect.
+You are Asistan, the answer validation engine for Mizik.
+Assess the supplied user answer against the supplied question and verified answer.
+Interpret equivalent wording, ordinary spelling variation, number formatting, and language variation.
+Return exactly one lowercase status word: correct or incorrect.
 </system_directives>`;
   const user = `Question: ${question}
-Correct answer: ${correctAnswer}
+Verified answer: ${correctAnswer}
 User answer: ${userAnswer}
 Language: ${language}
 Game: ${gameName}`;
   const result = await runAI([
     { role: "system", content: system },
     { role: "user", content: user }
-  ], 40, retries, VALIDATOR_AI_MODEL);
-  const normalized = cleanAIResponse(result.response).toLowerCase().replace(/[^a-z]/g, "");
+  ], 20, retries, VALIDATOR_AI_MODEL);
+  const normalized = cleanAIResponse(result.response).toLowerCase().trim();
   if (normalized === "correct") return true;
   if (normalized === "incorrect") return false;
-  throw new Error("Validator returned an invalid status");
+  const match = normalized.match(/^(correct|incorrect)$/);
+  if (match) return match[1] === "correct";
+  throw new Error("Validator status unavailable");
 }
 
 async function runAIImage(prompt, retries = 0) {
     const available = getAvailableCFCredential();
     if (!available) {
-        logEvent("ERROR", "AI_MANAGER", "All AI credentials exhausted for Image Generation.");
+        
         return null;
     }
     const { cred, index } = available;
@@ -505,13 +397,13 @@ async function runAIImage(prompt, retries = 0) {
         const rawText = await response.text();
         let json = {};
         try { json = JSON.parse(rawText); } catch(e) {
-            logEvent("ERROR", "AI_MANAGER", `Failed to parse AI Image API response: ${e.message}`);
+            
         }
 
         const isRateLimited = response.status === 429 || response.status === 401 || response.status === 403 || (json.errors && json.errors.length > 0 && json.errors.some(err => err.message && (err.message.includes("allocation") || err.message.includes("limit"))));
 
         if (isRateLimited) {
-            logEvent("WARN", "AI_MANAGER", `Fallback Triggered: Credential index ${index} exhausted on Image generation. Lockout 24h.`);
+            
             cfCredentials[index].lockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
             if (retries < cfCredentials.length) {
                 return await runAIImage(prompt, retries + 1);
@@ -524,109 +416,6 @@ async function runAIImage(prompt, retries = 0) {
         logEvent("ERROR", "AI_MANAGER", `Network or Abort error during image generation: ${e.message}`);
         return null;
     }
-}
-
-async function executeBackgroundMassGeneration(isTrigger) {
-  const available = getAvailableCFCredential();
-  if (!available) return;
-
-  const processName = isTrigger ? "Trigger" : "Auto";
-  logEvent("INFO", "SYSTEM", `Initiation mass generation process: ${processName}`);
-
-  let targetLevels = [1, 2, 3];
-  if (!isTrigger) {
-    try {
-      const rows = db.prepare("SELECT current_step FROM user_progress ORDER BY RANDOM() LIMIT 7").all();
-      if (rows.length > 0) {
-        targetLevels = rows.map(r => r.current_step);
-      }
-    } catch (e) {
-      logEvent("WARN", "SYSTEM", `Could not fetch target levels for mass gen: ${e.message}`);
-    }
-  }
-
-  const langs = ["en", "fr", "es", "ht"];
-  const qTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK"];
-
-  for (const lang of langs) {
-    const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[lang] || "English";
-    const tfOpts = localizedTrueFalse[lang] || ["True", "False"];
-    
-    for (let i = 0; i < 7; i++) {
-      try {
-        const currentCheck = getAvailableCFCredential();
-        if (!currentCheck) return;
-
-        const level = targetLevels[Math.floor(Math.random() * targetLevels.length)] || 1;
-        const qType = qTypes[Math.floor(Math.random() * qTypes.length)];
-
-        let seedText = "General Knowledge";
-        try {
-          const seedItem = await BaseQuiz.aggregate([{ $match: { lang: lang } }, { $sample: { size: 1 } }]);
-          if (seedItem && seedItem.length > 0) {
-            seedText = seedItem[0].question;
-          }
-        } catch(e) {
-            logEvent("WARN", "SYSTEM", `Seed generation fallback triggered: ${e.message}`);
-        }
-
-        let systemInstruction = `<system_directives name="mass_question_${qType.toLowerCase()}">
-You are Asistan, the ${qType} question engine for Mizik.
-Generate one factually verified ${qType} question in ${langName} at level ${level}.
-Set qType to ${qType}.
-Provide the exact answer, a concise explanation, a professional successMsg, a professional errorMsg, and an integer timeLimit in seconds.
-Return one JSON object with exactly these fields: level, lang, qType, question, options, answer, explanation, successMsg, errorMsg, timeLimit.
-</system_directives>`;
-        let prompt = `Language: ${langName}
-Level: ${level}
-Question type: ${qType}
-Verified source topic: ${seedText}`;
-
-        const aiResponse = await runAI([
-          { role: "system", content: systemInstruction },
-          { role: "user", content: prompt }
-        ], 1000);
-
-        try {
-          const parsed = parseAIJsonResponse(aiResponse.response, ["question", "answer", "options", "explanation", "qType", "successMsg", "errorMsg", "timeLimit"]);
-          
-          if (parsed.qType === "TRUE_FALSE") {
-            parsed.options = tfOpts;
-            if (parsed.answer !== tfOpts[0] && parsed.answer !== tfOpts[1]) {
-                parsed.answer = tfOpts[0];
-            }
-          }
-
-          const existingItems = await BaseQuiz.find({ lang: lang }).limit(250).lean().catch(() => []);
-          const simCheck = isSimilarToExisting(parsed.question, existingItems);
-          
-          if (!simCheck.similar || simCheck.pct <= 70) {
-            const exists = await BaseQuiz.findOne({ lang: lang, question: parsed.question }).catch(() => true);
-            if (!exists) {
-              await BaseQuiz.create({
-                lang: lang,
-                level: parsed.level || level,
-                qType: parsed.qType || qType,
-                question: parsed.question,
-                options: Array.isArray(parsed.options) ? parsed.options : [],
-                answer: parsed.answer,
-                explanation: parsed.explanation,
-                successMsg: parsed.successMsg || "",
-                errorMsg: parsed.errorMsg || "",
-                timeLimit: Math.max(5, Math.min(180, Number(parsed.timeLimit) || 20))
-              }).catch((e) => { logEvent("ERROR", "SYSTEM", `Failed saving generated content: ${e.message}`); });
-              logEvent("SUCCESS", "SYSTEM", `New mass question saved for ${lang}. Similarity: ${simCheck.pct}%`);
-            }
-          }
-        } catch (parseError) {
-            logEvent("ERROR", "SYSTEM", `Failed to parse generated mass question: ${parseError.message}`);
-        }
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (e) {
-          logEvent("ERROR", "SYSTEM", `Exception in mass generation loop: ${e.message}`);
-      }
-    }
-  }
 }
 
 async function getProgress(sessionId) {
@@ -685,17 +474,6 @@ app.get("/local-image/:filename", (req, res) => {
 });
 
 app.use((req, res, next) => {
-  logEvent("INFO", "ROUTER", `Intercepted HTTP Request on: ${req.method} ${req.path}`);
-  
-  globalRequestCounter++;
-  if (globalRequestCounter >= 70) {
-    logEvent("INFO", "SYSTEM", "70 requests reached. Triggering mass generation.");
-    globalRequestCounter = 0;
-    executeBackgroundMassGeneration(true).catch(e => {
-        logEvent("ERROR", "SYSTEM", `Trigger mass generation failed: ${e.message}`);
-    });
-  }
-
   const origin = req.headers.origin;
   const authHeader = req.headers.authorization;
   let isAllowed = false;
@@ -716,7 +494,6 @@ app.use((req, res, next) => {
     return res.status(200).end();
   }
   if (!isAllowed) {
-    logEvent("WARN", "ROUTER", `Forbidden access attempt from Origin: ${origin}`);
     return res.status(403).json({ error: "Forbidden: Origin or Token not allowed" });
   }
   next();
@@ -740,7 +517,6 @@ app.post("/user-info", async (req, res) => {
     let newStep = body.level !== undefined && body.level !== null ? parseInt(body.level) : (progress ? progress.current_step : 1);
     let newConsec = body.nivo !== undefined && body.nivo !== null ? parseInt(body.nivo) : (progress ? progress.consecutive_correct : 0);
     await saveProgress(session_id, progress ? progress.language : 'en', newStep, newConsec);
-    logEvent("SUCCESS", "ROUTER", `User info saved successfully for session: ${session_id}`);
     return res.json({ success: true, message: "User info saved successfully" });
   } catch (e) {
     logEvent("ERROR", "ROUTER", `User info save failed: ${e.message}`);
@@ -749,7 +525,6 @@ app.post("/user-info", async (req, res) => {
 });
 
 async function executeMode0PureDB(randomItem) {
-    logEvent("INFO", "MODE_0_PURE_DB", "Execution started");
     if (!randomItem) throw new Error("Source item missing");
     const parsed = { question: randomItem.question, options: randomItem.options, answer: randomItem.answer };
     const randomType = randomItem.qType || "MCQ";
@@ -757,162 +532,117 @@ async function executeMode0PureDB(randomItem) {
     const finalSuccess = randomItem.successMsg || null;
     const finalError = randomItem.errorMsg || null;
     const finalExplanation = randomItem.explanation || null;
-    logEvent("SUCCESS", "MODE_0_PURE_DB", "Execution completed successfully");
     return { parsed, randomType, imgUrl, finalSuccess, finalError, finalExplanation };
 }
 
 async function executeMode1ImproveExisting(randomItem, langName, langCode) {
-    logEvent("INFO", "MODE_1_IMPROVE_EXISTING", "Execution started");
-    if (!randomItem) throw new Error("Source item missing");
-    const prompt = `<system_directives name="improved_question">
-You are Asistan, a factual question editor.
-Rewrite the supplied question while preserving its verified subject and answer.
-Match the original question type and language.
-Return a raw JSON object containing question, options, and answer.
-Question formatting follows the supplied type.
-</system_directives>
+  if (!randomItem) throw new Error("Source item missing");
+  const game = getBuiltInGameByQType(randomItem.qType) || {
+    name: randomItem.qType || "Quiz",
+    systemDirectives: `<system_directives name="stored_question">
+You are Asistan, the current Mizik game engine.
+Generate one question matching the supplied game type and language.
+Return question, options, answer, explanation, successMsg, errorMsg, timeLimit and qType as a JSON object.
+</system_directives>`
+  };
+  const prompt = `${game.systemDirectives}
 
 Language: ${langName}
-Question type: ${randomItem.qType || "MCQ"}
-Source question: ${randomItem.question}
-Source answer: ${randomItem.answer}`;
-    const aiResponse = await runAI([{ role: "system", content: "<system_directives name=\"question_editor\">\nYou are Asistan, a factual question editor for Mizik.\nReturn a raw JSON object containing the requested fields.\nPreserve verified meaning, answer, language, and question type.\n</system_directives>" }, { role: "user", content: prompt }], 1000);
-    const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
-    
-    if (randomItem.qType === "TRUE_FALSE") {
-        parsed.options = localizedTrueFalse[langCode] || ["True", "False"];
-        if (parsed.answer !== parsed.options[0] && parsed.answer !== parsed.options[1]) {
-            parsed.answer = parsed.options[0];
-        }
-    }
-    
-    logEvent("SUCCESS", "MODE_1_IMPROVE_EXISTING", "Execution completed successfully");
-    return { parsed, randomType: randomItem.qType || "MCQ", imgUrl: null, finalSuccess: "", finalError: "", finalExplanation: "" };
+Level: ${randomItem.level || 1}
+Current verified question: ${randomItem.question}
+Current verified answer: ${randomItem.answer}
+
+Create a fresh question for the same game using the supplied verified content as the factual basis.
+Return question, options, answer, explanation, successMsg, errorMsg, timeLimit and qType as one JSON object.`;
+  const aiResponse = await runAI([
+    { role: "system", content: game.systemDirectives },
+    { role: "user", content: prompt }
+  ], 900);
+  const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer", "explanation", "successMsg", "errorMsg", "timeLimit", "qType"]);
+  if (randomItem.qType === "TRUE_FALSE") {
+    parsed.options = localizedTrueFalse[langCode] || ["True", "False"];
+    if (!parsed.options.includes(parsed.answer)) throw new Error("Invalid True or False answer");
+  }
+  parsed.timeLimit = Math.max(5, Math.min(180, Number(parsed.timeLimit) || 20));
+  return {
+    parsed,
+    randomType: randomItem.qType || parsed.qType || "MCQ",
+    imgUrl: randomItem.imageUrl || null,
+    finalSuccess: parsed.successMsg || randomItem.successMsg || "",
+    finalError: parsed.errorMsg || randomItem.errorMsg || "",
+    finalExplanation: parsed.explanation || randomItem.explanation || ""
+  };
 }
 
 async function executeMode2CreateSimilar(randomItem, langName, langCode) {
-    logEvent("INFO", "MODE_2_CREATE_SIMILAR", "Execution started");
-    if (!randomItem) throw new Error("Source item missing");
-    const prompt = `<system_directives name="similar_question">
-You are Asistan, a factual question generator.
-Create a new question about the same verified subject area as the supplied source.
-Keep the requested language and question type.
-Return a raw JSON object containing question, options, and answer.
-Use knowledge grounded in the supplied source subject.
-</system_directives>
+  if (!randomItem) throw new Error("Source item missing");
+  const game = getBuiltInGameByQType(randomItem.qType) || {
+    name: randomItem.qType || "Quiz",
+    systemDirectives: `<system_directives name="stored_question">
+You are Asistan, the current Mizik game engine.
+Generate one question matching the supplied game type and language.
+Return question, options, answer, explanation, successMsg, errorMsg, timeLimit and qType as a JSON object.
+</system_directives>`
+  };
+  const prompt = `${game.systemDirectives}
 
 Language: ${langName}
-Question type: ${randomItem.qType || "MCQ"}
-Source question: ${randomItem.question}`;
-    const aiResponse = await runAI([{ role: "system", content: "<system_directives name=\"question_editor\">\nYou are Asistan, a factual question editor for Mizik.\nReturn a raw JSON object containing the requested fields.\nPreserve verified meaning, answer, language, and question type.\n</system_directives>" }, { role: "user", content: prompt }], 1000);
-    const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer"]);
-    
-    if (randomItem.qType === "TRUE_FALSE") {
-        parsed.options = localizedTrueFalse[langCode] || ["True", "False"];
-        if (parsed.answer !== parsed.options[0] && parsed.answer !== parsed.options[1]) {
-            parsed.answer = parsed.options[0];
-        }
-    }
-    
-    logEvent("SUCCESS", "MODE_2_CREATE_SIMILAR", "Execution completed successfully");
-    return { parsed, randomType: randomItem.qType || "MCQ", imgUrl: null, finalSuccess: "", finalError: "", finalExplanation: "" };
+Level: ${randomItem.level || 1}
+Verified subject: ${randomItem.question}
+Verified answer: ${randomItem.answer}
+
+Create a new question on the same verified subject area while keeping the same game type and language.
+Return question, options, answer, explanation, successMsg, errorMsg, timeLimit and qType as one JSON object.`;
+  const aiResponse = await runAI([
+    { role: "system", content: game.systemDirectives },
+    { role: "user", content: prompt }
+  ], 900);
+  const parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer", "explanation", "successMsg", "errorMsg", "timeLimit", "qType"]);
+  if (randomItem.qType === "TRUE_FALSE") {
+    parsed.options = localizedTrueFalse[langCode] || ["True", "False"];
+    if (!parsed.options.includes(parsed.answer)) throw new Error("Invalid True or False answer");
+  }
+  parsed.timeLimit = Math.max(5, Math.min(180, Number(parsed.timeLimit) || 20));
+  return {
+    parsed,
+    randomType: randomItem.qType || parsed.qType || "MCQ",
+    imgUrl: randomItem.imageUrl || null,
+    finalSuccess: parsed.successMsg || randomItem.successMsg || "",
+    finalError: parsed.errorMsg || randomItem.errorMsg || "",
+    finalExplanation: parsed.explanation || randomItem.explanation || ""
+  };
 }
 
-async function executeMode3PureAIGeneration(session_id, language, langName) {
-    logEvent("INFO", "MODE_3_PURE_AI_GENERATION", "Execution started");
-    const questionTypes = ["MCQ", "TRUE_FALSE", "FILL_BLANK", "IDENTITY_IMAGE"];
-    const randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
-    const tfOpts = localizedTrueFalse[language] || ["True", "False"];
-    const systemInstructionStrict = `<system_directives name="${randomType.toLowerCase()}">
-You are Asistan, the ${randomType} game engine for Mizik.
-Generate one factually verified game question in the requested language.
-Set qType to ${randomType}.
-Provide the requested answer, a concise explanation, a professional successMsg and a professional errorMsg in the requested language.
-Return one JSON object with the fields required by the current game.
-</system_directives>`;
-    let parsed = null;
-    let imgUrl = null;
-
-    if (randomType === "IDENTITY_IMAGE") {
-        const categories = ["Country, city or region", "Public person", "Anime, film or series", "Animal", "Plant", "Planet"];
-        const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
-        const combinedPrompt = `<system_directives name="identity_image">
-You are Asistan, the visual-question generator for the Identity Image game.
-Create a factual image-generation target and one valid question about the represented subject.
-The image target has no text.
-The question asks for the identity represented by the image.
-The answer is the exact identity used for the generated image.
-Return a raw JSON object containing imagePrompt, options, question, and answer.
-The response language is ${langName}.
-</system_directives>
-
-Category: ${selectedCategory}`;
-        const comboResp = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: combinedPrompt }], 900);
-        const parsedCombo = parseAIJsonResponse(comboResp.response, ["imagePrompt", "options", "question", "answer", "explanation", "successMsg", "errorMsg", "timeLimit"]);
-        const aiJsonResult = await runAIImage(parsedCombo.imagePrompt);
-        if (!aiJsonResult || !aiJsonResult.image) throw new Error("Flux AI Image API failed");
-        const buffer = Buffer.from(aiJsonResult.image, "base64");
-        const filename = `img_${Date.now()}_${crypto.randomUUID().split("-")[0]}.png`;
-        const r2Key = `uploads/${filename}`;
-        await s3.send(new PutObjectCommand({
-          Bucket: process.env.R2_BUCKET,
-          Key: r2Key,
-          Body: buffer,
-          ContentType: "image/png"
-        }));
-        imgUrl = `${process.env.R2_PUBLIC_URL}/${r2Key}`;
-        parsed = { question: parsedCombo.question, options: [], answer: parsedCombo.answer, explanation: parsedCombo.explanation, successMsg: parsedCombo.successMsg, errorMsg: parsedCombo.errorMsg, timeLimit: parsedCombo.timeLimit, qType: "IDENTITY_IMAGE" };
-    } else if (randomType === "MCQ") {
-        const mcqPrompt = `Language: ${langName}
-Question type: MCQ
-Required fields: question, options, answer
-Question shape: direct question ending with a question mark
-Options: at most 4
-Answer: one option`;
-        const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: mcqPrompt }], 700);
-        parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer", "explanation", "successMsg", "errorMsg", "timeLimit"]);
-    } else if (randomType === "TRUE_FALSE") {
-        const tfPrompt = `Language: ${langName}
-Question type: TRUE_FALSE
-Required fields: question, options, answer
-Options: ${JSON.stringify(tfOpts)}
-Question shape: factual statement
-Answer: one localized option`;
-        const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: tfPrompt }], 600);
-        parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer", "explanation", "successMsg", "errorMsg", "timeLimit"]);
-        parsed.options = tfOpts;
-        if (parsed.answer !== tfOpts[0] && parsed.answer !== tfOpts[1]) throw new Error("Invalid True/False answer");
-    } else {
-        const fbPrompt = `Language: ${langName}
-Question type: FILL_BLANK
-Required fields: question, options, answer
-Question shape: one sentence containing one blank marker
-Options: []
-Answer: one word`;
-        const aiResponse = await runAI([{ role: "system", content: systemInstructionStrict }, { role: "user", content: fbPrompt }], 600);
-        parsed = parseAIJsonResponse(aiResponse.response, ["question", "options", "answer", "explanation", "successMsg", "errorMsg", "timeLimit"]);
-        parsed.options = [];
-    }
-
-    logEvent("SUCCESS", "MODE_3_PURE_AI_GENERATION", "Execution completed successfully");
-    parsed.timeLimit = Math.max(5, Math.min(180, Number(parsed.timeLimit) || 20));
-    return { parsed, randomType, imgUrl, finalSuccess: parsed.successMsg || "", finalError: parsed.errorMsg || "", finalExplanation: parsed.explanation || "" };
+async function executeMode3PureAIGeneration(language, langName, requestedGame = null, imageUrl = null, gameContext = "", level = 1) {
+  const selectedGame = requestedGame ? await getGameDefinition(requestedGame) : null;
+  const game = selectedGame || builtInGames[Math.floor(Math.random() * builtInGames.length)];
+  if (!game) throw new Error("No game available");
+  const result = await generateGameQuestion(game, language, level, imageUrl, gameContext, []);
+  return {
+    parsed: result,
+    randomType: result.qType || game.slug.toUpperCase(),
+    imgUrl: result.imageUrl || null,
+    finalSuccess: result.successMsg || "",
+    finalError: result.errorMsg || "",
+    finalExplanation: result.explanation || ""
+  };
 }
 
 const builtInGames = [
   {
     slug: "mcq",
     name: "MCQ",
-    description: "Factual multiple choice questions.",
+    description: "Multiple choice knowledge game.",
     systemDirectives: `<system_directives name="mcq">
 You are Asistan, the MCQ game engine for Mizik.
-Generate one factually verified question in the requested language.
+Create one accurate question in the requested language.
+Build 2 to 4 distinct answer options.
+Set answer to one exact option.
+Explain the verified fact briefly.
+Write successMsg and errorMsg naturally in the requested language.
+Choose a response time suited to difficulty and return it as timeLimit in seconds.
+Return one JSON object with question, options, answer, explanation, successMsg, errorMsg, timeLimit and qType.
 Set qType to MCQ.
-Provide 2 to 4 distinct options and set answer to one option.
-Provide a concise explanation that identifies the verified fact behind the answer.
-Provide a professional successMsg and a professional errorMsg in the requested language.
-Set timeLimit to an integer in seconds suited to the question difficulty.
-Return one JSON object with exactly these fields: question, options, answer, explanation, successMsg, errorMsg, timeLimit, qType.
 </system_directives>`,
     soloPoints: 1,
     modes: ["solo", "multi"]
@@ -920,16 +650,17 @@ Return one JSON object with exactly these fields: question, options, answer, exp
   {
     slug: "true_false",
     name: "True or False",
-    description: "Factual true or false statements.",
+    description: "Factual statement judgment game.",
     systemDirectives: `<system_directives name="true_false">
 You are Asistan, the True or False game engine for Mizik.
-Generate one factually verified statement in the requested language.
+Create one accurate factual statement in the requested language.
+Use the two answer labels supplied by the server.
+Set answer to the correct localized label.
+Explain the verified fact briefly.
+Write successMsg and errorMsg naturally in the requested language.
+Choose a response time suited to difficulty and return it as timeLimit in seconds.
+Return one JSON object with question, options, answer, explanation, successMsg, errorMsg, timeLimit and qType.
 Set qType to TRUE_FALSE.
-Use the two localized labels supplied by the server as options and select one as answer.
-Provide a concise explanation that identifies the verified fact.
-Provide a professional successMsg and a professional errorMsg in the requested language.
-Set timeLimit to an integer in seconds suited to the statement difficulty.
-Return one JSON object with exactly these fields: question, options, answer, explanation, successMsg, errorMsg, timeLimit, qType.
 </system_directives>`,
     soloPoints: 1,
     modes: ["solo", "multi"]
@@ -937,17 +668,18 @@ Return one JSON object with exactly these fields: question, options, answer, exp
   {
     slug: "fill_blank",
     name: "Fill Blank",
-    description: "Complete a factual sentence.",
+    description: "Factual missing-word game.",
     systemDirectives: `<system_directives name="fill_blank">
 You are Asistan, the Fill Blank game engine for Mizik.
-Generate one factually verified sentence in the requested language with one blank represented by ____.
+Create one accurate factual sentence in the requested language.
+Place one blank marker ____ inside the sentence.
+Set answer to the missing word or short phrase.
+Keep options as an empty array.
+Explain the verified fact briefly.
+Write successMsg and errorMsg naturally in the requested language.
+Choose a response time suited to difficulty and return it as timeLimit in seconds.
+Return one JSON object with question, options, answer, explanation, successMsg, errorMsg, timeLimit and qType.
 Set qType to FILL_BLANK.
-Set answer to the exact missing word or short phrase.
-Keep options empty.
-Provide a concise explanation tied to the verified fact.
-Provide a professional successMsg and a professional errorMsg in the requested language.
-Set timeLimit to an integer in seconds suited to the difficulty.
-Return one JSON object with exactly these fields: question, options, answer, explanation, successMsg, errorMsg, timeLimit, qType.
 </system_directives>`,
     soloPoints: 1,
     modes: ["solo", "multi"]
@@ -955,17 +687,18 @@ Return one JSON object with exactly these fields: question, options, answer, exp
   {
     slug: "identity_image",
     name: "Identity Image",
-    description: "Identify a subject represented by an image.",
+    description: "Visual identification game.",
     systemDirectives: `<system_directives name="identity_image">
 You are Asistan, the Identity Image game engine for Mizik.
 An image is supplied for visual identification.
-Determine the intended identity from the supplied image context and generate one valid identification question in the requested language.
-Set qType to IDENTITY_IMAGE.
+Identify one clear subject represented by the supplied image context.
+Write one direct identification question in the requested language.
 Set answer to the exact intended identity.
-Provide a concise explanation describing why the identity is correct from the available task information.
-Provide a professional successMsg and a professional errorMsg in the requested language.
-Set timeLimit to an integer in seconds suited to the visual difficulty.
-Return one JSON object with exactly these fields: question, options, answer, explanation, successMsg, errorMsg, timeLimit, qType.
+Explain the identifying fact briefly.
+Write successMsg and errorMsg naturally in the requested language.
+Choose a response time suited to visual difficulty and return it as timeLimit in seconds.
+Return one JSON object with question, options, answer, explanation, successMsg, errorMsg, timeLimit and qType.
+Set qType to IDENTITY_IMAGE.
 </system_directives>`,
     soloPoints: 3,
     modes: ["solo", "multi"]
@@ -973,15 +706,16 @@ Return one JSON object with exactly these fields: question, options, answer, exp
   {
     slug: "word_twist",
     name: "Word Twist",
-    description: "Unscramble letters into the target word.",
+    description: "Unscramble a supplied word.",
     systemDirectives: `<system_directives name="word_twist">
 You are Asistan, the Word Twist game engine for Mizik.
-Use only a word supplied by the server for the current round.
+Use the supplied target word as the answer.
+Produce a scrambled form using the same letters.
 Set qType to WORD_TWIST.
-Confirm the supplied word is the answer and create a concise explanation for the word.
-Provide a professional successMsg and a professional errorMsg in the requested language.
-Set timeLimit to an integer in seconds suited to the word length and difficulty.
-Return one JSON object with exactly these fields: scrambled, answer, explanation, successMsg, errorMsg, timeLimit, qType.
+Explain the word briefly in the requested language.
+Write successMsg and errorMsg naturally in the requested language.
+Choose a response time suited to word difficulty and return it as timeLimit in seconds.
+Return one JSON object with scrambled, answer, explanation, successMsg, errorMsg, timeLimit and qType.
 </system_directives>`,
     soloPoints: 3,
     modes: ["solo", "multi"]
@@ -989,16 +723,16 @@ Return one JSON object with exactly these fields: scrambled, answer, explanation
   {
     slug: "text_twist",
     name: "Text Twist",
-    description: "Build words from a supplied letter set.",
+    description: "Build a word from supplied letters.",
     systemDirectives: `<system_directives name="text_twist">
 You are Asistan, the Text Twist game engine for Mizik.
-Use only the supplied letter set and requested language.
+Use only the supplied letter set for the current round.
+Select one valid target word in the requested language.
 Set qType to TEXT_TWIST.
-Select one valid target word that can be formed from the supplied letters.
-Provide a concise explanation for the target word.
-Provide a professional successMsg and a professional errorMsg in the requested language.
-Set timeLimit to an integer in seconds suited to the word difficulty.
-Return one JSON object with exactly these fields: letters, answer, explanation, successMsg, errorMsg, timeLimit, qType.
+Explain the target word briefly.
+Write successMsg and errorMsg naturally in the requested language.
+Choose a response time suited to word difficulty and return it as timeLimit in seconds.
+Return one JSON object with letters, answer, explanation, successMsg, errorMsg, timeLimit and qType.
 </system_directives>`,
     soloPoints: 4,
     modes: ["solo", "multi"]
@@ -1006,41 +740,51 @@ Return one JSON object with exactly these fields: letters, answer, explanation, 
   {
     slug: "2048",
     name: "2048",
-    description: "Tile-merging puzzle game.",
+    description: "Tile merging puzzle game.",
     systemDirectives: `<system_directives name="2048">
 You are Asistan, the 2048 game engine for Mizik.
-Define the current board setup and target for the requested level.
+Define a playable board configuration for the requested level.
 Set qType to 2048.
-Provide a concise explanation of the current objective and professional successMsg and errorMsg in the requested language.
-Return one JSON object with exactly these fields: boardSize, startTileValues, targetValue, explanation, successMsg, errorMsg, timeLimit, qType.
+Set boardSize, startTileValues and targetValue.
+Explain the current objective briefly in the requested language.
+Write successMsg and errorMsg naturally in the requested language.
+Set timeLimit to a suitable number of seconds or zero for an untimed round.
+Return one JSON object with boardSize, startTileValues, targetValue, explanation, successMsg, errorMsg, timeLimit and qType.
 </system_directives>`,
     soloPoints: 4,
     modes: ["solo"]
   }
 ];
-async function seedBuiltInGames() {
-  for (const game of builtInGames) {
-    await GameDefinition.findOneAndUpdate(
-      { slug: game.slug },
-      { ...game, updatedAt: new Date() },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    ).catch(() => {});
-  }
+
+function getBuiltInGameByQType(qType) {
+  const map = {
+    MCQ: "mcq",
+    TRUE_FALSE: "true_false",
+    FILL_BLANK: "fill_blank",
+    IDENTITY_IMAGE: "identity_image",
+    WORD_TWIST: "word_twist",
+    TEXT_TWIST: "text_twist",
+    "2048": "2048"
+  };
+  const slug = map[String(qType || "").toUpperCase()];
+  return builtInGames.find(game => game.slug === slug) || null;
 }
 
 async function getGameDefinition(slugOrName) {
   if (!slugOrName) return null;
-  const normalized = String(slugOrName).trim().toLowerCase().replace(/\s+/g, "_");
-  const built = builtInGames.find(game => game.slug === normalized || game.name.toLowerCase() === String(slugOrName).trim().toLowerCase());
+  const text = String(slugOrName).trim();
+  const normalized = normalizeGameSlug(text);
+  const built = builtInGames.find(game => game.slug === normalized || game.name.toLowerCase() === text.toLowerCase());
   if (built) return built;
   const stored = await GameDefinition.findOne({
-    $or: [{ slug: normalized }, { name: new RegExp(`^${String(slugOrName).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") }]
+    recordType: "game",
+    $or: [{ slug: normalized }, { name: new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") }]
   }).lean().catch(() => null);
   return stored || null;
 }
 
 async function listGameDefinitions() {
-  const stored = await GameDefinition.find({}).sort({ name: 1 }).lean().catch(() => []);
+  const stored = await GameDefinition.find({ recordType: "game" }).sort({ name: 1 }).lean().catch(() => []);
   const map = new Map();
   for (const game of builtInGames) map.set(game.slug, game);
   for (const game of stored) map.set(game.slug, game);
@@ -1057,10 +801,6 @@ function normalizeGameSlug(value) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, "_");
 }
 
-function hashText(value) {
-  return crypto.createHash("sha256").update(String(value || "")).digest("hex");
-}
-
 function scrambleWord(word) {
   const chars = String(word || "").split("");
   for (let i = chars.length - 1; i > 0; i--) {
@@ -1072,21 +812,28 @@ function scrambleWord(word) {
 }
 
 async function generateGameQuestion(game, language, level, imageUrl = null, gameContext = "", words = []) {
+  if (!game) throw new Error("Game not found");
+
   if (game.slug === "word_twist") {
-    const pool = Array.isArray(words) && words.length > 0 ? words.filter(word => typeof word === "string" && word.trim().length >= 2) : [];
-    if (pool.length === 0) throw new Error("Word Twist requires a word pool");
-    const answer = pool[Math.floor(Math.random() * pool.length)].trim();
+    const pool = Array.isArray(words) ? words.map(word => String(word || "").trim()).filter(word => word.length >= 2) : [];
+    if (!pool.length) throw new Error("Word Twist requires supplied words");
+    const answer = pool[Math.floor(Math.random() * pool.length)];
+    const scrambled = scrambleWord(answer);
     const prompt = `${game.systemDirectives}
+
 Language: ${language}
-Word: ${answer}
 Level: ${level}
-Scrambled: ${scrambleWord(answer)}`;
-    const response = await runAI([{ role: "system", content: game.systemDirectives }, { role: "user", content: prompt }], 550);
+Target word: ${answer}
+Scrambled letters: ${scrambled}`;
+    const response = await runAI([
+      { role: "system", content: game.systemDirectives },
+      { role: "user", content: prompt }
+    ], 450);
     const parsed = parseAIJsonResponse(response.response, ["scrambled", "answer", "explanation", "successMsg", "errorMsg", "timeLimit", "qType"]);
+    parsed.scrambled = scrambled;
     parsed.answer = answer;
-    parsed.scrambled = scrambleWord(answer);
     parsed.qType = "WORD_TWIST";
-    parsed.timeLimit = Math.max(8, Math.min(40, Number(parsed.timeLimit) || answer.length * 3));
+    parsed.timeLimit = Math.max(8, Math.min(60, Number(parsed.timeLimit) || answer.length * 3));
     return parsed;
   }
 
@@ -1096,37 +843,57 @@ Scrambled: ${scrambleWord(answer)}`;
     const prompt = `${game.systemDirectives}
 
 Language: ${language}
-Letter set: ${letters}
-Level: ${level}`;
-    const response = await runAI([{ role: "system", content: game.systemDirectives }, { role: "user", content: prompt }], 500);
-    const parsed = parseAIJsonResponse(response.response, ["letters", "answer", "explanation", "successMsg", "errorMsg", "timeLimit"]);
+Level: ${level}
+Letter set: ${letters}`;
+    const response = await runAI([
+      { role: "system", content: game.systemDirectives },
+      { role: "user", content: prompt }
+    ], 450);
+    const parsed = parseAIJsonResponse(response.response, ["letters", "answer", "explanation", "successMsg", "errorMsg", "timeLimit", "qType"]);
+    parsed.letters = letters;
     parsed.qType = "TEXT_TWIST";
+    parsed.timeLimit = Math.max(8, Math.min(90, Number(parsed.timeLimit) || 25));
     return parsed;
   }
 
   if (game.slug === "2048") {
     const prompt = `${game.systemDirectives}
+
 Language: ${language}
 Level: ${level}`;
-    const response = await runAI([{ role: "system", content: game.systemDirectives }, { role: "user", content: prompt }], 500);
+    const response = await runAI([
+      { role: "system", content: game.systemDirectives },
+      { role: "user", content: prompt }
+    ], 450);
     const parsed = parseAIJsonResponse(response.response, ["boardSize", "startTileValues", "targetValue", "explanation", "successMsg", "errorMsg", "timeLimit", "qType"]);
-    parsed.boardSize = Math.max(4, Number(parsed.boardSize) || 4);
-    parsed.startTileValues = Array.isArray(parsed.startTileValues) ? parsed.startTileValues : [2, 4];
+    parsed.boardSize = Math.max(4, Math.min(8, Number(parsed.boardSize) || 4));
+    parsed.startTileValues = Array.isArray(parsed.startTileValues) ? parsed.startTileValues.map(Number).filter(Number.isFinite) : [2, 4];
     parsed.targetValue = Number(parsed.targetValue) || 2048;
     parsed.qType = "2048";
-    parsed.timeLimit = Math.max(0, Number(parsed.timeLimit) || 0);
+    parsed.timeLimit = Math.max(0, Math.min(600, Number(parsed.timeLimit) || 0));
     return parsed;
   }
 
   const system = game.systemDirectives;
-  let userPrompt = `Language: ${language}
+  let userPrompt = `${system}
+
+Language: ${language}
 Level: ${level}
 Game: ${game.name}
-Context: ${gameContext || "general factual knowledge"}`;
+Current context: ${gameContext || "general factual knowledge"}`;
   if (imageUrl) userPrompt += `\nImage URL: ${imageUrl}`;
-  const response = await runAI([{ role: "system", content: system }, { role: "user", content: userPrompt }], 900);
+  if (game.slug === "true_false") userPrompt += `\nLocalized choices: ${JSON.stringify(localizedTrueFalse[language] || localizedTrueFalse.en)}`;
+  const response = await runAI([
+    { role: "system", content: system },
+    { role: "user", content: userPrompt }
+  ], 800);
   const required = ["question", "options", "answer", "explanation", "successMsg", "errorMsg", "timeLimit", "qType"];
   const parsed = parseAIJsonResponse(response.response, required);
+  if (game.slug === "true_false") {
+    const tfOpts = localizedTrueFalse[language] || localizedTrueFalse.en;
+    parsed.options = tfOpts;
+    if (!tfOpts.includes(parsed.answer)) throw new Error("Invalid True or False answer");
+  }
   parsed.timeLimit = Math.max(5, Math.min(180, Number(parsed.timeLimit) || 20));
   return parsed;
 }
@@ -1134,37 +901,46 @@ Context: ${gameContext || "general factual knowledge"}`;
 async function generateAndSaveGame(gameInput) {
   const name = String(gameInput.name || "").trim();
   const description = String(gameInput.description || "").trim();
-  const language = String(gameInput.language || "en").trim().toLowerCase();
+  const language = normalizeLanguage(gameInput.language || "en");
   const baseRules = String(gameInput.rules || "").trim();
   if (!name || !description) throw new Error("name and description required");
   const slug = normalizeGameSlug(gameInput.slug || name);
   const generatorSystem = `<system_directives name="game_generator">
-You are Asistan, the game-definition generator for Mizik.
-Create a reusable game definition from the supplied game title, description, and rules.
-The definition contains one concise English systemDirectives block dedicated to the supplied game.
-The directive defines the game identity, objective, exact output fields, answer semantics, feedback fields, and timing field for that game.
-The directive remains specific to the game and uses only the current turn data supplied by the server.
-Return one JSON object with slug, name, description, systemDirectives, soloPoints, and modes.
-The systemDirectives value starts with <system_directives name="..."> and ends with </system_directives>.
+You are Asistan, the reusable game-definition engine for Mizik.
+Create one durable game definition from the supplied title, description and rules.
+Produce one English systemDirectives block dedicated to that game.
+The directive identifies the game, its objective, its exact JSON fields, answer semantics, explanation field, feedback fields and timing field.
+The directive is concise, specific and reusable.
+Return one JSON object with slug, name, description, systemDirectives, soloPoints and modes.
 </system_directives>`;
   const prompt = `Game title: ${name}
 Description: ${description}
 Rules: ${baseRules}
 Language context: ${language}`;
-  const response = await runAI([{ role: "system", content: generatorSystem }, { role: "user", content: prompt }], 1200);
+  const response = await runAI([
+    { role: "system", content: generatorSystem },
+    { role: "user", content: prompt }
+  ], 1000);
   const generated = parseAIJsonResponse(response.response, ["slug", "name", "description", "systemDirectives", "soloPoints", "modes"]);
   generated.slug = normalizeGameSlug(generated.slug || slug) || slug;
   generated.name = String(generated.name || name).trim();
   generated.description = String(generated.description || description).trim();
   generated.systemDirectives = String(generated.systemDirectives || "").trim();
   generated.soloPoints = Math.max(1, Math.min(10, Number(generated.soloPoints) || 1));
-  generated.modes = Array.isArray(generated.modes) && generated.modes.length > 0 ? generated.modes : ["solo", "multi"];
-  if (!generated.systemDirectives.startsWith("<system_directives") || !generated.systemDirectives.includes("</system_directives>")) {
-    throw new Error("Generated game prompt is invalid");
-  }
+  generated.modes = Array.isArray(generated.modes) && generated.modes.length ? generated.modes : ["solo", "multi"];
+  if (!/^<system_directives\b[\s\S]*<\/system_directives>$/.test(generated.systemDirectives)) throw new Error("Generated game prompt invalid");
   const saved = await GameDefinition.findOneAndUpdate(
-    { slug: generated.slug },
-    { ...generated, updatedAt: new Date() },
+    { recordType: "game", recordKey: `game:${generated.slug}` },
+    {
+      recordType: "game",
+      recordKey: `game:${generated.slug}`,
+      slug: generated.slug,
+      name: generated.name,
+      description: generated.description,
+      systemDirectives: generated.systemDirectives,
+      soloPoints: generated.soloPoints,
+      modes: generated.modes
+    },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
   return saved.toObject();
@@ -1441,12 +1217,7 @@ async function validateGameAnswer(session, tfid, answer) {
 
   const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[session.state.language] || "English";
   const visibleQuestion = session.state.questionPayload?.question || session.state.questionPayload?.scrambled || session.state.questionPayload?.letters || session.state.question || "";
-  let correct;
-  try {
-    correct = await runAIValidator(visibleQuestion, session.state.currentAnswer, answer, langName, session.gameSlug);
-  } catch {
-    correct = checkAnswerTolerance(answer, session.state.currentAnswer);
-  }
+  const correct = await runAIValidator(visibleQuestion, session.state.currentAnswer, answer, langName, session.gameSlug);
 
   session.state.answeredBy = tfid;
 
@@ -1595,23 +1366,19 @@ async function buildQuizForSession(body) {
 
   const servedRows = db.prepare("SELECT quiz_id FROM served_questions WHERE session_id = ?").all(session_id);
   const servedIds = servedRows.map(r => r.quiz_id).filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
-  let matchCriteria = { lang: language, level: current_step_num };
+  let matchCriteria = { recordType: { $in: [null, "question"] }, lang: language, level: current_step_num };
   if (servedIds.length > 0) matchCriteria._id = { $nin: servedIds };
 
   let dbItems = await BaseQuiz.aggregate([{ $match: matchCriteria }, { $sample: { size: 100 } }]).catch(() => []);
   if (dbItems.length === 0) {
-    let broadCriteria = { lang: language };
+    let broadCriteria = { recordType: { $in: [null, "question"] }, lang: language };
     if (servedIds.length > 0) broadCriteria._id = { $nin: servedIds };
     dbItems = await BaseQuiz.aggregate([{ $match: broadCriteria }, { $sample: { size: 100 } }]).catch(() => []);
   }
   if (dbItems.length === 0 && servedIds.length > 0) {
     db.prepare("DELETE FROM served_questions WHERE session_id = ?").run(session_id);
-    dbItems = await BaseQuiz.aggregate([{ $match: { lang: language, level: current_step_num } }, { $sample: { size: 100 } }]).catch(() => []);
-    if (dbItems.length === 0) dbItems = await BaseQuiz.aggregate([{ $match: { lang: language } }, { $sample: { size: 100 } }]).catch(() => []);
-  }
-  if (dbItems.length === 0) {
-    const randomJsonRecord = await getRandomFromJsonFile(language, current_step_num);
-    if (randomJsonRecord) dbItems = [randomJsonRecord];
+    dbItems = await BaseQuiz.aggregate([{ $match: { recordType: { $in: [null, "question"] }, lang: language, level: current_step_num } }, { $sample: { size: 100 } }]).catch(() => []);
+    if (dbItems.length === 0) dbItems = await BaseQuiz.aggregate([{ $match: { recordType: { $in: [null, "question"] }, lang: language } }, { $sample: { size: 100 } }]).catch(() => []);
   }
 
   let randomItem = dbItems.length > 0 ? dbItems[Math.floor(Math.random() * dbItems.length)] : null;
@@ -1669,7 +1436,7 @@ async function buildQuizForSession(body) {
 
   if (!success) {
     try {
-      const result = await executeMode3PureAIGeneration(session_id, language, langName);
+      const result = await executeMode3PureAIGeneration(language, langName, requestedGame || null, body.image_url || null, body.game_context || "", current_step_num);
       parsed = result.parsed;
       randomType = result.randomType;
       imgUrl = result.imgUrl;
@@ -1678,24 +1445,7 @@ async function buildQuizForSession(body) {
       finalExplanation = result.finalExplanation;
       success = true;
     } catch (e) {
-      logEvent("ERROR", "STRATEGY_SELECTOR", `AI generation fallback failed: ${e.message}`);
-    }
-  }
-
-  if (!success) {
-    if (randomItem) {
-      parsed = { question: randomItem.question, options: Array.isArray(randomItem.options) ? randomItem.options : [], answer: randomItem.answer };
-      randomType = randomItem.qType || "MCQ";
-      imgUrl = randomItem.imageUrl || null;
-      finalSuccess = randomItem.successMsg || "";
-      finalError = randomItem.errorMsg || "";
-      finalExplanation = randomItem.explanation || "";
-    } else {
-      parsed = { question: "System recovery question.", options: ["True", "False"], answer: "True" };
-      randomType = "TRUE_FALSE";
-      finalSuccess = "";
-      finalError = "";
-      finalExplanation = "";
+      throw new Error(`Question generation failed: ${e.message}`);
     }
   }
 
@@ -1804,12 +1554,7 @@ async function validateQuizForSession(body) {
   const langName = { en: "English", fr: "French", es: "Spanish", ht: "Haitian Creole" }[progress.language] || "English";
   const gameName = current.q_type || "Quiz";
   let isCorrect = false;
-  try {
-    isCorrect = await runAIValidator(current.question, current.answer, user_answer, langName, gameName);
-  } catch (e) {
-    isCorrect = checkAnswerTolerance(user_answer, current.answer);
-    logEvent("WARN", "VALIDATION_AI", `Validator fallback used: ${e.message}`);
-  }
+  isCorrect = await runAIValidator(current.question, current.answer, user_answer, langName, gameName);
 
   let finalFeedback = "";
   const baseMessage = isCorrect ? current.success_msg : current.error_msg;
@@ -1847,13 +1592,23 @@ async function validateQuizForSession(body) {
 app.post("/quizz", async (req, res) => {
   try {
     const quizData = await buildQuizForSession(req.body || {});
-    logEvent("INFO", "ROUTER", `Quiz data generated for ${req.body?.session_id || "unknown"}`);
     return res.json(quizData);
   } catch (e) {
-    logEvent("ERROR", "ROUTER", `Critical failure in /quizz endpoint: ${e.message}`);
-    const sessionId = req.body?.session_id || "default";
-    await saveCurrentQuiz(sessionId, "TRUE_FALSE", "System recovery question.", JSON.stringify(["True", "False"]), null, "True", "", "", "");
-    return res.json({ type: "TRUE_FALSE", question: "System recovery question.", options: ["True", "False"], error_msg: e.message });
+    const sessionId = req.body?.session_id || "";
+    const progress = sessionId ? await getProgress(sessionId).catch(() => null) : null;
+    const language = normalizeLanguage(req.body?.lang || progress?.language || "en");
+    return res.status(503).json({
+      success: false,
+      type: null,
+      question: null,
+      options: [],
+      image_url: null,
+      explanation: "",
+      successMsg: "",
+      errorMsg: localizedQuizErrors[language] || localizedQuizErrors.en,
+      language,
+      retryable: true
+    });
   }
 });
 
@@ -1861,8 +1616,19 @@ app.post("/validate", async (req, res) => {
   try {
     return res.json(await validateQuizForSession(req.body || {}));
   } catch (e) {
-    logEvent("ERROR", "VALIDATION", `Exception during validation: ${e.message}`);
-    return res.json({ correct: false, explanation: "", successMsg: "", errorMsg: "", consecutive_correct: 0, needed_for_next_level: 7, current_step: 1, language: "en" });
+    const sessionId = req.body?.session_id || "";
+    const progress = sessionId ? await getProgress(sessionId).catch(() => null) : null;
+    const language = normalizeLanguage(req.body?.lang || progress?.language || "en");
+    return res.status(422).json({
+      correct: false,
+      explanation: "",
+      successMsg: "",
+      errorMsg: localizedQuizErrors[language] || localizedQuizErrors.en,
+      consecutive_correct: progress?.consecutive_correct || 0,
+      needed_for_next_level: Math.max(0, 7 - (progress?.consecutive_correct || 0)),
+      current_step: progress?.current_step || 1,
+      language
+    });
   }
 });
 
@@ -2331,12 +2097,6 @@ httpServer.on("upgrade", (request, socket, head) => {
 setInterval(cleanupExpiredGames, 1000);
 setInterval(() => silentValidationAt.clear(), 60 * 60 * 1000);
 
-mongoose.connection.once("open", async () => {
-  await seedBuiltInGames();
-  syncJsonToMongo();
-  executeBackgroundMassGeneration(false);
-  setInterval(() => executeBackgroundMassGeneration(false), 70 * 60 * 1000);
-});
 
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
