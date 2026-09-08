@@ -1,7 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import Database import "dotenv/config";
-import express from "express";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import Database from "better-sqlite3";
@@ -32,6 +30,7 @@ db.exec("CREATE TABLE IF NOT EXISTS user_info (session_id TEXT PRIMARY KEY, data
 db.exec("CREATE TABLE IF NOT EXISTS served_questions (session_id TEXT, quiz_id TEXT, PRIMARY KEY(session_id, quiz_id))");
 db.exec("CREATE TABLE IF NOT EXISTS game_sessions (game_id TEXT PRIMARY KEY, game_slug TEXT, owner_tfid TEXT, players TEXT, state TEXT, expires_at INTEGER)");
 db.exec("CREATE TABLE IF NOT EXISTS game_words (game_id TEXT PRIMARY KEY, words TEXT, expires_at INTEGER)");
+db.exec("CREATE TABLE IF NOT EXISTS game_invitations (invitation_id TEXT PRIMARY KEY, game_id TEXT, from_tfid TEXT, to_tfid TEXT, game_slug TEXT, status TEXT, created_at INTEGER, expires_at INTEGER)");
 
 const MONGO_URI = process.env.MONGO_URI;
 
@@ -66,6 +65,76 @@ const MAIN_AI_MODEL = "@cf/zai-org/glm-4.7-flash";
 const VALIDATOR_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
 const wsClients = new Map();
 const silentValidationAt = new Map();
+
+const invitationVariants = {
+  en: [
+    "You have received a game invitation from TF-{TFID}. Would you like to accept it?",
+    "TF-{TFID} has invited you to join a game. Would you like to accept the invitation?",
+    "A game invitation from TF-{TFID} is waiting for your response. Would you like to accept it?",
+    "TF-{TFID} has sent you an invitation to participate in a game. Would you like to accept?",
+    "You are invited by TF-{TFID} to participate in a game. Please choose whether to accept the invitation.",
+    "An invitation from TF-{TFID} has been received. Would you like to join the proposed game?",
+    "TF-{TFID} has requested your participation in a game. Would you like to accept the invitation?"
+  ],
+  fr: [
+    "Vous avez reçu une invitation de TF-{TFID}. Souhaitez-vous l’accepter ?",
+    "TF-{TFID} vous a invité à rejoindre une partie. Souhaitez-vous accepter cette invitation ?",
+    "Une invitation de TF-{TFID} attend votre réponse. Souhaitez-vous l’accepter ?",
+    "TF-{TFID} vous propose de participer à une partie. Souhaitez-vous accepter cette invitation ?",
+    "Vous êtes invité par TF-{TFID} à participer à une partie. Veuillez choisir si vous souhaitez accepter.",
+    "Vous avez reçu une invitation de participation envoyée par TF-{TFID}. Souhaitez-vous rejoindre la partie ?",
+    "TF-{TFID} sollicite votre participation à une partie. Souhaitez-vous accepter l’invitation ?"
+  ],
+  es: [
+    "Ha recibido una invitación de TF-{TFID}. ¿Desea aceptarla?",
+    "TF-{TFID} le ha invitado a participar en una partida. ¿Desea aceptar la invitación?",
+    "Tiene una invitación de TF-{TFID} pendiente de respuesta. ¿Desea aceptarla?",
+    "TF-{TFID} le propone participar en una partida. ¿Desea aceptar esta invitación?",
+    "TF-{TFID} le ha invitado a participar en una partida. Seleccione si desea aceptar la invitación.",
+    "Ha recibido una invitación para participar en una partida enviada por TF-{TFID}. ¿Desea unirse?",
+    "TF-{TFID} solicita su participación en una partida. ¿Desea aceptar la invitación?"
+  ],
+  ht: [
+    "Ou resevwa yon envitasyon nan men TF-{TFID}. Èske ou vle aksepte li?",
+    "TF-{TFID} envite w pou patisipe nan yon jwèt. Èske ou vle aksepte envitasyon an?",
+    "Gen yon envitasyon nan men TF-{TFID} k ap tann repons ou. Èske ou vle aksepte li?",
+    "TF-{TFID} pwopoze pou ou patisipe nan yon jwèt. Èske ou vle aksepte envitasyon sa a?",
+    "TF-{TFID} envite w pou patisipe nan yon jwèt. Tanpri chwazi si ou vle aksepte envitasyon an.",
+    "Ou resevwa yon envitasyon pou patisipe nan yon jwèt nan men TF-{TFID}. Èske ou vle antre nan jwèt la?",
+    "TF-{TFID} mande patisipasyon ou nan yon jwèt. Èske ou vle aksepte envitasyon an?"
+  ]
+};
+
+const localizedConnectionMessages = {
+  en: {
+    connected: "The player connection was established successfully.",
+    disconnected: "The player connection was closed.",
+    disconnectError: "The player connection could not be completed correctly.",
+    accepted: "The game invitation was accepted successfully.",
+    declined: "The game invitation was declined."
+  },
+  fr: {
+    connected: "La connexion du joueur a été établie avec succès.",
+    disconnected: "La connexion du joueur a été interrompue.",
+    disconnectError: "La connexion du joueur n’a pas pu être établie correctement.",
+    accepted: "L’invitation à la partie a été acceptée avec succès.",
+    declined: "L’invitation à la partie a été refusée."
+  },
+  es: {
+    connected: "La conexión del jugador se estableció correctamente.",
+    disconnected: "La conexión del jugador se ha cerrado.",
+    disconnectError: "La conexión del jugador no pudo completarse correctamente.",
+    accepted: "La invitación a la partida fue aceptada correctamente.",
+    declined: "La invitación a la partida fue rechazada."
+  },
+  ht: {
+    connected: "Koneksyon jwè a etabli avèk siksè.",
+    disconnected: "Koneksyon jwè a fèmen.",
+    disconnectError: "Koneksyon jwè a pa t kapab etabli kòrèkteman.",
+    accepted: "Envitasyon jwèt la aksepte avèk siksè.",
+    declined: "Envitasyon jwèt la refize."
+  }
+};
 
 const s3 = new S3Client({
   region: "auto",
@@ -365,7 +434,7 @@ async function runAI(messages, max_tokens, retries = 0, model = MAIN_AI_MODEL) {
         logEvent("WARN", "AI_MANAGER", `Fallback Triggered: Credential index ${index} exhausted or limited. Locking out for 24 hours.`);
         cfCredentials[index].lockoutUntil = Date.now() + 24 * 60 * 60 * 1000;
         if (retries < cfCredentials.length) {
-            return await runAI(messages, max_tokens, retries + 1);
+            return await runAI(messages, max_tokens, retries + 1, model);
         }
         return { response: "{}" };
     }
@@ -1069,6 +1138,111 @@ Language context: ${language}`;
   return saved.toObject();
 }
 
+function normalizeLanguage(language) {
+  const lang = String(language || "en").trim().toLowerCase();
+  if (lang === "fr" || lang === "es" || lang === "ht" || lang === "en") return lang;
+  return "en";
+}
+
+async function getUserLanguageByTfid(tfid) {
+  const normalized = String(tfid || "").trim();
+  if (!normalized) return "en";
+  try {
+    const users = mongoose.connection.db.collection("users");
+    const user = await users.findOne({
+      $or: [{ tfid: normalized }, { TFID: normalized }, { dh7: normalized }]
+    }, { projection: { language: 1, lang: 1, langue: 1 } });
+    return normalizeLanguage(user?.language || user?.lang || user?.langue || "en");
+  } catch {
+    return "en";
+  }
+}
+
+function buildInvitationText(language, fromTfid) {
+  const lang = normalizeLanguage(language);
+  const variants = invitationVariants[lang] || invitationVariants.en;
+  const template = variants[Math.floor(Math.random() * variants.length)];
+  return template.replaceAll("{TFID}", String(fromTfid || "").trim());
+}
+
+function invitationChoices(language) {
+  const lang = normalizeLanguage(language);
+  if (lang === "fr") return ["Accepté", "Refuser"];
+  if (lang === "es") return ["Aceptar", "Rechazar"];
+  if (lang === "ht") return ["Aksepte", "Refize"];
+  return ["Accept", "Decline"];
+}
+
+function createGameInvitation({ gameId, fromTfid, toTfid, gameSlug }) {
+  const invitationId = crypto.randomUUID();
+  const now = Date.now();
+  db.prepare("INSERT INTO game_invitations (invitation_id, game_id, from_tfid, to_tfid, game_slug, status, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(
+    invitationId,
+    gameId,
+    fromTfid,
+    toTfid,
+    gameSlug,
+    "pending",
+    now,
+    now + GAME_TTL_MS
+  );
+  return invitationId;
+}
+
+function loadPendingInvitationsForTfid(tfid) {
+  const rows = db.prepare("SELECT * FROM game_invitations WHERE to_tfid = ? AND status = ? AND expires_at > ? ORDER BY created_at DESC").all(String(tfid || "").trim(), "pending", Date.now());
+  return rows.map(row => row);
+}
+
+function updateInvitation(invitationId, status) {
+  db.prepare("UPDATE game_invitations SET status = ? WHERE invitation_id = ? AND status = ? AND expires_at > ?").run(status, invitationId, "pending", Date.now());
+  return db.prepare("SELECT * FROM game_invitations WHERE invitation_id = ?").get(invitationId);
+}
+
+function deleteExpiredInvitations() {
+  db.prepare("DELETE FROM game_invitations WHERE expires_at <= ?").run(Date.now());
+}
+
+function connectionMessage(language, status) {
+  const lang = normalizeLanguage(language);
+  const messages = localizedConnectionMessages[lang] || localizedConnectionMessages.en;
+  return messages[status] || messages.disconnectError;
+}
+
+async function getGamePlayerLanguage(gameSession, tfid) {
+  if (gameSession?.state?.playerLanguages?.[tfid]) return normalizeLanguage(gameSession.state.playerLanguages[tfid]);
+  return getUserLanguageByTfid(tfid);
+}
+
+async function sendInvitationToTfid(gameSession, toTfid) {
+  const target = String(toTfid || "").trim();
+  if (!target) return null;
+  const language = await getUserLanguageByTfid(target);
+  const invitationId = createGameInvitation({
+    gameId: gameSession.gameId,
+    fromTfid: gameSession.ownerTfid,
+    toTfid: target,
+    gameSlug: gameSession.gameSlug
+  });
+  const invitation = {
+    invitationId,
+    gameId: gameSession.gameId,
+    fromTfid: gameSession.ownerTfid,
+    toTfid: target,
+    gameSlug: gameSession.gameSlug,
+    status: "pending",
+    text: buildInvitationText(language, gameSession.ownerTfid),
+    choices: invitationChoices(language),
+    language,
+    expiresAt: Date.now() + GAME_TTL_MS
+  };
+  const sockets = wsClients.get(`user:${target}`);
+  if (sockets) {
+    for (const socket of sockets) wsSend(socket, { type: "game:invitation", invitation });
+  }
+  return invitation;
+}
+
 function gameExpiresAt() {
   return Date.now() + GAME_TTL_MS;
 }
@@ -1117,6 +1291,7 @@ function cleanupExpiredGames() {
   const now = Date.now();
   db.prepare("DELETE FROM game_sessions WHERE expires_at <= ?").run(now);
   db.prepare("DELETE FROM game_words WHERE expires_at <= ?").run(now);
+  deleteExpiredInvitations();
   for (const [gameId, sockets] of wsClients.entries()) {
     if (!loadGameSession(gameId) && sockets.size === 0) wsClients.delete(gameId);
   }
@@ -1155,9 +1330,12 @@ async function createGameSession({ gameSlug, ownerTfid, tfids, language = "en", 
   const mode = players.length === 1 ? "solo" : "multi";
   if (!Array.isArray(game.modes) || !game.modes.includes(mode)) throw new Error(`Game does not support ${mode}`);
   const gameId = crypto.randomUUID();
+  const playerLanguages = Object.fromEntries(await Promise.all(players.map(async tfid => [tfid, tfid === ownerTfid ? normalizeLanguage(language) : await getUserLanguageByTfid(tfid)])));
+  const pending = players.length > 1;
   const state = {
-    status: "active",
-    language,
+    status: pending ? "pending" : "active",
+    language: normalizeLanguage(language),
+    playerLanguages,
     level: Number(level) || 1,
     mode,
     players,
@@ -1174,13 +1352,15 @@ async function createGameSession({ gameSlug, ownerTfid, tfids, language = "en", 
   };
   saveGameSession(gameId, game.slug, ownerTfid, players, state);
   if (Array.isArray(words) && words.length > 0) saveStoredWords(gameId, words);
-  const question = await generateGameQuestion(game, language, Number(level) || 1, null, gameContext, words);
-  state.question = question.question || null;
-  state.questionPayload = question;
-  state.currentAnswer = question.answer || null;
-  state.timeLimit = Number(question.timeLimit) || 0;
-  state.questionStartedAt = Date.now();
-  saveGameSession(gameId, game.slug, ownerTfid, players, state);
+  if (!pending) {
+    const question = await generateGameQuestion(game, language, Number(level) || 1, null, gameContext, words);
+    state.question = question.question || null;
+    state.questionPayload = question;
+    state.currentAnswer = question.answer || null;
+    state.timeLimit = Number(question.timeLimit) || 0;
+    state.questionStartedAt = Date.now();
+    saveGameSession(gameId, game.slug, ownerTfid, players, state);
+  }
   return loadGameSession(gameId);
 }
 
@@ -1737,7 +1917,54 @@ app.post("/game/create", async (req, res) => {
       words: body.words || [],
       gameContext: body.game_context || ""
     });
-    return res.json({ success: true, game: buildPublicGameState(session) });
+    const invitations = [];
+    for (const tfid of session.players) {
+      if (tfid !== session.ownerTfid) {
+        const invitation = await sendInvitationToTfid(session, tfid);
+        if (invitation) invitations.push(invitation);
+      }
+    }
+    return res.json({ success: true, game: buildPublicGameState(session), invitations });
+  } catch (e) {
+    return res.status(400).json({ success: false, error: e.message });
+  }
+});
+
+app.post("/game/invitation/accept", async (req, res) => {
+  try {
+    const invitationId = String(req.body?.invitation_id || req.body?.invitationId || "").trim();
+    const tfid = String(req.body?.tfid || "").trim();
+    const invitation = updateInvitation(invitationId, "accepted");
+    if (!invitation || invitation.to_tfid !== tfid) return res.status(404).json({ success: false, error: "Invitation not found or expired" });
+    const session = loadGameSession(invitation.game_id);
+    if (!session) return res.status(404).json({ success: false, error: "Game not found or expired" });
+    if (session.state.status === "pending") {
+      session.state.status = "active";
+      const game = await getGameDefinition(session.gameSlug);
+      const words = await getStoredWords(session.gameId);
+      const question = await generateGameQuestion(game, session.state.language, session.state.level, null, session.state.gameContext || "", words);
+      session.state.question = question.question || null;
+      session.state.questionPayload = question;
+      session.state.currentAnswer = question.answer || null;
+      session.state.timeLimit = Number(question.timeLimit) || 0;
+      session.state.questionStartedAt = Date.now();
+      saveGameSession(session.gameId, session.gameSlug, session.ownerTfid, session.players, session.state);
+    }
+    wsBroadcast(session.gameId, { type: "game:update", game: buildPublicGameState(session) });
+    wsBroadcast(session.gameId, { type: "game:question", game: buildPublicGameState(session) });
+    return res.json({ success: true, message: connectionMessage(await getUserLanguageByTfid(tfid), "accepted"), game: buildPublicGameState(session) });
+  } catch (e) {
+    return res.status(400).json({ success: false, error: e.message });
+  }
+});
+
+app.post("/game/invitation/refuse", async (req, res) => {
+  try {
+    const invitationId = String(req.body?.invitation_id || req.body?.invitationId || "").trim();
+    const tfid = String(req.body?.tfid || "").trim();
+    const invitation = updateInvitation(invitationId, "declined");
+    if (!invitation || invitation.to_tfid !== tfid) return res.status(404).json({ success: false, error: "Invitation not found or expired" });
+    return res.json({ success: true, message: connectionMessage(await getUserLanguageByTfid(tfid), "declined"), game_id: invitation.game_id });
   } catch (e) {
     return res.status(400).json({ success: false, error: e.message });
   }
@@ -1787,8 +2014,54 @@ function registerSocketForGame(gameId, ws) {
   wsClients.get(gameId).add(ws);
 }
 
-function unregisterSocket(ws) {
-  for (const sockets of wsClients.values()) sockets.delete(ws);
+function registerSocketForUser(tfid, ws) {
+  const key = `user:${String(tfid || "").trim()}`;
+  if (!key.slice(5)) return;
+  if (!wsClients.has(key)) wsClients.set(key, new Set());
+  wsClients.get(key).add(ws);
+}
+
+async function notifyGamePlayerConnection(gameId, changedTfid, status, error = false) {
+  const session = loadGameSession(gameId);
+  if (!session) return;
+  for (const tfid of session.players) {
+    if (tfid === changedTfid) continue;
+    const sockets = wsClients.get(`user:${tfid}`);
+    if (!sockets) continue;
+    const language = await getGamePlayerLanguage(session, tfid);
+    for (const socket of sockets) {
+      wsSend(socket, {
+        type: "connection:status",
+        success: !error,
+        status,
+        tfid: changedTfid,
+        message: connectionMessage(language, error ? "disconnectError" : status)
+      });
+    }
+  }
+}
+
+async function unregisterSocket(ws, connectionError = false) {
+  const tfid = ws.tfid;
+  const activeGameIds = [];
+  if (tfid) {
+    const rows = db.prepare("SELECT game_id FROM game_sessions WHERE expires_at > ?").all(Date.now());
+    for (const row of rows) {
+      const session = loadGameSession(row.game_id);
+      if (session && session.players.includes(tfid) && session.state.status === "active") activeGameIds.push(session.gameId);
+    }
+  }
+  let userStillConnected = false;
+  for (const [key, sockets] of wsClients.entries()) {
+    sockets.delete(ws);
+    if (key === `user:${String(tfid || "").trim()}` && sockets.size > 0) userStillConnected = true;
+    if (sockets.size === 0) wsClients.delete(key);
+  }
+  if (!userStillConnected) {
+    for (const gameId of activeGameIds) {
+      await notifyGamePlayerConnection(gameId, tfid, "disconnected", connectionError);
+    }
+  }
 }
 
 async function handleWebSocketMessage(ws, message) {
@@ -1803,6 +2076,14 @@ async function handleWebSocketMessage(ws, message) {
       return;
     }
     wsSend(ws, { type: "ready", tfid: ws.tfid || null, session_id: ws.sessionId || null });
+    if (ws.tfid) {
+      registerSocketForUser(ws.tfid, ws);
+      const pendingInvitations = loadPendingInvitationsForTfid(ws.tfid);
+      for (const item of pendingInvitations) {
+        const language = await getUserLanguageByTfid(ws.tfid);
+        wsSend(ws, { type: "game:invitation", invitation: { invitationId: item.invitation_id, gameId: item.game_id, fromTfid: item.from_tfid, toTfid: item.to_tfid, gameSlug: item.game_slug, status: item.status, text: buildInvitationText(language, item.from_tfid), choices: invitationChoices(language), language, expiresAt: item.expires_at } });
+      }
+    }
     wsSend(ws, { type: "games:list", games: await listGameDefinitions() });
     const activeGames = [];
     const rows = db.prepare("SELECT * FROM game_sessions WHERE expires_at > ?").all(Date.now());
@@ -1841,8 +2122,16 @@ async function handleWebSocketMessage(ws, message) {
       gameContext: data.game_context || ""
     });
     registerSocketForGame(session.gameId, ws);
-    wsSend(ws, { type: "game:created", game: buildPublicGameState(session) });
-    wsBroadcast(session.gameId, { type: "game:question", game: buildPublicGameState(session) });
+    if (ws.tfid) registerSocketForUser(ws.tfid, ws);
+    const invitations = [];
+    for (const tfid of session.players) {
+      if (tfid !== session.ownerTfid) {
+        const invitation = await sendInvitationToTfid(session, tfid);
+        if (invitation) invitations.push(invitation);
+      }
+    }
+    wsSend(ws, { type: "game:created", game: buildPublicGameState(session), invitations });
+    if (session.state.status === "active") wsBroadcast(session.gameId, { type: "game:question", game: buildPublicGameState(session) });
     return;
   }
 
@@ -1853,7 +2142,55 @@ async function handleWebSocketMessage(ws, message) {
     if (!tfid || !session.players.includes(tfid)) throw new Error("TFID is not part of this game");
     ws.tfid = tfid;
     registerSocketForGame(session.gameId, ws);
-    wsSend(ws, { type: "game:state", game: buildPublicGameState(session) });
+    registerSocketForUser(tfid, ws);
+    const language = await getGamePlayerLanguage(session, tfid);
+    wsSend(ws, { type: "game:state", game: buildPublicGameState(session), connection: { success: true, message: connectionMessage(language, "connected"), status: "connected" } });
+    if (session.state.status === "active") await notifyGamePlayerConnection(session.gameId, tfid, "connected", false);
+    return;
+  }
+
+  if (type === "game:invitation:accept") {
+    const tfid = String(data.tfid || ws.tfid || "").trim();
+    const invitation = updateInvitation(String(data.invitation_id || data.invitationId || ""), "accepted");
+    if (!invitation || invitation.to_tfid !== tfid) throw new Error("Invitation not found or expired");
+    const session = loadGameSession(invitation.game_id);
+    if (!session) throw new Error("Game not found or expired");
+    if (session.state.status === "pending") {
+      session.state.status = "active";
+      session.state.turnIndex = 0;
+      session.state.askedTo = session.players[0];
+      const game = await getGameDefinition(session.gameSlug);
+      const words = await getStoredWords(session.gameId);
+      const question = await generateGameQuestion(game, session.state.language, session.state.level, null, session.state.gameContext || "", words);
+      session.state.question = question.question || null;
+      session.state.questionPayload = question;
+      session.state.currentAnswer = question.answer || null;
+      session.state.timeLimit = Number(question.timeLimit) || 0;
+      session.state.questionStartedAt = Date.now();
+      saveGameSession(session.gameId, session.gameSlug, session.ownerTfid, session.players, session.state);
+    }
+    ws.tfid = tfid;
+    registerSocketForUser(tfid, ws);
+    registerSocketForGame(session.gameId, ws);
+    const language = await getGamePlayerLanguage(session, tfid);
+    wsSend(ws, { type: "game:invitation", invitation: { invitationId: invitation.invitation_id, gameId: invitation.game_id, fromTfid: invitation.from_tfid, toTfid: invitation.to_tfid, gameSlug: invitation.game_slug, status: "accepted", text: connectionMessage(language, "accepted"), choices: invitationChoices(language), language } });
+    await notifyGamePlayerConnection(session.gameId, tfid, "connected", false);
+    wsBroadcast(session.gameId, { type: "game:update", game: buildPublicGameState(session) });
+    if (session.state.status === "active") wsBroadcast(session.gameId, { type: "game:question", game: buildPublicGameState(session) });
+    return;
+  }
+
+  if (type === "game:invitation:refuse") {
+    const tfid = String(data.tfid || ws.tfid || "").trim();
+    const invitation = updateInvitation(String(data.invitation_id || data.invitationId || ""), "declined");
+    if (!invitation || invitation.to_tfid !== tfid) throw new Error("Invitation not found or expired");
+    const language = await getUserLanguageByTfid(tfid);
+    wsSend(ws, { type: "game:invitation", invitation: { invitationId: invitation.invitation_id, gameId: invitation.game_id, fromTfid: invitation.from_tfid, toTfid: invitation.to_tfid, gameSlug: invitation.game_slug, status: "declined", text: connectionMessage(language, "declined"), choices: invitationChoices(language), language } });
+    const ownerSockets = wsClients.get(`user:${invitation.from_tfid}`);
+    if (ownerSockets) {
+      const ownerLanguage = await getUserLanguageByTfid(invitation.from_tfid);
+      for (const socket of ownerSockets) wsSend(socket, { type: "connection:status", success: true, status: "declined", tfid, message: connectionMessage(ownerLanguage, "declined") });
+    }
     return;
   }
 
@@ -1938,8 +2275,8 @@ webSocketServer.on("connection", ws => {
       wsSend(ws, { type: "error", error: e.message });
     }
   });
-  ws.on("close", () => unregisterSocket(ws));
-  ws.on("error", () => unregisterSocket(ws));
+  ws.on("close", () => { unregisterSocket(ws, false).catch(() => {}); });
+  ws.on("error", () => { unregisterSocket(ws, true).catch(() => {}); });
 });
 
 httpServer.on("upgrade", (request, socket, head) => {
