@@ -49,40 +49,40 @@ const silentValidationAt = new Map();
 
 const invitationVariants = {
   en: [
-    "You have received a game invitation from TF-{TFID}. Would you like to accept it?",
-    "TF-{TFID} has invited you to join a game. Would you like to accept the invitation?",
-    "A game invitation from TF-{TFID} is waiting for your response. Would you like to accept it?",
-    "TF-{TFID} has sent you an invitation to participate in a game. Would you like to accept?",
-    "You are invited by TF-{TFID} to participate in a game. Please choose whether to accept the invitation.",
-    "An invitation from TF-{TFID} has been received. Would you like to join the proposed game?",
-    "TF-{TFID} has requested your participation in a game. Would you like to accept the invitation?"
+    "You have received a game invitation from {TFID}. Would you like to accept it?",
+    "{TFID} has invited you to join a game. Would you like to accept the invitation?",
+    "A game invitation from {TFID} is waiting for your response. Would you like to accept it?",
+    "{TFID} has sent you an invitation to participate in a game. Would you like to accept?",
+    "You are invited by {TFID} to participate in a game. Please choose whether to accept the invitation.",
+    "An invitation from {TFID} has been received. Would you like to join the proposed game?",
+    "{TFID} has requested your participation in a game. Would you like to accept the invitation?"
   ],
   fr: [
-    "Vous avez reçu une invitation de TF-{TFID}. Souhaitez-vous l’accepter ?",
-    "TF-{TFID} vous a invité à rejoindre une partie. Souhaitez-vous accepter cette invitation ?",
-    "Une invitation de TF-{TFID} attend votre réponse. Souhaitez-vous l’accepter ?",
-    "TF-{TFID} vous propose de participer à une partie. Souhaitez-vous accepter cette invitation ?",
-    "Vous êtes invité par TF-{TFID} à participer à une partie. Veuillez choisir si vous souhaitez accepter.",
-    "Vous avez reçu une invitation de participation envoyée par TF-{TFID}. Souhaitez-vous rejoindre la partie ?",
-    "TF-{TFID} sollicite votre participation à une partie. Souhaitez-vous accepter l’invitation ?"
+    "Vous avez reçu une invitation de {TFID}. Souhaitez-vous l’accepter ?",
+    "{TFID} vous a invité à rejoindre une partie. Souhaitez-vous accepter cette invitation ?",
+    "Une invitation de {TFID} attend votre réponse. Souhaitez-vous l’accepter ?",
+    "{TFID} vous propose de participer à une partie. Souhaitez-vous accepter cette invitation ?",
+    "Vous êtes invité par {TFID} à participer à une partie. Veuillez choisir si vous souhaitez accepter.",
+    "Vous avez reçu une invitation de participation envoyée par {TFID}. Souhaitez-vous rejoindre la partie ?",
+    "{TFID} sollicite votre participation à une partie. Souhaitez-vous accepter l’invitation ?"
   ],
   es: [
-    "Ha recibido una invitación de TF-{TFID}. ¿Desea aceptarla?",
-    "TF-{TFID} le ha invitado a participar en una partida. ¿Desea aceptar la invitación?",
-    "Tiene una invitación de TF-{TFID} pendiente de respuesta. ¿Desea aceptarla?",
-    "TF-{TFID} le propone participar en una partida. ¿Desea aceptar esta invitación?",
-    "TF-{TFID} le ha invitado a participar en una partida. Seleccione si desea aceptar la invitación.",
-    "Ha recibido una invitación para participar en una partida enviada por TF-{TFID}. ¿Desea unirse?",
-    "TF-{TFID} solicita su participación en una partida. ¿Desea aceptar la invitación?"
+    "Ha recibido una invitación de {TFID}. ¿Desea aceptarla?",
+    "{TFID} le ha invitado a participar en una partida. ¿Desea aceptar la invitación?",
+    "Tiene una invitación de {TFID} pendiente de respuesta. ¿Desea aceptarla?",
+    "{TFID} le propone participar en una partida. ¿Desea aceptar esta invitación?",
+    "{TFID} le ha invitado a participar en una partida. Seleccione si desea aceptar la invitación.",
+    "Ha recibido una invitación para participar en una partida enviada por {TFID}. ¿Desea unirse?",
+    "{TFID} solicita su participación en una partida. ¿Desea aceptar la invitación?"
   ],
   ht: [
     "Ou resevwa yon envitasyon nan men TF-{TFID}. Èske ou vle aksepte li?",
-    "TF-{TFID} envite w pou patisipe nan yon jwèt. Èske ou vle aksepte envitasyon an?",
-    "Gen yon envitasyon nan men TF-{TFID} k ap tann repons ou. Èske ou vle aksepte li?",
-    "TF-{TFID} pwopoze pou ou patisipe nan yon jwèt. Èske ou vle aksepte envitasyon sa a?",
-    "TF-{TFID} envite w pou patisipe nan yon jwèt. Tanpri chwazi si ou vle aksepte envitasyon an.",
-    "Ou resevwa yon envitasyon pou patisipe nan yon jwèt nan men TF-{TFID}. Èske ou vle antre nan jwèt la?",
-    "TF-{TFID} mande patisipasyon ou nan yon jwèt. Èske ou vle aksepte envitasyon an?"
+    "{TFID} envite w pou patisipe nan yon jwèt. Èske ou vle aksepte envitasyon an?",
+    "Gen yon envitasyon nan men {TFID} k ap tann repons ou. Èske ou vle aksepte li?",
+    "{TFID} pwopoze pou ou patisipe nan yon jwèt. Èske ou vle aksepte envitasyon sa a?",
+    "{TFID} envite w pou patisipe nan yon jwèt. Tanpri chwazi si ou vle aksepte envitasyon an.",
+    "Ou resevwa yon envitasyon pou patisipe nan yon jwèt nan men {TFID}. Èske ou vle antre nan jwèt la?",
+    "{TFID} mande patisipasyon ou nan yon jwèt. Èske ou vle aksepte envitasyon an?"
   ]
 };
 
@@ -308,7 +308,7 @@ async function runAIValidator(question, correctAnswer, userAnswer, language, gam
   const normalizedUser = normalizeValidationText(userAnswer);
   const exactMatch = normalizedVerified && normalizedVerified === normalizedUser ? "true" : "false";
   const system = `<system_directives name="answer_validator">
-You are Asistan, the answer validation engine for Mizik.
+You are Asistan, the answer validation engine for Quizzs.
 Determine whether the user answer matches the verified answer for the supplied question.
 Equivalent wording, ordinary spelling variation, accents, punctuation, number formatting, and natural language variation count as valid matches.
 An exact normalized answer match is a correct answer.
